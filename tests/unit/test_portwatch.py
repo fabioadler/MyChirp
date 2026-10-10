@@ -84,5 +84,31 @@ class TestHardwareRequirements(unittest.TestCase):
             getattr(generic_csv.CSVRadio, 'HARDWARE_REQUIREMENTS', None))
 
 
+class TestKnownCables(unittest.TestCase):
+    def test_every_known_chip_maps_to_a_name(self):
+        for (vid, pid), name in portwatch.KNOWN_USB_CHIPS.items():
+            self.assertTrue(name)
+            port = FakePort('/dev/x', vid, pid)
+            self.assertEqual(True, portwatch.is_known_cable(port))
+            self.assertIn(port.device, portwatch.describe_port(port))
+
+    def test_unknown_ids_are_not_known_cables(self):
+        port = FakePort('/dev/x', 0xDEAD, 0xBEEF)
+        self.assertFalse(portwatch.is_known_cable(port))
+        # ...but are still described honestly by their raw IDs
+        self.assertIn('DEAD:BEEF', portwatch.describe_port(port))
+
+    def test_record_detected(self):
+        port = FakePort('/dev/ttyUSB0', 0x1A86, 0x7523, 'USB Serial')
+        portwatch.record_detected(port)
+        try:
+            self.assertEqual('/dev/ttyUSB0',
+                             portwatch.LAST_DETECTED['device'])
+            self.assertTrue(portwatch.LAST_DETECTED['known_chip'])
+            self.assertIn('CH340', portwatch.LAST_DETECTED['description'])
+        finally:
+            portwatch.LAST_DETECTED.clear()
+
+
 if __name__ == '__main__':
     unittest.main()

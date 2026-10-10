@@ -462,6 +462,7 @@ class ChirpCloneDialog(wx.Dialog):
         # Never move the port selection during an active transfer
         if self._clone_thread and self._clone_thread.is_alive():
             return
+        portwatch.record_detected(port)
         desc = portwatch.describe_port(port)
         LOG.info('New serial port detected: %s', desc)
         if self.set_selected_port(port.device):

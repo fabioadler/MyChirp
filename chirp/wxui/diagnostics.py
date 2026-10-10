@@ -32,6 +32,7 @@ from chirp import directory
 from chirp.wxui import clone
 from chirp.wxui import common
 from chirp.wxui import config
+from chirp.wxui import portwatch
 
 _ = wx.GetTranslation
 LOG = logging.getLogger(__name__)
@@ -91,6 +92,29 @@ class ChirpDiagnosticsDialog(wx.Dialog):
             psizer.Add(wx.StaticText(
                 panel, label=_('No serial ports detected')),
                 0, wx.BOTTOM, border=8)
+
+        # Programming cables section
+        _add_section(panel, psizer, _('Programming cables'))
+        ports = serial.tools.list_ports.comports()
+        known = [p for p in ports if portwatch.is_known_cable(p)]
+        if known:
+            for port in known:
+                desc = portwatch.describe_port(port)
+                label = '%s: %s' % (port.device, desc)
+                psizer.Add(wx.StaticText(panel, label=label),
+                           0, wx.LEFT, border=8)
+        else:
+            psizer.Add(wx.StaticText(
+                panel, label=_('No known programming cable connected')),
+                0, wx.LEFT, border=8)
+        if portwatch.LAST_DETECTED:
+            psizer.Add(wx.StaticText(
+                panel,
+                label='%s: %s (%s)' % (
+                    _('Last detected'),
+                    portwatch.LAST_DETECTED.get('description'),
+                    portwatch.LAST_DETECTED.get('time'))),
+                0, wx.LEFT, border=8)
 
         # Selected model section
         _add_section(panel, psizer, _('Selected radio'))

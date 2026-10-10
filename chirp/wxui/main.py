@@ -47,6 +47,7 @@ from chirp.wxui import clone
 from chirp.wxui import developer
 from chirp.wxui import diagnostics
 from chirp.wxui import memedit
+from chirp.wxui import portwatch
 from chirp.wxui import printing
 from chirp.wxui import query_sources
 from chirp.wxui import radioinfo
@@ -492,6 +493,23 @@ class ChirpMain(wx.Frame):
             self.add_tab_bm = wx.Bitmap(str(icon), wx.BITMAP_TYPE_ANY)
 
         self.add_tab_panel.Bind(wx.EVT_PAINT, self._paint_add_tab_panel)
+
+        # Recognize programming cables whenever they are plugged in,
+        # even before the clone dialog is opened
+        self._port_watcher = portwatch.PortWatcher(on_added=self._port_added)
+        self._port_watcher.start()
+
+    def _port_added(self, port):
+        """A serial device just appeared: tell the user plainly."""
+        portwatch.record_detected(port)
+        desc = portwatch.describe_port(port)
+        LOG.info('Serial device detected: %s', desc)
+        if portwatch.is_known_cable(port):
+            self.statusbar.SetStatusText(
+                _('Programming cable detected: %s') % desc, i=0)
+        else:
+            self.statusbar.SetStatusText(
+                _('Serial device detected: %s') % desc, i=0)
 
     def _paint_add_tab_panel(self, event):
         panel = event.GetEventObject()

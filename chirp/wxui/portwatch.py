@@ -22,6 +22,7 @@ never opens them.
 """
 
 import logging
+from datetime import datetime
 
 import serial.tools.list_ports
 import wx
@@ -29,15 +30,40 @@ import wx
 _ = wx.GetTranslation
 LOG = logging.getLogger(__name__)
 
-# Well-known USB serial adapter chips used in programming cables.
-# Anything unknown is still described by its raw VID:PID.
+# Well-known USB serial adapter chips used in radio programming
+# cables (K1/K2 two-pin cables are typically CH340 or PL2303; OEM
+# cables use FTDI, CP210x, or STM32 CDC). Anything unknown is still
+# described by its raw VID:PID - never guessed.
 KNOWN_USB_CHIPS = {
-    (0x1A86, 0x7523): 'WCH CH340 USB serial',
+    (0x1A86, 0x7523): 'WCH CH340/CH341 USB serial',
     (0x1A86, 0x55D4): 'WCH CH9102 USB serial',
     (0x067B, 0x2303): 'Prolific PL2303 USB serial',
-    (0x0403, 0x6001): 'FTDI FT232 USB serial',
+    (0x0403, 0x6001): 'FTDI FT232R USB serial',
+    (0x0403, 0x6010): 'FTDI FT2232 USB serial',
+    (0x0403, 0x6014): 'FTDI FT232H USB serial',
+    (0x0403, 0x6015): 'FTDI FT231X USB serial',
     (0x10C4, 0xEA60): 'Silicon Labs CP210x USB serial',
+    (0x0483, 0x5740): 'STM32 virtual COM port',
 }
+
+# Last cable seen by any watcher, for the diagnostics panel
+LAST_DETECTED = {}
+
+
+def is_known_cable(port):
+    """True if the port's USB IDs match a known adapter chip."""
+    return (port.vid, port.pid) in KNOWN_USB_CHIPS
+
+
+def record_detected(port):
+    """Record the appearance of a device for the diagnostics panel."""
+    LAST_DETECTED.clear()
+    LAST_DETECTED.update({
+        'time': datetime.now().isoformat(timespec='seconds'),
+        'device': port.device,
+        'description': describe_port(port),
+        'known_chip': is_known_cable(port),
+    })
 
 
 def describe_port(port):
