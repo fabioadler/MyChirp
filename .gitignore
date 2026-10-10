@@ -37,6 +37,8 @@ chirpwx.spec
 chirp/locale/.files
 # for pycharm IDE
 .idea
+# graphify knowledge graph outputs (kept local)
+graphify-out/
 # nix
 .direnv
 result/
