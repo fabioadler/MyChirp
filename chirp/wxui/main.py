@@ -45,6 +45,7 @@ from chirp.wxui import bugreport
 from chirp.wxui import common
 from chirp.wxui import clone
 from chirp.wxui import developer
+from chirp.wxui import diagnostics
 from chirp.wxui import memedit
 from chirp.wxui import printing
 from chirp.wxui import query_sources
@@ -1026,6 +1027,11 @@ class ChirpMain(wx.Frame):
                                              _('Show debug log location'))
                 self.Bind(wx.EVT_MENU, self._menu_debug_loc, debug_loc_menu)
                 help_menu.Append(debug_loc_menu)
+
+        diagnostics_menu = wx.MenuItem(help_menu, wx.NewId(),
+                                       _('Radio diagnostics...'))
+        self.Bind(wx.EVT_MENU, self._menu_diagnostics, diagnostics_menu)
+        help_menu.Append(diagnostics_menu)
 
         backup_loc_menu = wx.MenuItem(help_menu, wx.NewId(),
                                       _('Show image backup location'))
@@ -2055,6 +2061,10 @@ GNU General Public License for more details."""
     def _menu_debug_log(self, event):
         dst = common.temporary_debug_log()
         wx.LaunchDefaultApplication(dst)
+
+    @common.error_proof()
+    def _menu_diagnostics(self, event):
+        diagnostics.ChirpDiagnosticsDialog(self).ShowModal()
 
     @common.error_proof()
     def _menu_debug_loc(self, event):

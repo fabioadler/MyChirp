@@ -39,6 +39,7 @@ from chirp.wxui import radiothread
 
 LOG = logging.getLogger(__name__)
 CONF = config.get()
+_ = wx.GetTranslation
 
 
 def pg_action_edit():
@@ -838,6 +839,145 @@ class ChirpSettingGrid(wx.Panel):
             prop.SetModifiedStatus(False)
 
 
+def error_hints(text):
+    """Map a radio communication error message to a simplified
+    explanation and a list of suggestions.
+
+    Returns (simplified, suggestions); both are None/empty when no
+    known pattern matches, in which case the caller should fall back
+    to showing the original message alone.
+    """
+    text = str(text)
+    if 'Radio refused to send' in text or 'Radio did not send block' in text:
+        simplified = _(
+            'The radio stopped providing data during the transfer. '
+            'This is usually caused by a cable connection problem, a '
+            'low battery, or a radio model that requires a different '
+            'communication protocol.')
+        suggestions = [
+            _('Check that the programming cable is fully connected.'),
+            _('Make sure the selected vendor and model match your '
+              'radio.'),
+            _('Try turning the radio off and on again before retrying.'),
+        ]
+        return simplified, suggestions
+    if 'No response from radio' in text:
+        simplified = _(
+            'The radio did not answer at all. This is usually a '
+            'cable or connection problem, or the radio is not '
+            'powered on.')
+        suggestions = [
+            _('Check that the programming cable is fully connected on '
+              'both ends.'),
+            _('Make sure the radio is turned on (volume may need to be '
+              'at 100%).'),
+            _('Verify you are using the correct port for your cable.'),
+        ]
+        return simplified, suggestions
+    if 'refused clone' in text or 'refused programming' in text:
+        simplified = _(
+            'The radio refused to enter programming mode. This is '
+            'usually a connection problem or a firmware that speaks '
+            'a different protocol.')
+        suggestions = [
+            _('Turn the radio off and on, then retry immediately.'),
+            _('Check the cable connection.'),
+            _('Make sure the selected vendor and model match your '
+              'radio.'),
+        ]
+        return simplified, suggestions
+    if 'Unexpected response' in text or 'Unknown response' in text:
+        simplified = _(
+            'The radio sent an unexpected answer. The selected model '
+            'may not match your radio, or the connection is '
+            'unreliable.')
+        suggestions = [
+            _('Make sure the selected vendor and model match your '
+              'radio.'),
+            _('Check the cable connection.'),
+        ]
+        return simplified, suggestions
+    return None, []
+
+
+class ChirpErrorDialog(wx.Dialog):
+    """Two-layer error dialog.
+
+    Shows a simplified, user-oriented message on top and keeps the
+    original technical message available behind a details toggle so no
+    technical information is hidden, per the design notes in
+    docs/ui-redesign.md.
+    """
+
+    def __init__(self, error, parent=None, title=None):
+        super().__init__(parent, title=title or _('An error has occurred'),
+                         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        self._link = None
+        if isinstance(error, errors.SpecificRadioError):
+            self._link = error.get_link()
+        self._technical = str(error)
+        self._simplified, self._suggestions = error_hints(self._technical)
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        top = wx.BoxSizer(wx.HORIZONTAL)
+        icon = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_MESSAGE_BOX)
+        top.Add(wx.StaticBitmap(self, bitmap=icon), 0,
+                wx.ALIGN_TOP | wx.ALL, border=10)
+        msg_vbox = wx.BoxSizer(wx.VERTICAL)
+        if self._simplified:
+            msg_vbox.Add(wx.StaticText(self, label=self._simplified), 0,
+                         wx.EXPAND | wx.ALL, border=5)
+        else:
+            msg_vbox.Add(wx.StaticText(self, label=self._technical), 0,
+                         wx.EXPAND | wx.ALL, border=5)
+        if self._suggestions:
+            for suggestion in self._suggestions:
+                msg_vbox.Add(wx.StaticText(self, label=' - %s' % suggestion),
+                             0, wx.EXPAND | wx.LEFT, border=15)
+        top.Add(msg_vbox, 1, wx.EXPAND)
+        vbox.Add(top, 0, wx.EXPAND)
+
+        self._details_btn = wx.Button(self, label=_('Technical details'))
+        self._details_btn.Bind(wx.EVT_BUTTON, self._toggle_details)
+        self._details = wx.TextCtrl(self, style=wx.TE_MULTILINE |
+                                    wx.TE_READONLY | wx.TE_DONTWRAP |
+                                    wx.BORDER_SUNKEN)
+        self._details.SetValue(self._technical)
+        self._details.SetMinSize((-1, 100))
+        self._details.Hide()
+        vbox.Add(self._details_btn, 0, wx.ALL, border=10)
+        vbox.Add(self._details, 1, wx.EXPAND | wx.LEFT | wx.RIGHT,
+                 border=10)
+
+        bs = wx.BoxSizer(wx.HORIZONTAL)
+        bs.AddStretchSpacer()
+        if self._link:
+            self._more_btn = wx.Button(self, label=_('More Info'))
+            self._more_btn.Bind(wx.EVT_BUTTON, self._open_link)
+            bs.Add(self._more_btn, 0, wx.ALL, border=5)
+        close = wx.Button(self, wx.ID_OK)
+        bs.Add(close, 0, wx.ALL, border=5)
+        vbox.Add(bs, 0, wx.ALL | wx.EXPAND, border=10)
+        self.SetSizerAndFit(vbox)
+
+    def _toggle_details(self, event):
+        shown = not self._details.IsShown()
+        self._details.Show(shown)
+        if shown:
+            self._details.SetValue(self._technical)
+        self._details_btn.SetLabel(_('Hide details') if shown
+                                   else _('Technical details'))
+        self.InvalidateBestSize()
+        self.GetSizer().SetSizeHints(self)
+        self.Layout()
+        if shown:
+            self.SetSize(self.GetBestSize())
+
+    def _open_link(self, event):
+        webbrowser.open(self._link)
+
+
 class error_proof(object):
     def __init__(self, *expected_exceptions, title=None):
         self._expected = expected_exceptions
@@ -848,24 +988,8 @@ class error_proof(object):
     def show_error(error, parent=None, title=None):
         title = title or _('An error has occurred')
 
-        if isinstance(error, errors.SpecificRadioError):
-            link = error.get_link()
-            message = str(error)
-        else:
-            link = None
-            message = str(error)
-
-        if link:
-            buttons = wx.YES_NO | wx.NO_DEFAULT
-        else:
-            buttons = wx.OK
-        d = wx.MessageDialog(parent, message, title,
-                             wx.ICON_ERROR | buttons)
-        if link:
-            d.SetYesNoLabels(_('More Info'), wx.ID_OK)
-        r = d.ShowModal()
-        if r == wx.ID_YES:
-            webbrowser.open(link)
+        d = ChirpErrorDialog(error, parent=parent, title=title)
+        d.ShowModal()
 
     def run_safe(self, fn, args, kwargs):
         try:

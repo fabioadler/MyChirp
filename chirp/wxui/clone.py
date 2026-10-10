@@ -20,6 +20,7 @@ import re
 import textwrap
 import threading
 import webbrowser
+from datetime import datetime
 
 import serial
 from serial.tools import list_ports
@@ -34,6 +35,7 @@ from chirp.wxui import config
 from chirp.wxui import common
 from chirp.wxui import developer
 from chirp.wxui import serialtrace
+from chirp.wxui import theme
 
 _ = wx.GetTranslation
 LOG = logging.getLogger(__name__)
@@ -41,6 +43,10 @@ CONF = config.get()
 HELPME = _('Help Me...')
 CUSTOM = _('Custom...')
 ID_RECENT = wx.NewId()
+
+# Result of the most recent clone attempt, consumed by the
+# diagnostics dialog
+LAST_CLONE_RESULT = {}
 
 
 def is_prolific_warning(string):
@@ -318,6 +324,7 @@ class ChirpCloneDialog(wx.Dialog):
         super(ChirpCloneDialog, self).__init__(
             *a, title=_('Communicate with radio'), **k)
         self._clone_thread = None
+        self._direction = None
         grid = wx.FlexGridSizer(2, 5, 5)
         grid.AddGrowableCol(1)
         bs = self.CreateButtonSizer(wx.OK | wx.CANCEL)
@@ -362,6 +369,15 @@ class ChirpCloneDialog(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self._action)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
+        # Direction banner: makes reading and writing impossible to
+        # confuse (distinct color + explicit wording)
+        self.direction_msg = wx.StaticText(
+            self, label='',
+            style=(wx.ALIGN_CENTER_HORIZONTAL | wx.ST_NO_AUTORESIZE |
+                   wx.ELLIPSIZE_END))
+        vbox.Add(self.direction_msg,
+                 border=5, proportion=0,
+                 flag=wx.EXPAND | wx.TOP | wx.BOTTOM)
         vbox.Add(grid, proportion=1,
                  flag=wx.TOP | wx.BOTTOM | wx.EXPAND,
                  border=20)
@@ -677,6 +693,36 @@ class ChirpCloneDialog(wx.Dialog):
         LOG.debug('Recorded last-used port %s for %s %s',
                   port, rclass.VENDOR, rclass.MODEL)
 
+    def _set_direction(self, label, accent_role):
+        """Set the direction banner of the dialog.
+
+        Reading and writing use distinct colors so the two operations
+        can never be confused (see docs/ui-redesign.md).
+        """
+        self._direction = label
+        self.direction_msg.SetLabel(label)
+        self.direction_msg.SetForegroundColour(theme.color(accent_role))
+        font = self.direction_msg.GetFont()
+        font.SetWeight(wx.FONTWEIGHT_BOLD)
+        self.direction_msg.SetFont(font)
+
+    def _record_clone(self, ok, error=None):
+        """Record the outcome for the diagnostics dialog"""
+        try:
+            rclass = self.get_selected_rclass()
+            model = '%s %s' % (rclass.VENDOR, rclass.MODEL)
+        except Exception:
+            model = ''
+        LAST_CLONE_RESULT.clear()
+        LAST_CLONE_RESULT.update({
+            'time': datetime.now().isoformat(timespec='seconds'),
+            'direction': self._direction or '',
+            'model': model,
+            'port': self.get_selected_port(),
+            'ok': ok,
+            'error': error,
+        })
+
     def _status(self, status):
         def _safe_status():
             self.gauge.SetRange(status.max)
@@ -686,11 +732,13 @@ class ChirpCloneDialog(wx.Dialog):
         wx.CallAfter(_safe_status)
 
     def complete(self):
+        self._record_clone(True)
         self._radio.pipe.close()
         wx.CallAfter(self.EndModal, wx.ID_OK)
 
     def fail(self, error):
         def safe_fail():
+            self._record_clone(False, error=str(error))
             common.error_proof.show_error(
                 error, parent=self,
                 title=_('Error communicating with radio'))
@@ -733,6 +781,8 @@ class ChirpCloneDialog(wx.Dialog):
 class ChirpDownloadDialog(ChirpCloneDialog):
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
+        self._set_direction(_('Read from radio (download)'),
+                            'ACCENT_DOWNLOAD')
         if (CONF.get_bool('always_start_recent', 'state') and
                 CONF.get('recent_models', 'state')):
             self._do_recent()
@@ -864,6 +914,8 @@ class ChirpUploadDialog(ChirpCloneDialog):
     def __init__(self, radio, *a, **k):
         super(ChirpUploadDialog, self).__init__(*a, allow_detected_models=True,
                                                 **k)
+        self._set_direction(_('Write to radio (upload)'),
+                            'ACCENT_UPLOAD')
         self._radio = radio
 
         self.select_vendor_model(self._radio.VENDOR, model_value(self._radio))
