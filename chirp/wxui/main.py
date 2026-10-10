@@ -53,6 +53,7 @@ from chirp.wxui import radiothread
 from chirp.wxui import report
 from chirp.wxui import serialtrace
 from chirp.wxui import settingsedit
+from chirp.wxui import theme
 from chirp import CHIRP_VERSION
 
 EditorSetChanged, EVT_EDITORSET_CHANGED = wx.lib.newevent.NewCommandEvent()
@@ -470,8 +471,10 @@ class ChirpMain(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self._window_close)
         self.Bind(common.EVT_CROSS_EDITOR_ACTION, self._editor_cross_action)
 
-        self.statusbar = self.CreateStatusBar(2)
-        self.statusbar.SetStatusWidths([-1, 200])
+        self.statusbar = self.CreateStatusBar(3)
+        self.statusbar.SetStatusWidths([-1, 200, 170])
+
+        theme.register(self)
 
         self._update_window_for_editor()
 
@@ -605,6 +608,7 @@ class ChirpMain(wx.Frame):
                                      editorset,
                                      os.path.basename(editorset.filename),
                                      select=select)
+        theme.apply(editorset)
         self.Bind(EVT_EDITORSET_CHANGED, self._editor_changed, editorset)
         self.Bind(common.EVT_STATUS_MESSAGE, self._editor_status, editorset)
         editorset.Bind(common.EVT_EDITOR_REFRESH,
@@ -849,6 +853,19 @@ class ChirpMain(wx.Frame):
         view_menu.Append(restore_tabs)
         self.Bind(wx.EVT_MENU, self._menu_restore_tabs, restore_tabs)
         restore_tabs.Check(CONF.get_bool('restore_tabs', 'prefs', False))
+
+        theme_menu = wx.Menu()
+        self._theme_mode_ids = {}
+        for mode, label in [(theme.MODE_SYSTEM, _('Follow system')),
+                            (theme.MODE_LIGHT, _('Light')),
+                            (theme.MODE_DARK, _('Dark'))]:
+            item = wx.MenuItem(theme_menu, wx.NewId(), label,
+                               kind=wx.ITEM_RADIO)
+            theme_menu.Append(item)
+            self.Bind(wx.EVT_MENU, self._menu_theme, item)
+            self._theme_mode_ids[item.GetId()] = mode
+            item.Check(theme.get_mode() == mode)
+        view_menu.AppendSubMenu(theme_menu, _('Theme'))
 
         lang_item = wx.MenuItem(view_menu, wx.NewId(),
                                 _('Language') + '...')
@@ -1263,8 +1280,13 @@ class ChirpMain(wx.Frame):
             radio = self.current_editorset.radio
             radio_name = '%s %s' % (radio.VENDOR, radio.MODEL)
             self.statusbar.SetStatusText(radio_name, i=1)
+            if self.current_editorset.modified:
+                self.statusbar.SetStatusText(_('Unsaved changes'), i=2)
+            else:
+                self.statusbar.SetStatusText('', i=2)
         else:
             self.statusbar.SetStatusText('', i=1)
+            self.statusbar.SetStatusText('', i=2)
 
         items = [
             (wx.ID_CLOSE, can_close),
@@ -1613,6 +1635,11 @@ class ChirpMain(wx.Frame):
     def _menu_restore_tabs(self, event):
         menuitem = event.GetEventObject().FindItemById(event.GetId())
         CONF.set_bool('restore_tabs', menuitem.IsChecked(), 'prefs')
+
+    def _menu_theme(self, event):
+        mode = self._theme_mode_ids.get(event.GetId())
+        if mode:
+            theme.set_mode(mode)
 
     @common.error_proof()
     def _menu_language(self, event):
