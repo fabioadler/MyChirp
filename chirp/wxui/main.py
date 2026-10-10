@@ -747,6 +747,11 @@ class ChirpMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self._menu_export, export_item)
 
         if developer.developer_mode():
+            dump_item = file_menu.Append(wx.MenuItem(
+                file_menu, wx.NewId(), _('Export raw memory dump...')))
+            self.Bind(wx.EVT_MENU, self._menu_export_dump, dump_item)
+
+        if developer.developer_mode():
             loadmod_item = file_menu.Append(wx.MenuItem(file_menu, wx.NewId(),
                                                         _('Load Module...')))
             self.Bind(wx.EVT_MENU, self._menu_load_module, loadmod_item)
@@ -2065,6 +2070,40 @@ GNU General Public License for more details."""
     @common.error_proof()
     def _menu_diagnostics(self, event):
         diagnostics.ChirpDiagnosticsDialog(self).ShowModal()
+
+    @common.error_proof()
+    def _menu_export_dump(self, event):
+        """Export the open radio's raw memory image (read-only, no
+        communication with the radio is performed)."""
+        eset = self.current_editorset
+        if eset is None:
+            common.error_proof.show_error(
+                _('No radio image is open to export'))
+            return
+        radio = eset.radio
+        if isinstance(radio, chirp_common.LiveRadio):
+            common.error_proof.show_error(
+                _('Live-mode radios do not provide a full memory image '
+                  'to export'))
+            return
+        default = os.path.splitext(eset.filename or
+                                   'radio.img')[0] + '.bin'
+        d = wx.FileDialog(self, _('Export raw memory dump'),
+                          defaultFile=default,
+                          wildcard='Raw binary image (*.bin)|*.bin',
+                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        if d.ShowModal() != wx.ID_OK:
+            return
+        size, crc = common.write_raw_memory_dump(radio, d.GetPath())
+        LOG.info('Raw memory dump of %s %s: %i bytes, CRC32 %08X',
+                 radio.VENDOR, radio.MODEL, size, crc)
+        wx.MessageBox(
+            _('Exported %i bytes (CRC32 %08X).\n\n'
+              'This file is the radio\'s channel memory image, read '
+              'through the clone protocol. It is not firmware: the '
+              'clone protocol does not expose the radio\'s program '
+              'memory.') % (size, crc),
+            _('Raw memory dump'), wx.ICON_INFORMATION)
 
     @common.error_proof()
     def _menu_debug_loc(self, event):

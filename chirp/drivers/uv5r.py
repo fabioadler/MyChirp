@@ -850,6 +850,12 @@ class BaofengUV5R(chirp_common.CloneModeRadio):
                    (0x1EC0, 0x2000),
                   ]
     _valid_chars = UV5R_CHARSET
+    # Hardware needed to program this radio, shown in the UI so the
+    # user knows what to plug in. The two-pin mic/speaker (K1) cable is
+    # documented in this driver's own download/upload instructions.
+    HARDWARE_REQUIREMENTS = (
+        'Kenwood-style K1 two-pin programming cable connected to the '
+        'mic/speaker connector')
 
     @classmethod
     def get_prompts(cls):

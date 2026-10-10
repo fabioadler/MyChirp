@@ -34,6 +34,7 @@ from chirp import errors
 from chirp.wxui import config
 from chirp.wxui import common
 from chirp.wxui import developer
+from chirp.wxui import portwatch
 from chirp.wxui import serialtrace
 from chirp.wxui import theme
 
@@ -378,6 +379,14 @@ class ChirpCloneDialog(wx.Dialog):
         vbox.Add(self.direction_msg,
                  border=5, proportion=0,
                  flag=wx.EXPAND | wx.TOP | wx.BOTTOM)
+        # Persistent risk warning (upload direction)
+        self.warn_msg = wx.StaticText(
+            self, label='',
+            style=(wx.ALIGN_CENTER_HORIZONTAL | wx.ST_NO_AUTORESIZE |
+                   wx.ELLIPSIZE_END))
+        vbox.Add(self.warn_msg,
+                 border=2, proportion=0,
+                 flag=wx.EXPAND | wx.BOTTOM)
         vbox.Add(grid, proportion=1,
                  flag=wx.TOP | wx.BOTTOM | wx.EXPAND,
                  border=20)
@@ -397,6 +406,14 @@ class ChirpCloneDialog(wx.Dialog):
                  proportion=0)
         vbox.Add(self.model_msg,
                  border=5, proportion=0,
+                 flag=wx.EXPAND | wx.BOTTOM)
+        # Hardware requirement hint for the selected model
+        self.hw_msg = wx.StaticText(
+            self, label='',
+            style=(wx.ALIGN_CENTER_HORIZONTAL | wx.ST_NO_AUTORESIZE |
+                   wx.ELLIPSIZE_END))
+        vbox.Add(self.hw_msg,
+                 border=2, proportion=0,
                  flag=wx.EXPAND | wx.BOTTOM)
         vbox.Add(wx.StaticLine(self), flag=wx.EXPAND | wx.ALL, border=5)
         vbox.Add(bs, flag=wx.ALL, border=10)
@@ -428,6 +445,41 @@ class ChirpCloneDialog(wx.Dialog):
 
         self.SetMinSize((400, 200))
         self.Fit()
+
+        # Detect when a programming cable is plugged or unplugged while
+        # the dialog is open (passive enumeration only)
+        self._watcher = portwatch.PortWatcher(on_added=self._port_added,
+                                              on_removed=self._port_removed)
+        self._watcher.start()
+        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_destroy)
+
+    def _on_destroy(self, event):
+        if event.GetEventObject() is self:
+            self._watcher.stop()
+        event.Skip()
+
+    def _port_added(self, port):
+        # Never move the port selection during an active transfer
+        if self._clone_thread and self._clone_thread.is_alive():
+            return
+        desc = portwatch.describe_port(port)
+        LOG.info('New serial port detected: %s', desc)
+        if self.set_selected_port(port.device):
+            self.status_msg.SetLabel(_('Detected: %s') % desc)
+        else:
+            self.status_msg.SetLabel(
+                _('New port detected: %s') % desc)
+
+    def _port_removed(self, port):
+        desc = portwatch.describe_port(port)
+        LOG.info('Serial port removed: %s', desc)
+        if self._clone_thread and self._clone_thread.is_alive():
+            # The cable going away mid-transfer usually aborts it; tell
+            # the user plainly instead of failing silently
+            self.status_msg.SetLabel(
+                _('Cable removed during transfer: %s') % desc)
+        else:
+            self.status_msg.SetLabel(_('Removed: %s') % desc)
 
     def set_ports(self, system_ports=None, select=None):
         if not system_ports:
@@ -677,6 +729,11 @@ class ChirpCloneDialog(wx.Dialog):
         model = self._model.GetStringSelection()
 
         rclass = self.get_selected_rclass()
+        requirements = getattr(rclass, 'HARDWARE_REQUIREMENTS', None)
+        if requirements:
+            self.hw_msg.SetLabel(_('Cable: %s') % requirements)
+        else:
+            self.hw_msg.SetLabel('')
         rconfig = config.get_for_radio(rclass)
         last_port = rconfig.get('last_port')
         if last_port and self.set_selected_port(last_port):
@@ -697,7 +754,9 @@ class ChirpCloneDialog(wx.Dialog):
         """Set the direction banner of the dialog.
 
         Reading and writing use distinct colors so the two operations
-        can never be confused (see docs/ui-redesign.md).
+        can never be confused (see docs/ui-redesign.md). The
+        destructive direction additionally gets an always-visible
+        risk warning.
         """
         self._direction = label
         self.direction_msg.SetLabel(label)
@@ -705,6 +764,16 @@ class ChirpCloneDialog(wx.Dialog):
         font = self.direction_msg.GetFont()
         font.SetWeight(wx.FONTWEIGHT_BOLD)
         self.direction_msg.SetFont(font)
+        if accent_role == 'ACCENT_UPLOAD':
+            self.warn_msg.SetLabel(
+                _('This will OVERWRITE the radio\'s current memories '
+                  'and settings.'))
+            self.warn_msg.SetForegroundColour(theme.color('ERROR'))
+            wfont = self.warn_msg.GetFont()
+            wfont.SetWeight(wx.FONTWEIGHT_BOLD)
+            self.warn_msg.SetFont(wfont)
+        else:
+            self.warn_msg.SetLabel('')
 
     def _record_clone(self, ok, error=None):
         """Record the outcome for the diagnostics dialog"""
@@ -955,6 +1024,28 @@ class ChirpUploadDialog(ChirpCloneDialog):
                 if s:
                     s.close()
                 return
+
+        # Second confirmation factor: uploading overwrites whatever is
+        # currently in the radio, so require an explicit informed "yes"
+        # (first factor is the instructions prompt above)
+        confirm = wx.RichMessageDialog(
+            self,
+            _('You are about to WRITE to the radio: the current memories '
+              'and settings in the device will be overwritten and cannot '
+              'be recovered without a backup. Do not disconnect the cable '
+              'during the transfer.'),
+            _('Confirm upload'),
+            wx.ICON_WARNING | wx.OK | wx.CANCEL)
+        confirm.SetOKCancelLabels(_('Upload and overwrite'), _('Cancel'))
+        confirm.SetCheckBox(
+            _('I understand this will overwrite the radio\'s current '
+              'configuration'))
+        if (confirm.ShowModal() != wx.ID_OK or
+                not confirm.IsCheckBoxChecked()):
+            self.cancel_action()
+            if s:
+                s.close()
+            return
 
         baud = self._radio.BAUD_RATE
         if self._radio.pipe:

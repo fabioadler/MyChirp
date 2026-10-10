@@ -33,6 +33,7 @@ from chirp import errors
 from chirp import logger
 from chirp import platform as chirp_platform
 from chirp import settings
+from chirp import util
 from chirp.wxui import accessibility
 from chirp.wxui import config
 from chirp.wxui import radiothread
@@ -898,6 +899,44 @@ def error_hints(text):
         ]
         return simplified, suggestions
     return None, []
+
+
+def write_raw_memory_dump(radio, filename):
+    """Write the radio's raw memory image to disk for inspection.
+
+    This is a developer/forensic aid: it exports the channel memory
+    image that the radio exposes through its clone protocol, byte for
+    byte, without any CHIRP metadata. It is NOT a firmware dump: the
+    clone protocol does not (and must not) reach the radio's program
+    memory.
+
+    Writes @filename (raw binary) and a companion hexdump at
+    <filename>.txt. Returns (size, crc32).
+    """
+    import zlib
+    from datetime import datetime
+
+    data = radio.get_mmap().get_byte_compatible().get_packed()
+    crc = zlib.crc32(data) & 0xFFFFFFFF
+    with open(filename, 'wb') as f:
+        f.write(data)
+
+    txtname = filename + '.txt'
+    with open(txtname, 'w', encoding='utf-8') as f:
+        f.write(_('Raw memory dump') + '\n')
+        f.write('=' * 40 + '\n')
+        f.write('%s: %s %s\n' % (_('Model'), radio.VENDOR, radio.MODEL))
+        f.write('%s: %s\n' % (_('Size'), len(data)))
+        f.write('%s: %08X\n' % (_('CRC32'), crc))
+        f.write('%s: %s\n' % (_('Date'),
+                              datetime.now().isoformat(timespec='seconds')))
+        f.write('\n')
+        # Explicit labeling to avoid any confusion with firmware
+        f.write(_('This is the channel memory image provided by the '
+                  "radio's clone protocol. It is not firmware.") + '\n')
+        f.write('\n')
+        f.write(util.hexprint(data))
+    return len(data), crc
 
 
 class ChirpErrorDialog(wx.Dialog):

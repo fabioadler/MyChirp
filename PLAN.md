@@ -35,13 +35,23 @@ Sequência observada no rastreio:
 
 **Não confirmado até teste real:** a ordem "aux primeiro" funcionar no rádio físico. Testes simulados provam apenas a lógica do código.
 
-## 3. Observações técnicas
+## 3. Políticas de segurança vigentes (consolidadas por pedido do usuário)
+
+1. **Gravação de firmware NÃO é implementada** (impossível/inválida pelo protocolo de clone; risco de brick permanente). O painel de diagnóstico explica isso ao usuário com linguagem clara.
+2. **Dump bruto** (`Export raw memory dump...`, modo desenvolvedor): exportação **somente leitura** da imagem de memória de canais já carregada (`.bin` puro + hexdump `.txt` com CRC32, modelo, data e rótulo explícito "não é firmware"). Nenhuma comunicação com o rádio é feita.
+3. **Hardware necessário**: drivers documentam o cabo via `HARDWARE_REQUIREMENTS` (iniciado com a família UV-5R/BOMVINK: cabo K1 de 2 pinos — evidência: o próprio prompt do driver). Exibido no diálogo de clonagem e no painel de diagnóstico. Nada é inventado para modelos sem documentação.
+4. **Detecção automática**: `portwatch.py` enumera portas seriais passivamente (nunca abre portas); novo cabo plugado → auto-seleção + aviso no diálogo; cabo removido durante transferência → aviso explícito. Nunca muda a seleção durante um clone ativo.
+5. **Dupla confirmação obrigatória para upload** (ação destrutiva): (1º) prompt de instruções + (2º) diálogo com checkbox explícito "Eu entendo que isso sobrescreverá a configuração atual do rádio" — sem checkbox marcado, nada é enviado.
+6. **Aviso de risco permanente** no diálogo de upload ("Isto vai SOBRESCREVER as memórias e configurações atuais do rádio", em negrito/vermelho) + banner laranja de direção.
+7. **BOM-5701**: upload permanece bloqueado até validação da leitura em hardware real + autorização explícita.
+
+## 4. Observações técnicas
 
 - Módulo interno `E220-400722D` = EByte E220-400T22D (LoRa UART, LLCC68, 410–493 MHz) — componente de dados sem fio, **sem relação** com o protocolo de clonagem via conector de 2 pinos.
 - String de versão do rádio em branco (`0xFF`×14) → `match_model` padrão não reabre imagens salvas; a classe nova terá `match_model` próprio (tamanho 0x1948 + versão em branco).
 - Cabo: CH340 (1A86:7523) em `/dev/ttyUSB0`, permissões OK.
 
-## 4. Fases e status
+## 5. Fases e status
 
 - [x] **Fase 0** — Repositório: remote/fetch/branch, PLAN.md, .gitignore, graphify build inicial
 - [x] **Fase 1** — Driver `chirp/drivers/uv5r.py`: helper `_download_aux()`, flag `_aux_first` (default off), classe `BOMVINKBOM5701` (VENDOR=BOMVINK, MODEL=BOM-5701, `match_model` próprio, `sync_out` bloqueado, `get_prompts` experimental)
@@ -54,7 +64,7 @@ Sequência observada no rastreio:
 - [ ] **Fase 7** — Testes UI (smoke headless via Xvfb se disponível), screenshots antes/depois, instruções do teste real de leitura
 - [ ] **Fase 8** — Relatório final PT-BR (diffs, resultados reais, limitações, reversão)
 
-## 5. Ritual por alteração (criteriosidade)
+## 6. Ritual por alteração (criteriosidade)
 
 1. Implementar (mínima e isolada)
 2. Testes da área + não-regressão (baseline capturado antes de qualquer mudança)
@@ -63,7 +73,7 @@ Sequência observada no rastreio:
 5. `graphify . --update` (incremental)
 6. `git add <arquivos específicos> && git commit` (sem push)
 
-## 6. Log de progresso
+## 7. Log de progresso
 
 | Data | Fase | Commit | Resumo |
 |---|---|---|---|
@@ -74,9 +84,10 @@ Sequência observada no rastreio:
 | 2026-10-10 | 3 | 3da757e6 | `chirp/wxui/theme.py`: infraestrutura de tema (paletas LIGHT/DARK por papéis semânticos, detecção do sistema via wx.SystemSettings, modo persistido no config 'state', register/apply que estiliza janelas recursivamente sem pintar widgets nativos, escala de espaçamento 4px) + `tests/unit/test_theme.py` (6 testes: papéis consistentes, resolução nos dois modos, modo system com mock, papéis/valores inválidos, acentos Ler≠Gravar) |
 | 2026-10-10 | 4 | 7ce399fb | `main.py`: tema registrado na janela principal (register/apply), submenu Ver→Tema (Sistema/Claro/Escuro, itens radio persistidos via theme.set_mode), barra de status com 3 campos (mensagens · rádio conectado · "Alterações não salvas"), tema aplicado às novas abas em add_editorset. Smoke de inicialização da versão dev OK (wx 4.2.3/Python 3.13; sem exceções; observação: .mo de tradução não compilado na árvore dev → UI dev em inglês) |
 | 2026-10-10 | 5 | 6603edf6 | `memedit.py`: linhas alternadas com `BG_GRID_ALT` do tema, células imutáveis com novo papel `BG_IMMUTABLE` (substitui a detecção manual de darkmode do sistema), `set_row_pending` pinta a linha inteira com `BG_PENDING` enquanto a escrita está em andamento, restripe completo ao trocar o tema (`theme.on_mode_change`). Cor base do grid passa a vir do tema (`BG_PANEL`). Smoke com rádio CSV real OK, sem exceções |
-| 2026-10-10 | 6 | (pendente) | `clone.py`: banner de direção ("Read from radio (download)" verde / "Write to radio (upload)" laranja, negrito) + `LAST_CLONE_RESULT` registrado em `complete()`/`fail()`. `common.py`: `error_hints()` (mapeia padrões conhecidos → mensagem simplificada + sugestões; padrões desconhecidos → sem camada simplificada, nada inventado) e `ChirpErrorDialog` com detalhes técnicos ocultáveis + botão More Info preservado. Novo `diagnostics.py`: painel Help→Radio diagnostics (portas detectadas com VID/PID, modelo selecionado + baud, resultado da última comunicação com erro técnico original, sugestões, acesso ao debug log). `main.py`: item de menu. Testes: `test_errorhints.py` (5) |
+| 2026-10-10 | 6 | 0535e1b8 | `clone.py`: banner de direção ("Read from radio (download)" verde / "Write to radio (upload)" laranja, negrito) + `LAST_CLONE_RESULT` registrado em `complete()`/`fail()`. `common.py`: `error_hints()` (mapeia padrões conhecidos → mensagem simplificada + sugestões; padrões desconhecidos → sem camada simplificada, nada inventado) e `ChirpErrorDialog` com detalhes técnicos ocultáveis + botão More Info preservado. Novo `diagnostics.py`: painel Help→Radio diagnostics (portas detectadas com VID/PID, modelo selecionado + baud, resultado da última comunicação com erro técnico original, sugestões, acesso ao debug log). `main.py`: item de menu. Testes: `test_errorhints.py` (5) |
+| 2026-10-10 | 6b | (pendente) | **Proteções e recursos de segurança**: `common.write_raw_memory_dump()` (exportação bruta `.bin` + hexdump `.txt` com CRC32 e rótulo "não é firmware") + item de menu Arquivo (modo dev). `uv5r.py`: `HARDWARE_REQUIREMENTS` (cabo K1 2 pinos) na família UV-5R/BOMVINK. Novo `portwatch.py` (enumeração passiva de portas, diff, chips conhecidos CH340/PL2303/FTDI/CP210x) integrado ao diálogo de clonagem (auto-seleção de cabo plugado, aviso de remoção durante transferência, pausa durante clone ativo). `clone.py`: label de hardware por modelo, aviso permanente de sobrescrita no upload (negrito/vermelho) e **dupla confirmação obrigatória** para upload (checkbox "Eu entendo que sobrescreve"). `diagnostics.py`: seções de cabo necessário e nota honesta sobre firmware. Testes: `test_rawdump.py` (dump byte-a-byte + CRC + rótulo), `test_portwatch.py` (diff/descrição/hardware sem invenção). 29 testes da área passando; smoke sem exceções |
 
-## 7. Ambiente de desenvolvimento (Linux/Debian 13)
+## 8. Ambiente de desenvolvimento (Linux/Debian 13)
 
 ```
 python3 -m venv --system-site-packages .venv   # wx 4.2.3 vem do pacote apt python3-wxgtk4.0
@@ -86,12 +97,12 @@ python3 -m venv --system-site-packages .venv   # wx 4.2.3 vem do pacote apt pyth
 .venv/bin/pytest tests/unit -v                  # testes unitários
 ```
 
-## 8. Reversão
+## 9. Reversão
 
 - Por fase: `git revert <commit>` (commits atômicos por alteração)
 - Total: `git reset --hard origin/master && git clean -fd` (remove também graphify-out/, .venv/ e PLAN.md não commitado)
 
-## 9. Teste real com o rádio (após Fases 1–1b)
+## 10. Teste real com o rádio (após Fases 1–1b)
 
 1. Rádio **desligado** → conectar o cabo de 2 pinos → ligar o rádio (volume 100%).
 2. Executar a versão de desenvolvimento e escolher **Radio → Download From Radio**.

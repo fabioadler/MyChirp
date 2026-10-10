@@ -102,6 +102,9 @@ class ChirpDiagnosticsDialog(wx.Dialog):
             lines.append('%s: %s baud' % (_('Communication speed'),
                                           getattr(rclass, 'BAUD_RATE',
                                                   _('unknown'))))
+            requirements = getattr(rclass, 'HARDWARE_REQUIREMENTS', None)
+            if requirements:
+                lines.append('%s: %s' % (_('Cable'), requirements))
         for line in lines:
             psizer.Add(wx.StaticText(panel, label=line), 0,
                        wx.LEFT, border=8)
@@ -150,6 +153,18 @@ class ChirpDiagnosticsDialog(wx.Dialog):
         log_btn.Bind(wx.EVT_BUTTON, self._open_debug_log)
         hbox.Add(log_btn, 0, wx.ALL, border=4)
         psizer.Add(hbox, 0, wx.EXPAND)
+
+        # Honest note about firmware, so users understand what CHIRP
+        # can and cannot do (and why)
+        _add_section(panel, psizer, _('About firmware'))
+        note = _(
+            'CHIRP reads and writes the channel memory image over the '
+            "radio's clone protocol. It does not read or write "
+            'firmware: firmware access requires radio-specific hardware '
+            'and protocols, and writing it without validation can '
+            'permanently damage the radio.')
+        psizer.Add(wx.StaticText(panel, label=note),
+                   0, wx.LEFT | wx.BOTTOM, border=8)
 
         close = wx.Button(self, wx.ID_OK)
         vbox.Add(close, 0, wx.ALL | wx.ALIGN_RIGHT, border=10)
