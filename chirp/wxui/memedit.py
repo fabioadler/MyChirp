@@ -39,6 +39,7 @@ from chirp.wxui import config
 from chirp.wxui import common
 from chirp.wxui import developer
 from chirp.wxui import memquery
+from chirp.wxui import theme
 
 _ = wx.GetTranslation
 LOG = logging.getLogger(__name__)
@@ -976,7 +977,8 @@ class ChirpMemEdit(common.ChirpEditor, common.ChirpSyncEditor):
         self._grid.DisableDragRowSize()
         self._grid.EnableDragCell()
         self._grid.SetFocus()
-        self._default_cell_bg_color = self._grid.GetCellBackgroundColour(0, 0)
+        self._default_cell_bg_color = theme.color('BG_PANEL')
+        theme.on_mode_change(self._theme_changed)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         if sys.platform != 'linux':
@@ -1576,19 +1578,6 @@ class ChirpMemEdit(common.ChirpEditor, common.ChirpSyncEditor):
 
         self._memory_cache[row] = memory
 
-        try:
-            darkmode = wx.SystemSettings.GetAppearance().IsDark()
-        except AttributeError:
-            # Older wxPython doesn't have GetAppearance(), so just assume light
-            darkmode = False
-        if darkmode:
-            immutable_color = wx.SystemSettings.GetColour(
-                wx.SYS_COLOUR_GRAYTEXT)
-        else:
-            # This is a very light gray that looks good in light mode, but
-            # makes dark mode (light font) very hard to read.
-            immutable_color = (0xF5, 0xF5, 0xF5, 0xFF)
-
         # Build a list of coldef names that are immutable extras for this
         # memory
         immutable_extras = ['extra.%s' % setting.get_name()
@@ -1603,11 +1592,38 @@ class ChirpMemEdit(common.ChirpEditor, common.ChirpSyncEditor):
                              col_def.name in immutable_extras)
                 self._grid.SetReadOnly(row, col,
                                        immutable or not self.editable)
-                if immutable:
-                    color = immutable_color
-                else:
-                    color = self._default_cell_bg_color
-                self._grid.SetCellBackgroundColour(row, col, color)
+                self._grid.SetCellBackgroundColour(
+                    row, col, self._cell_bg_color(row, immutable))
+
+    def _cell_bg_color(self, row, immutable):
+        """Background color for a cell: immutable stays muted, other
+        cells alternate rows per the theme stripe."""
+        if immutable:
+            return theme.color('BG_IMMUTABLE')
+        if row % 2:
+            return theme.color('BG_GRID_ALT')
+        return self._default_cell_bg_color
+
+    def _apply_row_colors(self, row):
+        """Re-apply the stripe/immutable cell colors of a cached row."""
+        memory = self._memory_cache.get(row)
+        if not memory:
+            return
+        immutable_extras = ['extra.%s' % setting.get_name()
+                            for setting in memory.extra
+                            if not setting.value.get_mutable()]
+        with wx.grid.GridUpdateLocker(self._grid):
+            for col, col_def in enumerate(self._col_defs):
+                immutable = (col_def.name in memory.immutable or
+                             col_def.name in immutable_extras)
+                self._grid.SetCellBackgroundColour(
+                    row, col, self._cell_bg_color(row, immutable))
+
+    def _theme_changed(self, mode):
+        """Restripe loaded rows when the theme mode changes."""
+        self._default_cell_bg_color = theme.color('BG_PANEL')
+        for row in list(self._memory_cache.keys()):
+            self._apply_row_colors(row)
 
     def synchronous_get_memory(self, number):
         """SYNCHRONOUSLY Get memory with extra properties
@@ -1631,6 +1647,12 @@ class ChirpMemEdit(common.ChirpEditor, common.ChirpSyncEditor):
     def set_row_pending(self, row):
         self._row_label_renderers[row].set_progress()
         memory = self._memory_cache[row]
+        # Tint the whole row while the write is in flight so pending
+        # changes are visible, not just the row label
+        with wx.grid.GridUpdateLocker(self._grid):
+            for col in range(len(self._col_defs)):
+                self._grid.SetCellBackgroundColour(
+                    row, col, theme.color('BG_PENDING'))
         if memory.extd_number:
             self._grid.SetRowLabelValue(row, '*%s' % memory.extd_number)
         else:
