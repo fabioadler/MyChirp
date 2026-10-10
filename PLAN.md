@@ -45,7 +45,7 @@ Sequência observada no rastreio:
 
 - [x] **Fase 0** — Repositório: remote/fetch/branch, PLAN.md, .gitignore, graphify build inicial
 - [x] **Fase 1** — Driver `chirp/drivers/uv5r.py`: helper `_download_aux()`, flag `_aux_first` (default off), classe `BOMVINKBOM5701` (VENDOR=BOMVINK, MODEL=BOM-5701, `match_model` próprio, `sync_out` bloqueado, `get_prompts` experimental)
-- [ ] **Fase 1b** — Testes `tests/unit/test_bomvink_bom5701.py` (serial simulado roteado pelo rastreio real) + suíte de regressão completa
+- [x] **Fase 1b** — Testes `tests/unit/test_bomvink_bom5701.py` (serial simulado roteado pelo rastreio real) + suíte de regressão completa
 - [ ] **Fase 2** — Design: `uipro init` + registro de decisões (`docs/ui-redesign.md`)
 - [ ] **Fase 3** — `chirp/wxui/theme.py`: tema claro/escuro, detecção do sistema, estilização central, persistência
 - [ ] **Fase 4** — Janela principal (`chirp/wxui/main.py`): status de conexão, indicador de alterações, hierarquia (funcionalidades preservadas)
@@ -68,7 +68,8 @@ Sequência observada no rastreio:
 | Data | Fase | Commit | Resumo |
 |---|---|---|---|
 | 2026-10-10 | 0 | 5dcaf759 | Repositório obtido do upstream (kk7ds/chirp master 33d2528c), branch `feature/bomvink-bom5701`, PLAN.md, .gitignore (graphify-out/), venv (Python 3.13 + wx 4.2.3 do sistema), baseline: tests/unit 720 passed/13 skipped; driver UV5R 140 passed/28 skipped/4 xfailed/4 xpassed; graphify build inicial (10810 nós, 600 comunidades) |
-| 2026-10-10 | 1 | (pendente) | `uv5r.py`: helper `_download_aux()`, caminho `_aux_first` no `_do_download` (aux lido ANTES do main e anexado depois — imagem idêntica 0x1948), classe `BOMVINKBOM5701` com `match_model` (0x1948 + versão em branco 0xFF) e `sync_out` bloqueado; regressão: unit 720 passed, driver UV5R 140 passed (idêntico ao baseline) |
+| 2026-10-10 | 1 | cf950d80 | `uv5r.py`: helper `_download_aux()`, caminho `_aux_first` no `_do_download` (aux lido ANTES do main e anexado depois — imagem idêntica 0x1948), classe `BOMVINKBOM5701` com `match_model` (0x1948 + versão em branco 0xFF) e `sync_out` bloqueado; regressão: unit 720 passed, driver UV5R 140 passed (idêntico ao baseline) |
+| 2026-10-10 | 1b | (pendente) | `tests/unit/test_bomvink_bom5701.py`: 9 testes com FakeBOM5701Serial fiel ao rastreio (magics UV-5R, ident `aa 30 76 04...`, sem ACK no 1º comando S, ACK nos demais, silêncio após o bloco main). Cobertura: ordem aux→main e imagem 0x1948, variante dropped-byte, decodificação de memórias (146.520/462.125 MHz do rastreio), UV-5R genérico ainda falha em 0x1EC0, upload bloqueado sem novos comandos, silêncio no meio do main → erro, sem contato → erro, match_model (aceita versão em branco, rejeita BFB297/tamanhos errados), detecção via directory. Suíte: 729 passed/13 skipped |
 
 ## 7. Ambiente de desenvolvimento (Linux/Debian 13)
 
