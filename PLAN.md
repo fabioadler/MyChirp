@@ -73,14 +73,33 @@ Sequência observada no rastreio:
 5. `graphify . --update` (incremental)
 6. `git add <arquivos específicos> && git commit` (sem push)
 
-## 7. VALIDAÇÃO EM HARDWARE REAL — CONCLUÍDA (2026-10-10)
+## 7. VALIDAÇÃO EM HARDWARE REAL — LEITURA E ESCRITA COMPLETAS (2026-10-10/11)
 
-**Resultado: o download do BOMVINK BOM-5701 funciona com a ordem aux-antes-do-main. Hipótese confirmada em hardware.**
+### 7.1 Leitura (download) — CONFIRMADA
+Duas leituras byte-idênticas (0x1948, CRC32 725C668E), ident e blocos coerentes com o rastreio original, canais reais decodificados. Backups em `~/.chirp/backups/`.
 
-| Leitura | Hora | Resultado | Backup |
-|---|---|---|---|
-| 1 | 22:36:29 | OK — imagem 0x1948, ~15 s | `~/.chirp/backups/BOMVINK_BOM-5701_validation_20261010_223629.img` (CRC32 725C668E) |
-| 2 | 22:43:02 | OK — imagem 0x1948, ~16 s | `~/.chirp/backups/BOMVINK_BOM-5701_validation_20261010_224302.img` |
+### 7.2 Descoberta do protocolo de escrita (upload) — 4 sondagens de evidência
+| Sonda | Resultado | Conclusão |
+|---|---|---|
+| Round-trip #1 (upload logo após download) | Rádio nem respondeu ao ident | **Cooldown**: o rádio precisa de intervalo entre sessões (reinicia após cada uma, coerente com a issue #12332) |
+| Round-trip #2 (após 20 s de pausa) | Ident OK; 0x1EC0/0x1ED0 ACK, **0x1EE0 recusado** | Escrita parcial funciona; há um padrão a decifrar |
+| Probe #1 (escritas 0x10 com bytes idênticos) | ACK/NACK **alternando perfeitamente na ordem** (aceita 1, recusa 2, aceita 3...) | Não é proteção por endereço; é comportamento sequencial |
+| Probe #2 (escritas 0x40) | **Todas recusadas** | 0x10 é o único tamanho aceito |
+| Probe #3 (retry-on-NACK com pausa de 0,15 s) | **38/38 blocos aceitos** — todos na 2ª tentativa; memória intacta | **Teoria confirmada: janela de commit** — após cada escrita aceita, o rádio NACKa a escrita imediata seguinte e aceita o retry |
+
+### 7.3 Round-trip final — UPLOAD COMPLETO VALIDADO
+Download (CRC 725C668E) → **upload integral da mesma imagem: 402 blocos, 101,8 s, zero erros** → re-download (CRC 725C668E) → **byte-identical**. O rádio foi lido, gravado por completo e relido sem nenhuma mudança.
+
+### 7.4 Protocolo final do BOM-5701 (ambas as direções validadas)
+1. Cooldown de ~20 s entre sessões de clonagem (o rádio "reinicia" após cada sessão).
+2. Ident padrão UV-5R (magics `50 BB FF 20 12 07 25` / `50 BB FF 01 25 98 4D`).
+3. **Download**: versão/aux ANTES do bloco main; main por último (a sessão encerra ao completá-lo).
+4. **Upload**: aux (0x1EC0–0x2000) ANTES do main; blocos de 0x10 bytes; **retry-on-NACK** por bloco (janela de commit).
+5. Região 0x1E80 (sem mapeamento na imagem 0x1948) nunca é gravada.
+
+### 7.5 Alterações decorrentes
+`uv5r.py`: `_send_block_retry()` (retry com pausa; seguro — bloco recusado não foi gravado e regravar carrega os mesmos dados) aplicado ao ramo aux-first; prompts atualizados honestamente (ambas direções validadas em hardware; nota de cooldown); docstrings. Testes: FakeSerial modela a alternância NACK (upload aux-first completa bloco-a-bloco no retry; UV-5R genérico sem retry falha — documentando por que a família existe). README com uso por GUI/terminal e as particularidades.
+
 
 **Integridade verificada (não é só "barra em 100%"):**
 - As duas leituras são **byte a byte idênticas** (0 bytes divergentes na imagem inteira; 0 canais divergentes).
@@ -90,9 +109,9 @@ Sequência observada no rastreio:
 - Canais decodificados: **146.520 MHz (canal 1, igual ao rastreio), 462.125 (canal 2, igual ao rastreio)**, 462.225…463.225, 450.225, 460.325 — plano de canais real e plausível.
 - Os arquivos `.img` reabrem automaticamente como **BOMVINK BOM-5701** (`match_model` validado com dados reais).
 
-**Observação de campo:** uma tentativa logo após o boot do rádio falhou de forma transitória em 0x1FC0 (fase de versão, código pré-existente); uma nova tentativa segundos depois funcionou. Recomenda-se aguardar alguns segundos após ligar o rádio antes de iniciar a leitura (nota adicionada às instruções).
+**Observação de campo:** uma tentativa logo após o boot do rádio falhou de forma transitória em 0x1FC0 (fase de versão, código pré-existente); uma nova tentativa segundos depois funcionou. Aguarde alguns segundos após ligar o rádio antes de iniciar a leitura.
 
-**Estado do upload:** continua bloqueado no driver (por design). A condição "leitura validada" para investigar o upload está agora atendida — aguardando autorização explícita do usuário.
+**Estado do upload:** **VALIDADO E LIBERADO** (round-trip byte-idêntico, ver 7.2–7.4). Dupla confirmação, aviso permanente de sobrescrita e prompts com nota de cooldown permanecem ativos na interface.
 
 ## 8. Log de progresso
 
