@@ -1026,7 +1026,7 @@ class ChirpUploadDialog(ChirpCloneDialog):
                     s.close()
                 return
 
-        # Second confirmation factor: uploading overwrites whatever is
+# Second confirmation factor: uploading overwrites whatever is
         # currently in the radio, so require an explicit informed "yes"
         # (first factor is the instructions prompt above)
         confirm = wx.RichMessageDialog(
@@ -1034,13 +1034,12 @@ class ChirpUploadDialog(ChirpCloneDialog):
             _('You are about to WRITE to the radio: the current memories '
               'and settings in the device will be overwritten and cannot '
               'be recovered without a backup. Do not disconnect the cable '
-              'during the transfer.'),
+              'during the transfer.\n\n'
+              'I understand this will overwrite the radio\'s current '
+              'configuration.'),
             _('Confirm upload'),
             wx.ICON_WARNING | wx.OK | wx.CANCEL)
-        confirm.SetOKCancelLabels(_('Upload and overwrite'), _('Cancel'))
-        confirm.SetCheckBox(
-            _('I understand this will overwrite the radio\'s current '
-              'configuration'))
+        confirm.ShowCheckBox('true')
         if (confirm.ShowModal() != wx.ID_OK or
                 not confirm.IsCheckBoxChecked()):
             self.cancel_action()
