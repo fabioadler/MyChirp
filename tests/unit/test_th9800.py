@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from chirp.drivers import th9800
+from mychirp.drivers import th9800
 
 
 class Fake9800:

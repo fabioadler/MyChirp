@@ -1,9 +1,9 @@
 from setuptools import setup
 from setuptools import find_packages
 
-setup(name='chirp',
+setup(name='mychirp',
       description='A cross-platform cross-radio programming tool',
-      packages=find_packages(include=["chirp*"]),
+      packages=find_packages(include=["mychirp*"]),
       include_package_data=True,
       version=0,
       url='https://chirp.danplanet.com',
@@ -14,15 +14,17 @@ setup(name='chirp',
           'yattag',
           'suds',
           'lark',
+          'flet',
       ],
       extras_require={
           'wx': ['wxPython'],
       },
       entry_points={
           'console_scripts': [
-              "chirp=chirp.wxui:chirpmain",
-              "chirpc=chirp.cli.main:main",
-              "experttune=chirp.cli.experttune:main",
+              "mychirp=mychirp.fletui:run",
+              "mychirp-wx=mychirp.wxui:chirpmain",
+              "mychirpc=mychirp.cli.main:main",
+              "experttune=mychirp.cli.experttune:main",
           ],
       },
       )

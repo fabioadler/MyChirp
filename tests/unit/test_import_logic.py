@@ -1,9 +1,9 @@
 from unittest import mock
 
 from tests.unit import base
-from chirp import import_logic
-from chirp import chirp_common
-from chirp import errors
+from mychirp import import_logic
+from mychirp import chirp_common
+from mychirp import errors
 
 
 class FakeRadio(chirp_common.Radio):
@@ -390,13 +390,13 @@ class ImportFieldTests(base.BaseTest):
         import_logic._import_duplex(radio, None, mem)
         self.assertEqual('', mem.duplex)
 
-    @mock.patch('chirp.chirp_common.FrozenMemory')
-    @mock.patch('chirp.import_logic._import_name')
-    @mock.patch('chirp.import_logic._import_power')
-    @mock.patch('chirp.import_logic._import_tone')
-    @mock.patch('chirp.import_logic._import_dtcs')
-    @mock.patch('chirp.import_logic._import_mode')
-    @mock.patch('chirp.import_logic._import_duplex')
+    @mock.patch('mychirp.chirp_common.FrozenMemory')
+    @mock.patch('mychirp.import_logic._import_name')
+    @mock.patch('mychirp.import_logic._import_power')
+    @mock.patch('mychirp.import_logic._import_tone')
+    @mock.patch('mychirp.import_logic._import_dtcs')
+    @mock.patch('mychirp.import_logic._import_mode')
+    @mock.patch('mychirp.import_logic._import_duplex')
     def _test_import_mem(self, errors,
                          mock_duplex, mock_mode, mock_dtcs, mock_tone,
                          mock_power, mock_name, mock_frozen):
@@ -456,14 +456,14 @@ class ImportFieldTests(base.BaseTest):
         # non-DSTAR radio exposes DV, so it is compatible, but obviously
         # no call list manipulation needed.
         radio.MODES = ['FM', 'DV']
-        with mock.patch('chirp.import_logic.ensure_has_calls') as mock_e:
+        with mock.patch('mychirp.import_logic.ensure_has_calls') as mock_e:
             import_logic.import_mem(radio, src_rf, mem)
             mock_e.assert_not_called()
 
         # A real D-STAR radio gets the full treatment, depending on the
         # required call lists flag
         radio = FakeDstarRadio(None)
-        with mock.patch('chirp.import_logic.ensure_has_calls') as mock_e:
+        with mock.patch('mychirp.import_logic.ensure_has_calls') as mock_e:
             radio.REQUIRES_CALL_LISTS = False
             import_logic.import_mem(radio, src_rf, mem)
             mock_e.assert_not_called()

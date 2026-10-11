@@ -1,0 +1,256 @@
+import logging
+
+import flet as ft
+
+from mychirp.fletui.services.app_state import EditorSetState
+from mychirp.fletui.services.radio_service import (
+    get_service,
+    list_serial_ports,
+    list_vendors,
+    list_models,
+    model_label_to_class,
+)
+from mychirp.fletui.theme import (
+    BORDER_RADIUS,
+    SPACING,
+    AppColors,
+)
+
+LOG = logging.getLogger(__name__)
+_ = lambda s: s
+
+
+class CloneDialog(ft.AlertDialog):
+    """Modern clone dialog: Vendor → Model → Port, with progress.
+
+    Mirrors the original CHIRP clone dialog layout (Port, Vendor,
+    Model fields) restyled with the MyChirp design tokens.
+    """
+
+    def __init__(self, page: ft.Page, state, mode: str, eset=None):
+        super().__init__(modal=True)
+        self._page = page
+        self.state = state
+        self.mode = mode  # "download" | "upload"
+        self.eset = eset
+        self._vendors = list_vendors()
+        self._models = []
+        self._ports = list_serial_ports()
+        self._build()
+
+    # ----- layout -----
+    def _build(self):
+        p = AppColors.for_mode(self.state.is_dark())
+        self.bgcolor = p.bg_panel
+        downloading = self.mode == "download"
+
+        if downloading:
+            title = _("Download from radio")
+            icon = ft.Icons.SETTINGS_INPUT_ANTENNA
+        else:
+            title = _("Upload to radio")
+            icon = ft.Icons.BACKUP
+
+        self.title = ft.Row(
+            controls=[
+                ft.Icon(icon, color=p.accent, size=22),
+                ft.Text(title, color=p.fg_text,
+                        weight=ft.FontWeight.BOLD, size=18),
+            ])
+
+        input_common = dict(
+            bgcolor=p.input,
+            border=ft.Border.all(1, p.border),
+            border_radius=BORDER_RADIUS["sm"],
+            text_style=ft.TextStyle(color=p.fg_text, size=13),
+            dense=True,
+        )
+
+        self.vendor_dd = ft.Dropdown(
+            label=_("Vendor"),
+            options=[ft.dropdown.Option(v) for v in self._vendors],
+            on_change=self._on_vendor,
+            **input_common)
+        self.model_dd = ft.Dropdown(
+            label=_("Model"),
+            options=[],
+            on_change=self._on_model,
+            **input_common)
+        self.port_dd = ft.Dropdown(
+            label=_("Port"),
+            options=[ft.dropdown.Option(pt) for pt in self._ports],
+            **input_common)
+
+        if not downloading and self.eset:
+            # Upload uses the current radio model; lock the fields
+            vendor = getattr(self.eset.radio, "VENDOR", "")
+            model = getattr(self.eset.radio, "MODEL", "")
+            self.vendor_dd.value = vendor
+            self.vendor_dd.disabled = True
+            self._models = list_models(vendor)
+            self.model_dd.options = [
+                ft.dropdown.Option(m) for m in self._models]
+            want = "%s %s" % (model, getattr(
+                self.eset.radio, "VARIANT", "") or "")
+            want = want.strip()
+            if want in self._models:
+                self.model_dd.value = want
+            self.model_dd.disabled = True
+
+        self.progress = ft.ProgressBar(
+            value=0, color=p.accent,
+            bgcolor=p.bg_panel_alt, visible=False)
+        self.progress_label = ft.Text(
+            "", size=12, color=p.fg_muted, visible=False)
+
+        field_row = (
+            ft.Row(controls=[self.vendor_dd, self.model_dd],
+                   spacing=SPACING.MD)
+            if downloading
+            else ft.Container()
+        )
+
+        self.content = ft.Container(
+            width=440,
+            content=ft.Column(
+                spacing=SPACING.MD,
+                tight=True,
+                controls=[
+                    *([field_row] if downloading else []),
+                    self.port_dd,
+                    self.progress,
+                    self.progress_label,
+                ],
+            ))
+
+        self.start_btn = ft.FilledButton(
+            icon=(
+                ft.Icons.DOWNLOADING
+                if downloading else ft.Icons.UPLOAD),
+            text=title,
+            on_click=self._on_start,
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=BORDER_RADIUS["md"]),
+                padding=ft.Padding.symmetric(
+                    horizontal=SPACING.LG, vertical=SPACING.MD),
+            ))
+        self.actions = [
+            ft.TextButton(_("Cancel"), on_click=self._close),
+            self.start_btn,
+        ]
+        self.actions_alignment = ft.MainAxisAlignment.END
+
+    # ----- handlers -----
+    def _on_vendor(self, e):
+        vendor = e.control.value
+        if not vendor:
+            return
+        self._models = list_models(vendor)
+        self.model_dd.options = [
+            ft.dropdown.Option(m) for m in self._models]
+        self.model_dd.value = None
+        if self._page:
+            self.model_dd.update()
+
+    def _on_model(self, e):
+        if self._page:
+            self.model_dd.update()
+
+    def _close(self, e=None):
+        self._page.close(self)
+
+    def _validate(self):
+        if self.mode == "download":
+            if not self.vendor_dd.value:
+                return _("Select a vendor")
+            if not self.model_dd.value:
+                return _("Select a model")
+        if not self.port_dd.value:
+            return _("Select a port")
+        return None
+
+    def _on_start(self, e):
+        error = self._validate()
+        if error:
+            self.progress_label.value = error
+            self.progress_label.color = AppColors.for_mode(
+                self.state.is_dark()).error
+            self.progress_label.visible = True
+            self._page.update()
+            return
+
+        service = get_service(self._page)
+        port = self.port_dd.value
+
+        if self.mode == "download":
+            vendor = self.vendor_dd.value
+            rclass = model_label_to_class(vendor, self.model_dd.value)
+            if rclass is None:
+                self.progress_label.value = _("Model not found")
+                self._page.update()
+                return
+            self._start_ui()
+            service.download_radio(
+                rclass, port,
+                on_done=self._download_done,
+                on_progress=self._on_progress)
+        else:
+            self._start_ui()
+            service.upload_radio(
+                self.eset.radio, port,
+                on_done=self._upload_done,
+                on_progress=self._on_progress)
+
+    def _start_ui(self):
+        p = AppColors.for_mode(self.state.is_dark())
+        self.start_btn.disabled = True
+        self.progress.visible = True
+        self.progress.color = (
+            p.accent_download if self.mode == "download"
+            else p.accent_upload)
+        self.progress_label.visible = True
+        self.progress_label.color = p.fg_muted
+        self.progress_label.value = (
+            _("Communicating with radio..."))
+        self._page.update()
+
+    def _on_progress(self, status):
+        try:
+            self.progress.value = (
+                status.cur / status.max) if status.max else 0
+            self.progress_label.value = status.msg or ""
+        except Exception:
+            pass
+        if self._page:
+            self._page.update()
+
+    def _download_done(self, job):
+        self.progress.visible = False
+        self.start_btn.disabled = False
+        if job.error:
+            self.progress_label.value = str(job.error)
+            self.progress_label.color = AppColors.for_mode(
+                self.state.is_dark()).error
+            self._page.update()
+            return
+        radio = job.result
+        base = "%s_%s" % (getattr(radio, "VENDOR", "Radio"),
+                          getattr(radio, "MODEL", ""))
+        filename = "%s.img" % base.replace(" ", "_")
+        eset = EditorSetState(radio, filename)
+        self.state.add_editorset(eset)
+        self.state.set_status(
+            _("Downloaded %s") % eset.radio_label)
+        self._close()
+
+    def _upload_done(self, job):
+        self.progress.visible = False
+        self.start_btn.disabled = False
+        if job.error:
+            self.progress_label.value = str(job.error)
+            self.progress_label.color = AppColors.for_mode(
+                self.state.is_dark()).error
+            self._page.update()
+            return
+        self.state.set_status(_("Upload complete"))
+        self._close()

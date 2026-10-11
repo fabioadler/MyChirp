@@ -5,14 +5,14 @@ import subprocess
 import tempfile
 import unittest
 
-from chirp import directory
-from chirp import errors
-from chirp.drivers import ft60
-from chirp.drivers import ft4
-from chirp.drivers import ftm300d
-from chirp.drivers import yaesu_clone
-from chirp import memmap
-from chirp.settings import RadioSetting
+from mychirp import directory
+from mychirp import errors
+from mychirp.drivers import ft60
+from mychirp.drivers import ft4
+from mychirp.drivers import ftm300d
+from mychirp.drivers import yaesu_clone
+from mychirp import memmap
+from mychirp.settings import RadioSetting
 
 
 class TestYaesuChecksum(unittest.TestCase):

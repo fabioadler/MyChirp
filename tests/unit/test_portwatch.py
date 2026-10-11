@@ -17,7 +17,7 @@
 
 import unittest
 
-from chirp.wxui import portwatch
+from mychirp.wxui import portwatch
 
 
 class FakePort:
@@ -69,7 +69,7 @@ class TestHardwareRequirements(unittest.TestCase):
     def test_uv5r_family_documents_cable(self):
         """The UV-5R protocol family (including the BOMVINK BOM-5701)
         documents the two-pin cable it needs."""
-        from chirp.drivers import uv5r
+        from mychirp.drivers import uv5r
         for rclass in (uv5r.BaofengUV5R, uv5r.BaofengUV5RGeneric,
                        uv5r.BOMVINKBOM5701):
             reqs = getattr(rclass, 'HARDWARE_REQUIREMENTS', None)
@@ -79,7 +79,7 @@ class TestHardwareRequirements(unittest.TestCase):
     def test_no_fabricated_requirements(self):
         """Drivers without documented hardware requirements must not
         invent any."""
-        from chirp.drivers import generic_csv
+        from mychirp.drivers import generic_csv
         self.assertIsNone(
             getattr(generic_csv.CSVRadio, 'HARDWARE_REQUIREMENTS', None))
 

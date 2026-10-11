@@ -17,7 +17,7 @@ import unittest
 
 import wx.lib.newevent  # noqa: F401  (common.py relies on wx.lib)
 
-from chirp.wxui import common
+from mychirp.wxui import common
 
 
 class TestErrorHints(unittest.TestCase):

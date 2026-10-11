@@ -1,5 +1,5 @@
-from chirp import chirp_common
-from chirp import settings
+from mychirp import chirp_common
+from mychirp import settings
 from tests import base
 
 

@@ -1,8 +1,8 @@
 import os
 
-from chirp import chirp_common
-from chirp.drivers import generic_csv
-from chirp import import_logic
+from mychirp import chirp_common
+from mychirp.drivers import generic_csv
+from mychirp import import_logic
 from tests import base
 
 

@@ -18,7 +18,7 @@
 import unittest
 from unittest import mock
 
-from chirp.hardware import ch341
+from mychirp.hardware import ch341
 
 
 class FakeCH341Device:

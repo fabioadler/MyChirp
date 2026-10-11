@@ -18,8 +18,8 @@ import struct
 
 import unittest
 
-from chirp.drivers import kguv920pa
-from chirp import memmap
+from mychirp.drivers import kguv920pa
+from mychirp import memmap
 
 
 class FakeSerial:

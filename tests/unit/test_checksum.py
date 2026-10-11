@@ -1,6 +1,6 @@
 import unittest
 
-from chirp import checksum
+from mychirp import checksum
 
 
 class TestCRC(unittest.TestCase):

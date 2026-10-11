@@ -18,7 +18,7 @@ from builtins import bytes
 
 import struct
 
-from chirp.drivers import icf
+from mychirp.drivers import icf
 
 import logging
 

@@ -19,8 +19,8 @@ import zlib
 
 import wx.lib.newevent  # noqa: F401  (modules under test rely on wx.lib)
 
-from chirp import directory
-from chirp.wxui import common
+from mychirp import directory
+from mychirp.wxui import common
 
 
 class TestRawMemoryDump(unittest.TestCase):

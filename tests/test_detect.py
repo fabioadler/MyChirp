@@ -4,14 +4,14 @@ from unittest import mock
 
 import pytest
 
-from chirp import directory
-from chirp import logger
+from mychirp import directory
+from mychirp import logger
 from tests import base
 
 
 class TestCaseDetect(base.DriverTest):
     def test_detect(self):
-        with logger.log_history(logging.WARNING, 'chirp.drivers') as history:
+        with logger.log_history(logging.WARNING, 'mychirp.drivers') as history:
             radio = directory.get_radio_by_image(self.TEST_IMAGE)
             self.assertEqual([], history.get_history(),
                              'Drivers should not log warnings/errors for '

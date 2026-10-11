@@ -2,7 +2,7 @@ import os
 import unittest
 from unittest import mock
 
-from chirp.cli import main
+from mychirp.cli import main
 
 
 class TestCLI(unittest.TestCase):

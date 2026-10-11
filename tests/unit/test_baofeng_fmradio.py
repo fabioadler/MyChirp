@@ -4,9 +4,9 @@ import struct
 import pytest
 
 from tests.unit import base
-from chirp.drivers import bf_t1
-from chirp.drivers import uv5r
-from chirp import settings
+from mychirp.drivers import bf_t1
+from mychirp.drivers import uv5r
+from mychirp import settings
 
 
 class FMRadioTest(base.BaseTest):

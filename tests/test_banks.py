@@ -1,4 +1,4 @@
-from chirp import chirp_common
+from mychirp import chirp_common
 from tests import base
 
 

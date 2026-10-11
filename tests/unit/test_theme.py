@@ -18,7 +18,7 @@ from unittest import mock
 
 import wx
 
-from chirp.wxui import theme
+from mychirp.wxui import theme
 
 
 class TestTheme(unittest.TestCase):

@@ -2,7 +2,7 @@ import unittest
 from unittest import mock
 import warnings
 
-from chirp.wxui import serialtrace
+from mychirp.wxui import serialtrace
 
 
 class TestSerialTrace(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestSerialTrace(unittest.TestCase):
 
     @mock.patch('os.remove')
     def test_purge_trace_files(self, mock_remove):
-        from chirp.wxui import serialtrace
+        from mychirp.wxui import serialtrace
 
         for i in range(15):
             serialtrace.TRACEFILES.append('test_trace_%i.txt' % i)

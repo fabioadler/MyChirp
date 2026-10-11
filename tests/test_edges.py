@@ -1,10 +1,10 @@
 import pytest
 from unittest import mock
 
-from chirp import bitwise
-from chirp import chirp_common
-from chirp import directory
-from chirp import errors
+from mychirp import bitwise
+from mychirp import chirp_common
+from mychirp import directory
+from mychirp import errors
 from tests import base
 
 

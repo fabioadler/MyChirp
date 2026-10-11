@@ -20,7 +20,7 @@ import unittest
 
 import wx.lib.newevent  # noqa: F401  (modules under test rely on wx.lib)
 
-from chirp.wxui import main
+from mychirp.wxui import main
 
 
 class TestLanguageSelector(unittest.TestCase):

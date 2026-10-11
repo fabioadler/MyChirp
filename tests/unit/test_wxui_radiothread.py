@@ -11,16 +11,16 @@ sys.modules['wx.lib.scrolledpanel'] = mock.MagicMock()
 sys.modules['wx.lib.sized_controls'] = mock.MagicMock()
 sys.modules['wx.richtext'] = mock.MagicMock()
 wx.lib.newevent.NewCommandEvent.return_value = None, None
-sys.modules['chirp.wxui.developer'] = mock.MagicMock()
+sys.modules['mychirp.wxui.developer'] = mock.MagicMock()
 
 # These need to be imported after the above mock so that we don't require
 # wx to be present for these tests
 from tests.unit import base  # noqa
-from chirp import chirp_common  # noqa
-from chirp import directory  # noqa
-from chirp.wxui import clone  # noqa
-from chirp.wxui import config  # noqa
-from chirp.wxui import radiothread  # noqa
+from mychirp import chirp_common  # noqa
+from mychirp import directory  # noqa
+from mychirp.wxui import clone  # noqa
+from mychirp.wxui import config  # noqa
+from mychirp.wxui import radiothread  # noqa
 
 
 class TestRadioThread(base.BaseTest):
@@ -179,11 +179,11 @@ class TestStartup(base.BaseTest):
         super().setUp()
         self.use(mock.patch('os.path'))
         self.use(mock.patch('os.makedirs'))
-        self.use(mock.patch('chirp.wxui.CONF'))
+        self.use(mock.patch('mychirp.wxui.CONF'))
         self.args = mock.MagicMock()
         self.args.install_desktop_app = False
         self.args.no_install_desktop_app = False
-        from chirp.wxui import maybe_install_desktop, CONF
+        from mychirp.wxui import maybe_install_desktop, CONF
         self.maybe_install_desktop = maybe_install_desktop
         self.conf = CONF
 

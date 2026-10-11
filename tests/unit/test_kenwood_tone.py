@@ -1,6 +1,6 @@
 from tests.unit import base
-from chirp import chirp_common
-from chirp import kenwood_tone
+from mychirp import chirp_common
+from mychirp import kenwood_tone
 
 
 class MockMemory:

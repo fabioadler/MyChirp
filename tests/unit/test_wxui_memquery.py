@@ -1,14 +1,14 @@
 import sys
 from unittest import mock
 
-from chirp import chirp_common
+from mychirp import chirp_common
 import lark
 from tests.unit import base
 
 sys.modules['wx'] = wx = mock.MagicMock()
 sys.modules['wx.adv'] = wx = mock.MagicMock()
 
-from chirp.wxui import memquery  # noqa
+from mychirp.wxui import memquery  # noqa
 
 
 class TestMemquery(base.BaseTest):

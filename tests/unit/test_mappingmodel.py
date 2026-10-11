@@ -16,8 +16,8 @@
 from unittest import mock
 
 from tests.unit import base
-from chirp import chirp_common
-from chirp.drivers import icf
+from mychirp import chirp_common
+from mychirp.drivers import icf
 
 
 class TestBaseMapping(base.BaseTest):

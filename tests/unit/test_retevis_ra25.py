@@ -1,8 +1,8 @@
 import os
 import unittest
 
-from chirp import memmap
-from chirp.drivers import retevis_ra25
+from mychirp import memmap
+from mychirp.drivers import retevis_ra25
 
 
 class TestRA25SqlMode(unittest.TestCase):

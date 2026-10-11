@@ -1,13 +1,13 @@
 import logging
 
-from chirp import logger
+from mychirp import logger
 from tests.unit import base
 
 
 class TestLogger(base.BaseTest):
     def test_log_history(self):
-        drv_log = logging.getLogger('chirp.drivers.foo')
-        ui_log = logging.getLogger('chirp.wxui.foo')
+        drv_log = logging.getLogger('mychirp.drivers.foo')
+        ui_log = logging.getLogger('mychirp.wxui.foo')
         root_log = logging.getLogger()
 
         root_log.setLevel(logging.DEBUG)
@@ -21,7 +21,7 @@ class TestLogger(base.BaseTest):
         # Log to everything
         log_all()
 
-        with logger.log_history(logging.WARNING, 'chirp.drivers') as h:
+        with logger.log_history(logging.WARNING, 'mychirp.drivers') as h:
             log_all()
             history = h.get_history()
 
@@ -29,7 +29,7 @@ class TestLogger(base.BaseTest):
         # since we started the capture, not before
         self.assertEqual(2, len(history))
 
-        with logger.log_history(logging.WARNING, 'chirp.drivers') as h:
+        with logger.log_history(logging.WARNING, 'mychirp.drivers') as h:
             log_all()
             history = h.get_history()
 

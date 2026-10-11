@@ -8,7 +8,7 @@ import unittest
 import pytest
 import yaml
 
-from chirp import directory
+from mychirp import directory
 
 from tests import test_banks
 from tests import test_brute_force

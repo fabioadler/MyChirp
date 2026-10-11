@@ -1,6 +1,6 @@
 from tests.unit import base
-from chirp import chirp_common, errors
-from chirp.drivers import kenwood_live
+from mychirp import chirp_common, errors
+from mychirp.drivers import kenwood_live
 
 
 class TestTHG71(base.BaseTest):

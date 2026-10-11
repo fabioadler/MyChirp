@@ -9,9 +9,9 @@ from unittest import mock
 
 import pytest
 
-from chirp import chirp_common
-from chirp.sources import base
-from chirp.sources import repeaterbook
+from mychirp import chirp_common
+from mychirp.sources import base
+from mychirp.sources import repeaterbook
 
 
 class TestRepeaterbook(unittest.TestCase):
@@ -21,7 +21,7 @@ class TestRepeaterbook(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
         self.patches = []
-        self.patches.append(mock.patch('chirp.platform.Platform.config_file',
+        self.patches.append(mock.patch('mychirp.platform.Platform.config_file',
                             self.fake_config))
         for p in self.patches:
             p.start()

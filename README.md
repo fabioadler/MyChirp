@@ -12,9 +12,9 @@ Mantém **todos os modelos do CHIRP original** e adiciona suporte validado a:
 ## Instalação (Linux)
 
 ```bash
-python3 -m venv --system-site-packages .venv
-.venv/bin/pip install -r requirements-dev.txt   # CHIRP + testes + pyusb
-.venv/bin/chirp
+python3 -m venv --system-site-packages venv
+venv/bin/pip install -r requirements-dev.txt   # CHIRP + testes + pyusb
+venv/bin/mychirp
 ```
 
 > Requer `python3-wxgtk4.0` do sistema (o venv o aproveita via
@@ -38,13 +38,13 @@ python3 -m venv --system-site-packages .venv
     EEPROMs I2C (24Cxx) e flash SPI (25xx) com identificação JEDEC;
     somente leitura, nada é gravado no chip.
 
-## Uso pelo terminal (chirpc)
+## Uso pelo terminal (mychirpc)
 
 ```bash
-.venv/bin/chirpc --serial=/dev/ttyUSB0 --radio=BOMVINK_BOM-5701 \
+venv/bin/mychirpc --serial=/dev/ttyUSB0 --radio=BOMVINK_BOM-5701 \
     --download-mmap --mmap=backup.img      # baixar
-.venv/bin/chirpc --mmap=backup.img --list-mem                # ver canais
-.venv/bin/chirpc --serial=/dev/ttyUSB0 --radio=BOMVINK_BOM-5701 \
+venv/bin/mychirpc --mmap=backup.img --list-mem                # ver canais
+venv/bin/mychirpc --serial=/dev/ttyUSB0 --radio=BOMVINK_BOM-5701 \
     --upload-mmap --mmap=backup.img       # gravar (protocolo validado)
 ```
 

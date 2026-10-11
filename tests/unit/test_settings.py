@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from tests.unit import base
-from chirp import settings
+from mychirp import settings
 
 
 class TestSettingValues(base.BaseTest):

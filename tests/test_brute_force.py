@@ -2,8 +2,8 @@ import logging
 
 import pytest
 
-from chirp import chirp_common
-from chirp import errors
+from mychirp import chirp_common
+from mychirp import errors
 from tests import base
 
 LOG = logging.getLogger(__name__)

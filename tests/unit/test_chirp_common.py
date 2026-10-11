@@ -8,11 +8,11 @@ import tempfile
 from unittest import mock
 
 from tests.unit import base
-from chirp import CHIRP_VERSION
-from chirp import chirp_common
-from chirp import directory
-from chirp import errors
-from chirp import settings
+from mychirp import CHIRP_VERSION
+from mychirp import chirp_common
+from mychirp import directory
+from mychirp import errors
+from mychirp import settings
 
 
 class TestUtilityFunctions(base.BaseTest):
@@ -60,14 +60,14 @@ class TestUtilityFunctions(base.BaseTest):
         self.assertEqual(chirp_common.format_freq(1), "0.000001")
         self.assertEqual(chirp_common.format_freq(1250000000), "1250.000000")
 
-    @mock.patch('chirp.CHIRP_VERSION', new='daily-20151021')
+    @mock.patch('mychirp.CHIRP_VERSION', new='daily-20151021')
     def test_compare_version_to_current(self):
         self.assertTrue(chirp_common.is_version_newer('daily-20180101'))
         self.assertFalse(chirp_common.is_version_newer('daily-20140101'))
         self.assertFalse(chirp_common.is_version_newer('0.3.0'))
         self.assertFalse(chirp_common.is_version_newer('0.3.0dev'))
 
-    @mock.patch('chirp.CHIRP_VERSION', new='0.3.0dev')
+    @mock.patch('mychirp.CHIRP_VERSION', new='0.3.0dev')
     def test_compare_version_to_current_dev(self):
         self.assertTrue(chirp_common.is_version_newer('daily-20180101'))
 
@@ -681,7 +681,7 @@ class TestImageMetadata(base.BaseTest):
             f.write(b'thisisrawdata')
             f.flush()
 
-        with mock.patch('chirp.memmap.MemoryMapBytes.__init__') as mock_mmap:
+        with mock.patch('mychirp.memmap.MemoryMapBytes.__init__') as mock_mmap:
             mock_mmap.return_value = None
             chirp_common.CloneModeRadio(None).load_mmap(fn)
             mock_mmap.assert_called_once_with(b'thisisrawdata')
@@ -694,7 +694,7 @@ class TestImageMetadata(base.BaseTest):
             f.write(chirp_common.CloneModeRadio.MAGIC + b'bad')
             f.flush()
 
-        with mock.patch('chirp.memmap.MemoryMapBytes.__init__') as mock_mmap:
+        with mock.patch('mychirp.memmap.MemoryMapBytes.__init__') as mock_mmap:
             mock_mmap.return_value = None
             chirp_common.CloneModeRadio(None).load_mmap(fn)
             mock_mmap.assert_called_once_with(b'thisisrawdata')

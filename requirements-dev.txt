@@ -7,7 +7,7 @@
 #   sudo apt install python3-wxgtk4.0
 #   python3 -m venv --system-site-packages .venv
 #   .venv/bin/pip install -r requirements-dev.txt
-#   .venv/bin/chirp
+#   .venv/bin/mychirp
 #
 # The `-e .` line installs CHIRP itself in editable mode (its
 # install_requires dependencies are also listed below explicitly for

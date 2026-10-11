@@ -1,6 +1,6 @@
 import os
 
-from chirp.drivers import btech
+from mychirp.drivers import btech
 
 
 def test_kt8900_models_all_detailed_settings_have_docs():

@@ -1,6 +1,6 @@
 import unittest
 from unittest import mock
-from chirp.sources import amsats
+from mychirp.sources import amsats
 
 
 class TestAmsatsSatNOGS(unittest.TestCase):
@@ -58,7 +58,7 @@ class TestAmsatsSatNOGS(unittest.TestCase):
         self.assertEqual(mem.mode, 'FM')
         self.assertNotIn("Mode:FM", mem.comment)
 
-    @mock.patch('chirp.sources.amsats.SatNOGS._fetch_all')
+    @mock.patch('mychirp.sources.amsats.SatNOGS._fetch_all')
     def test_do_fetch_filtering(self, mock_fetch):
         # Setup mocks
         mock_fetch.side_effect = [

@@ -3,9 +3,9 @@ import random
 import time
 from unittest import mock
 
-from chirp import chirp_common
-from chirp import errors
-from chirp.wxui import serialtrace
+from mychirp import chirp_common
+from mychirp import errors
+from mychirp.wxui import serialtrace
 from tests import base
 
 LOG = logging.getLogger(__name__)

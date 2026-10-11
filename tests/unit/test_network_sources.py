@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
 
-from chirp.sources import dmrmarc
+from mychirp.sources import dmrmarc
 
 # Hopefully this will provide a sentinel and forcing function for
 # network sources when APIs stop working. Unfortunately, live queries

@@ -19,9 +19,9 @@ import tempfile
 import unittest
 from unittest import mock
 
-from chirp import directory
-from chirp import errors
-from chirp.drivers import uv5r
+from mychirp import directory
+from mychirp import errors
+from mychirp.drivers import uv5r
 
 IDENT = b'\xaa\x30\x76\x04\x00\x05\x20\xdd'
 
@@ -359,7 +359,7 @@ class BOMVINKBOM5701Test(unittest.TestCase):
     def test_registered_models(self):
         """All owner-verified additions are registered as proper,
         separate models with documented hardware."""
-        from chirp.drivers import h777
+        from mychirp.drivers import h777
         bom = uv5r.BOMVINKBOM5701(None)
         self.assertEqual('BOMVINK', bom.VENDOR)
         self.assertEqual('BOM-5701', bom.MODEL)

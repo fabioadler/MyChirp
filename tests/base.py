@@ -3,8 +3,8 @@ import logging
 import os
 import unittest
 
-from chirp import chirp_common
-from chirp import bandplan_na
+from mychirp import chirp_common
+from mychirp import bandplan_na
 
 LOG = logging.getLogger(__name__)
 
@@ -21,10 +21,10 @@ class DriverTest(unittest.TestCase):
         if ('CHIRP_TEST_BITWISE_STRICT_BYTES' in os.environ and
                 not self.RADIO_CLASS.NEEDS_COMPAT_SERIAL):
             self.use_patch(unittest.mock.patch(
-                'chirp.bitwise.DataElement._compat_bytes',
+                'mychirp.bitwise.DataElement._compat_bytes',
                 side_effect=self._strict_bytes))
             self.use_patch(unittest.mock.patch(
-                'chirp.bitwise.string_straight_encode',
+                'mychirp.bitwise.string_straight_encode',
                 side_effect=AssertionError(
                     'string_straight_encode not allowed in strict mode')))
 

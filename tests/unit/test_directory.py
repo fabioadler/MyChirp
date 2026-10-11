@@ -9,8 +9,8 @@ from unittest import mock
 import yaml
 
 from tests.unit import base
-from chirp import chirp_common
-from chirp import directory
+from mychirp import chirp_common
+from mychirp import directory
 
 
 class TestDirectory(base.BaseTest):
@@ -125,6 +125,7 @@ class TestDetectBruteForce(base.BaseTest):
 
 class TestAliasMap(base.BaseTest):
     def test_uniqueness(self):
+        directory.import_drivers()
         directory_models = {}
         for rclass in directory.DRV_TO_RADIO.values():
             for cls in [rclass] + rclass.ALIASES:
@@ -136,7 +137,7 @@ class TestAliasMap(base.BaseTest):
                 directory_models[cls.VENDOR].add(fullmodel)
 
         aliases = yaml.load(open(os.path.join(os.path.dirname(__file__),
-                                              '..', '..', 'chirp', 'share',
+                                              '..', '..', 'mychirp', 'share',
                                               'model_alias_map.yaml')).read(),
                             Loader=yaml.FullLoader)
         for vendor, models in sorted(aliases.items()):
@@ -166,8 +167,8 @@ class TestAliasMap(base.BaseTest):
 
 
 class TestDetectedBy(base.BaseTest):
-    @mock.patch('chirp.directory.DRV_TO_RADIO', new={})
-    @mock.patch('chirp.directory.RADIO_TO_DRV', new={})
+    @mock.patch('mychirp.directory.DRV_TO_RADIO', new={})
+    @mock.patch('mychirp.directory.RADIO_TO_DRV', new={})
     def test_detected_isolation(self):
         @directory.register
         class BaseRadio(chirp_common.CloneModeRadio):
@@ -196,8 +197,8 @@ class TestDetectedBy(base.BaseTest):
         # Sub2 does not also detect Sub1
         self.assertEqual([SubRadio2], SubRadio2.detected_models())
 
-    @mock.patch('chirp.directory.DRV_TO_RADIO', new={})
-    @mock.patch('chirp.directory.RADIO_TO_DRV', new={})
+    @mock.patch('mychirp.directory.DRV_TO_RADIO', new={})
+    @mock.patch('mychirp.directory.RADIO_TO_DRV', new={})
     def test_detected_include_self(self):
         class BaseRadio(chirp_common.CloneModeRadio):
             VENDOR = 'CHIRP'

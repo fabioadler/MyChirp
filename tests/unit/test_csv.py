@@ -4,9 +4,9 @@ import unittest
 
 import ddt
 
-from chirp import chirp_common
-from chirp import directory
-from chirp.drivers import generic_csv
+from mychirp import chirp_common
+from mychirp import directory
+from mychirp.drivers import generic_csv
 
 CHIRP_CSV_LEGACY = (
     """Location,Name,Frequency,Duplex,Offset,Tone,rToneFreq,cToneFreq,DtcsCode,DtcsPolarity,Mode,TStep,Skip,Comment,URCALL,RPT1CALL,RPT2CALL

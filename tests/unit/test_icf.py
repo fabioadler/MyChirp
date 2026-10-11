@@ -18,8 +18,8 @@ import shutil
 import tempfile
 import unittest
 
-from chirp import directory
-from chirp.drivers import ic2820, icf, id31
+from mychirp import directory
+from mychirp.drivers import ic2820, icf, id31
 
 
 class TestFileICF(unittest.TestCase):
