@@ -20,10 +20,13 @@ Ela mantém **todos os 558 modelos do CHIRP original** e adiciona:
 
 ```bash
 python3 -m venv --system-site-packages .venv        # uma vez
-.venv/bin/pip install -e . --no-deps                # uma vez
-.venv/bin/pip install pyserial requests yattag lark suds
+.venv/bin/pip install -r requirements-dev.txt       # tudo em um comando
 .venv/bin/chirp
 ```
+
+O `requirements-dev.txt` instala o CHIRP (modo editável), as
+dependências de execução, a suíte de testes e o suporte à
+programadora CH341A (`pyusb`).
 
 - **Rádio → Baixar do rádio** / **Carregar no rádio**: escolha
   fabricante/modelo e porta. O cabo é reconhecido automaticamente ao
@@ -40,6 +43,17 @@ python3 -m venv --system-site-packages .venv        # uma vez
 - **Arquivo → Exportar dump bruto de memória** (modo desenvolvedor):
   exporta a imagem de canais em `.bin` + hexdump com CRC32
   (não é firmware).
+- **Arquivo → Exportar memória completa visível pelo cabo** (modo
+  desenvolvedor, leitura ao vivo): baixa os 8 KiB completos que o
+  cabo consegue ver (0x0000–0x2000), **incluindo a área de calibração
+  em 0x1800–0x1EC0** que a imagem padrão não cobre. Mapeamento
+  empírico comprovou que esta janela se espelha por todo o espaço de
+  endereços: é tudo que existe — o firmware não é acessível pelo cabo.
+- **Arquivo → Ler chip com a programadora CH341A** (modo
+  desenvolvedor): leitura *somente leitura* de EEPROMs I2C (24Cxx) e
+  flash SPI (25xx, com identificação JEDEC) pela programadora CH341A —
+  a mesma usada em chips de BIOS. Protocolo extraído das implementações
+  de referência (flashrom e ch341eepromtool); nada é gravado no chip.
 - Ativação do modo desenvolvedor: **Ajuda → Developer Mode**.
 
 ### Terminal (chirpc)

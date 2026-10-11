@@ -100,6 +100,18 @@ Download (CRC 725C668E) → **upload integral da mesma imagem: 402 blocos, 101,8
 ### 7.5 Alterações decorrentes
 `uv5r.py`: `_send_block_retry()` (retry com pausa; seguro — bloco recusado não foi gravado e regravar carrega os mesmos dados) aplicado ao ramo aux-first; prompts atualizados honestamente (ambas direções validadas em hardware; nota de cooldown); docstrings. Testes: FakeSerial modela a alternância NACK (upload aux-first completa bloco-a-bloco no retry; UV-5R genérico sem retry falha — documentando por que a família existe). README com uso por GUI/terminal e as particularidades.
 
+### 7.6 Mapeamento do espaço de endereços (sonda somente-leitura, 2026-10-11)
+Varredura de TODO o espaço 16-bit via cabo: **942 blocos lidos, 128 únicos (mod 0x2000), 810 aliases byte-idênticos** — o cabo enxerga exatamente **8 KiB (0x0000–0x1FFF) espelhados 8×**. Conclusões:
+1. **Firmware NÃO é acessível pelo cabo** — não há memória além da janela; o programa do MCU (placa YL14-UV5R-001 VER 4.2, família Beken) fica fora do mapa do protocolo de clone. Resposta definitiva e evidenciada.
+2. **A lacuna 0x1800–0x1EC0 (~1,7 KiB) é legível** e não faz parte da imagem CHIRR padrão — contém dados de calibração (`E3 E4 E2 E3…`, `74 7C 8C 83…`, `64 A0 0F C0 12`). Rádio intacto após a sonda (CRC 725C668E).
+3. Implementado **"Exportar memória completa visível pelo cabo"** (Arquivo, modo dev): leitura ao vivo dos 8 KiB com ordem gap→aux→main (regras de sessão), montagem por endereço, `.bin`+hexdump com CRC32. O PDF do esquema original UV-5R (`Diagrama-Baofeng-UV5R.pdf`, F8UV-1846/2011) foi consultado; o RDA5802 (receptor FM) é o único CI identificado na camada de texto; a placa YL14 é a produção clone moderna do mesmo projeto (sem flash SPI externa para clipar).
+
+### 7.7 Teste real de personalização de canal (2026-10-11) — APROVADO
+**Canal 18 adicionado ao rádio (145.000 MHz, "TESTE", FM)** via API CHIRP (mesmo caminho da GUI): download A (CRC 725C668E) → set_memory(18) → upload (101,5 s, zero erros) → download B → canal 18 confirmado no rádio; canais 0–17 intocados; **diff de imagem = 21 bytes, todos confinados aos slots do canal 18**. Backups `before_addch`/`after_addch` salvos. Gravação e personalização de canais do BOM-5701: **comprovadas em hardware**.
+
+### 7.8 Programadora CH341A (2026-10-11) — implementada (somente leitura)
+`chirp/hardware/ch341.py`: protocolo extraído das referências canônicas (flashrom `ch341a_spi.c` para SPI; `ch341eepromtool` para I2C 24Cxx) — constantes USB (1A86:5512, endpoints 02/82, pacotes 32 bytes), leitura sequencial de 24Cxx (endereçamento 8/16 bits, pacote NEXT_CMD documentado), SPI 25xx (UIO CS, stream 0xA8, **inversão de bits LSB-first**, JEDEC 0x9F + leitura 0x03 em ciclos de CS). GUI `chirp/wxui/chipprog.py` (Arquivo → Ler chip com a programadora CH341A): detecção, escolha 24Cxx/flash SPI, identificação JEDEC com decodificação honesta de fabricante/tamanho, progresso, dump com CRC32. **Somente leitura por design**: nenhum comando de escrita existe no módulo (testado estruturalmente); UV-EPROMs reais (Vpp) reportados como não suportados. 8 testes com USB simulado (framing, endereçamento, inversão de bits, JEDEC, integridade). **Validação com hardware físico da programadora: pendente** (o usuário possui uma CH341A; ao conectar, o diálogo deve detectá-la).
+
 
 **Integridade verificada (não é só "barra em 100%"):**
 - As duas leituras são **byte a byte idênticas** (0 bytes divergentes na imagem inteira; 0 canais divergentes).
