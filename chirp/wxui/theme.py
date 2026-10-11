@@ -79,9 +79,10 @@ MODE_LIGHT = 'light'
 MODE_DARK = 'dark'
 MODES = (MODE_SYSTEM, MODE_LIGHT, MODE_DARK)
 
-_configured_mode = CONF.get('theme_mode', 'state') or MODE_SYSTEM
+# Default to dark mode
+_configured_mode = CONF.get('theme_mode', 'state') or MODE_DARK
 if _configured_mode not in MODES:
-    _configured_mode = MODE_SYSTEM
+    _configured_mode = MODE_DARK
 
 _listeners = []
 _windows = []

@@ -1279,6 +1279,7 @@ class ChirpMain(wx.Frame):
         memory.SetMin(0)
         memory.SetMax(2000)
         memory.SetValue(event.memory)
+        memory.SetMinSize((80, -1))
         buttons = d.CreateButtonSizer(wx.OK | wx.CANCEL)
 
         vbox.Add(label, proportion=1, flag=wx.EXPAND | wx.ALL, border=10)

@@ -1201,8 +1201,8 @@ class BaofengUV5R(chirp_common.CloneModeRadio):
         _nam = self._get_nam(mem.number)
 
         if mem.empty:
-            _mem.set_raw("\xff" * 16)
-            _nam.set_raw("\xff" * 16)
+            _mem.set_raw(b"\xff" * 16)
+            _nam.set_raw(b"\xff" * 16)
             return
 
         was_empty = False

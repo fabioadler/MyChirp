@@ -93,6 +93,7 @@ class ChirpChipProgDialog(wx.Dialog):
                 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=8)
         self._spi_size = wx.SpinCtrl(panel, min=1024, max=64 * 1024 * 1024,
                                      initial=1024 * 1024)
+        self._spi_size.SetMinSize((120, -1))
         hs4.Add(self._spi_size, 1)
         psizer.Add(hs4, 0, wx.EXPAND | wx.BOTTOM, border=8)
 

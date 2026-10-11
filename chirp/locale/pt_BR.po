@@ -4174,6 +4174,12 @@ msgstr "Porta: %s"
 msgid "Failed to save: %s"
 msgstr "Falha ao salvar: %s"
 
+msgid "Spanish"
+msgstr "Espanhol"
+
+msgid "French"
+msgstr "Francês"
+
 #~ msgid "Adding memory {number}"
 #~ msgstr "Adicionando memï¿œria {number}"
 
