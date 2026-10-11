@@ -57,7 +57,7 @@ class AboutDialog(ft.AlertDialog):
                         alignment=ft.Alignment.CENTER,
                         padding=ft.Padding.only(top=SPACING.SM),
                         content=ft.Image(
-                            src="logo_mychirp.png",
+                            src="mychirp_logo_transparente.png",
                             width=120, height=120,
                             fit=ft.BoxFit.CONTAIN),
                     ),

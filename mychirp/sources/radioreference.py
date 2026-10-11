@@ -18,7 +18,7 @@ import threading
 
 from mychirp import chirp_common, errors
 from mychirp.sources import base
-from mychirp.wxui import config
+from mychirp import config
 
 from suds.client import Client
 from suds import WebFault

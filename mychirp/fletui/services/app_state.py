@@ -4,7 +4,7 @@ import weakref
 
 import flet as ft
 
-from mychirp.wxui import config
+from mychirp import config
 
 LOG = logging.getLogger(__name__)
 

@@ -16,7 +16,9 @@ LOG = logging.getLogger(__name__)
 logging.getLogger("flet").setLevel(logging.INFO)
 logging.getLogger("flet_transport").setLevel(logging.WARNING)
 
-ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
+# Single source of assets: mychirp/share (logos, icons)
+ASSETS_DIR = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "share"))
 
 
 def main(page: ft.Page):

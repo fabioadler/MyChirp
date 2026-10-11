@@ -1,42 +1,48 @@
-# CHIRP Project
+# MyChirp
 
-Fork oficial do repositório __[CHIRP](https://www.chirpmyradio.com)__ (PRs upstream: ver [pull_request_template.md](.github/pull_request_template.md)).
+Fork moderno do __[CHIRP](https://www.chirpmyradio.com)__ — programador de
+rádios amadores com interface **Flet** 100% responsiva e temas claro/escuro
+consistentes em todos os componentes.
+
+Créditos do projeto original: CHIRP Project (Dan Smith e contribuidores),
+GPLv3. Esta versão: **Feita/modificada por Fábio Adler de Luna Gomes**.
 
 ## Esta versão
 
-Mantém **todos os modelos do CHIRP original** e adiciona suporte validado a:
+Mantém **todos os modelos do CHIRP original** e substitui a interface wxUI
+por uma interface nova (`mychirp/fletui`):
 
-- **BOMVINK BOM-5701** — protocolo UV-5R, leitura e gravação completas comprovadas em hardware
-- **Baofeng BF-777S** e **Intelbras RC 3002 G2** — protocolo BF-888, verificados pelo proprietário
+- **Temas claro/escuro/sistema** aplicados de verdade em todos os
+  componentes — abas, tabelas, navegação lateral, formulários, diálogos,
+  barra de status — inclusive após download do rádio e troca de abas
+- **Bem-vindo** — logo centralizada (≤400px) que segue o tema ativo
+- **Memórias** — grade paginada com filtro, ocultar vazios e edição de
+  canal com controles tipados (frequência, tons CTCSS, DTCS, duplex...)
+- **Configurações** — navegação lateral responsiva (NavRail → Dropdown em
+  telas estreitas) com formulários por grupo e aplicação em lote
+- **Clonagem** — download/upload com seleção fabricante → modelo → porta
+  e barra de progresso
+- **Sobre** — créditos ao CHIRP original, desenvolvedor da versão e logo
+  da empresa
 
 ## Instalação (Linux)
 
 ```bash
-python3 -m venv --system-site-packages venv
-venv/bin/pip install -r requirements-dev.txt   # CHIRP + testes + pyusb
+python3 -m venv venv
+venv/bin/pip install -r requirements-dev.txt
 venv/bin/mychirp
 ```
 
-> Requer `python3-wxgtk4.0` do sistema (o venv o aproveita via
-> `--system-site-packages`).
+> O diálogo de arquivos usa o `zenity` do sistema
+> (`sudo apt install zenity` no Debian/Ubuntu).
 
-## Uso pela interface gráfica
+## Interface gráfica
 
-- **Rádio → Baixar / Carregar no rádio** — o cabo é detectado ao plugar;
-  a gravação exige dupla confirmação e mantém aviso de sobrescrita.
-- **Ver → Tema** (claro/escuro/sistema) · **Ver → Idioma**
-  (pt-BR padrão, inglês, chinês, japonês).
-- **Ajuda → Diagnóstico de rádio** — portas, cabos, testes de conexão
-  (porta e identificação, somente leitura), rastreio serial e backups.
-- Modo desenvolvedor (**Ajuda → Developer Mode**) libera:
-  - **Arquivo → Exportar dump bruto de memória** — imagem de canais em
-    `.bin` + hexdump com CRC32;
-  - **Arquivo → Exportar memória completa visível pelo cabo** — os 8 KiB
-    que o cabo enxerga, incluindo a área de calibração (0x1800–0x1EC0);
-    é tudo que existe: firmware não é acessível pelo cabo;
-  - **Arquivo → Ler chip com a programadora CH341A** — leitura de
-    EEPROMs I2C (24Cxx) e flash SPI (25xx) com identificação JEDEC;
-    somente leitura, nada é gravado no chip.
+- **Ctrl+O** — abrir imagem/CSV · **Arquivo** — recentes, salvar (Ctrl+S),
+  salvar como, fechar aba (Ctrl+W)
+- **Rádio → Baixar do rádio** (Ctrl+D) / **Carregar no rádio** (Ctrl+U)
+- **Ver → Tema** claro/escuro · **F5** — recarregar dados
+- **Ajuda → Sobre** — créditos e versão
 
 ## Uso pelo terminal (mychirpc)
 
@@ -48,8 +54,6 @@ venv/bin/mychirpc --serial=/dev/ttyUSB0 --radio=BOMVINK_BOM-5701 \
     --upload-mmap --mmap=backup.img       # gravar (protocolo validado)
 ```
 
-Outros modelos: `--radio=Baofeng_BF-777S` · `--radio='Intelbras_RC 3002 G2'`
-
 ## Notas do BOM-5701
 
 - Aguarde **~20 s entre sessões** de clonagem (o rádio reinicia após
@@ -58,8 +62,5 @@ Outros modelos: `--radio=Baofeng_BF-777S` · `--radio='Intelbras_RC 3002 G2'`
   (ordem aux-antes-do-main e retry pós-NACK).
 - Backups automáticos em `~/.chirp/backups/` — mantenha sempre um antes
   de gravar.
-- Gravação de **firmware** não existe: o protocolo de clone não expõe a
-  memória de programa.
 
-Documentação completa (diagnóstico, evidências, testes):
-[PLAN.md](PLAN.md)
+Documentação completa e histórico do projeto: [PLAN.md](PLAN.md)

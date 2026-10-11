@@ -67,9 +67,12 @@ class AppShell(ft.Container):
         self._build()
 
         self._picker = ft.FilePicker()
-        page.overlay.append(self._picker)
-        self._picker.on_result = self._on_file_result
-        self._pending_action = "open"
+        # flet 1.0: FilePicker is a service, not an overlay control
+        # (adding it to overlay raises "Unknown control: FilePicker").
+        # pick_files/save_file are async service methods that return
+        # their result directly (on_result only fires for PickFiles
+        # actions), so flows await them via page.run_task.
+        page.services.append(self._picker)
 
         # Global keyboard shortcuts (flet 1.0 removed MenuItemButton
         # shortcuts, so we handle keys at the page level)
@@ -138,7 +141,7 @@ class AppShell(ft.Container):
             content=ft.Row(
                 controls=[
                     ft.Image(
-                        src="logo_mychirp.png",
+                        src="mychirp_logo_transparente.png",
                         height=30,
                         fit=ft.BoxFit.CONTAIN,
                     ),
@@ -285,21 +288,15 @@ class AppShell(ft.Container):
 
     # ----- file actions -----
     def pick_open(self):
-        self._pending_action = "open"
-        self._picker.pick_files(
-            dialog_title=_("Open radio image"),
-            allowed_extensions=["img", "csv", "chirp"],
-            file_type=ft.FilePickerType.FILE,
-        )
-
-    def _on_file_result(self, e: ft.FilePickerResultEvent):
-        if not e.files:
-            return
-        path = e.files[0].path
-        if self._pending_action == "open":
-            self.open_file(path)
-        elif self._pending_action == "save":
-            self.save_current(target=path)
+        async def _flow():
+            files = await self._picker.pick_files(
+                dialog_title=_("Open radio image"),
+                allowed_extensions=["img", "csv", "chirp"],
+                file_type=ft.FilePickerFileType.CUSTOM,
+            )
+            if files:
+                self.open_file(files[0].path)
+        self._page.run_task(_flow)
 
     def open_file(self, filename):
         from mychirp.fletui.services.radio_service import get_service
@@ -328,12 +325,16 @@ class AppShell(ft.Container):
             self.state.set_status(_("Nothing to save"))
             return
         if target is None and as_new:
-            self._pending_action = "save"
-            self._picker.save_file(
-                dialog_title=_("Save radio image"),
-                file_name=eset.default_filename,
-                allowed_extensions=["img", "csv"],
-            )
+            async def _flow():
+                path = await self._picker.save_file(
+                    dialog_title=_("Save radio image"),
+                    file_name=eset.default_filename,
+                    allowed_extensions=["img", "csv"],
+                    file_type=ft.FilePickerFileType.CUSTOM,
+                )
+                if path:
+                    self.save_current(target=path)
+            self._page.run_task(_flow)
             return
         filename = target or eset.filename
         eset.filename = filename

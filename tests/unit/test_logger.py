@@ -7,7 +7,7 @@ from tests.unit import base
 class TestLogger(base.BaseTest):
     def test_log_history(self):
         drv_log = logging.getLogger('mychirp.drivers.foo')
-        ui_log = logging.getLogger('mychirp.wxui.foo')
+        ui_log = logging.getLogger('mychirp.fletui.foo')
         root_log = logging.getLogger()
 
         root_log.setLevel(logging.DEBUG)

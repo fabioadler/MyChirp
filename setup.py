@@ -16,13 +16,10 @@ setup(name='mychirp',
           'lark',
           'flet',
       ],
-      extras_require={
-          'wx': ['wxPython'],
-      },
+      extras_require={},
       entry_points={
           'console_scripts': [
               "mychirp=mychirp.fletui:run",
-              "mychirp-wx=mychirp.wxui:chirpmain",
               "mychirpc=mychirp.cli.main:main",
               "experttune=mychirp.cli.experttune:main",
           ],

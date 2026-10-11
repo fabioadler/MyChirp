@@ -39,7 +39,7 @@ class WelcomeScreen(ft.Container):
                 controls=[
                     ft.Container(
                         content=ft.Image(
-                            src="logo_mychirp.png",
+                            src="mychirp_logo_transparente.png",
                             width=logo_size,
                             height=logo_size,
                             fit=ft.BoxFit.CONTAIN,

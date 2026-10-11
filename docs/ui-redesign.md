@@ -1,11 +1,11 @@
-# UI Redesign — Decisões de Design (wxui modernization)
+# UI Redesign — Decisões de Design (interface Flet)
 
 > Ferramenta de orientação: **ui-ux-pro-max-cli 2.15.0** (skill instalada em `.opencode/skills/` via `uipro init -a opencode`).
-> As recomendações da skill são orientadas a web (shadcn/ui + Tailwind). Conforme a regra do projeto, elas são usadas **como referência** e os componentes são implementados **nativamente em wxPython** — sem migração de framework e sem interface web paralela.
+> As recomendações da skill são orientadas a web (shadcn/ui + Tailwind). Elas são usadas **como referência** e os componentes são implementados **nativamente em Flet 1.0** (`mychirp/fletui`), sem interface web paralela. Histórico: os mesmos tokens foram aplicados primeiro na wxui (removida) e migrados para a Flet UI.
 
-## 1. Princípios adotados (da skill, adaptados ao wx)
+## 1. Princípios adotados (da skill, adaptados ao Flet)
 
-| Recomendação da skill (design-system) | Implementação no wxPython |
+| Recomendação da skill (design-system) | Implementação no Flet |
 |---|---|
 | Arquitetura de tokens em 3 camadas (primitivo → semântico → componente) | `chirp/wxui/theme.py`: dicionários de primitivos (hex), papéis semânticos (`BG`, `FG`, `ACCENT`...) e helpers por componente |
 | Escala de espaçamento base 4px (4/8/12/16/24) | Constantes `SPACING_XS/SM/MD/LG/XL` aplicadas em margens/paddings dos painéis modernizados |

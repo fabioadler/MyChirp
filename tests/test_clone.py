@@ -5,7 +5,6 @@ from unittest import mock
 
 from mychirp import chirp_common
 from mychirp import errors
-from mychirp.wxui import serialtrace
 from tests import base
 
 LOG = logging.getLogger(__name__)
@@ -15,9 +14,8 @@ class SerialException(Exception):
     pass
 
 
-class SerialNone(serialtrace.SerialTrace):
+class SerialNone:
     def __init__(self, *a, **k):
-        super().__init__(*a, **k)
         self.port = '/dev/ttyUSB0'
 
     def flush(self):

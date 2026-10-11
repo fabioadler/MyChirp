@@ -15,7 +15,7 @@ import flet as ft
 from mychirp import chirp_common
 from mychirp import directory
 from mychirp import errors as chirp_errors
-from mychirp.wxui import config
+from mychirp import config
 
 LOG = logging.getLogger(__name__)
 

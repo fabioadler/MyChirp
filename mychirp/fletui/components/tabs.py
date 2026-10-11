@@ -18,7 +18,10 @@ class MyTabs(ft.Container):
         self._entries: list[dict] = []
 
         self.tab_bar = ft.TabBar(tabs=[], scrollable=True)
-        self.tab_view = ft.TabBarView(controls=[])
+        # expand=True is required: TabBarView (a Flutter PageView) must
+        # receive bounded height constraints, otherwise it renders
+        # "height is unbounded"
+        self.tab_view = ft.TabBarView(controls=[], expand=True)
         self.tabs_ctrl = ft.Tabs(
             length=0,
             content=ft.Column(
