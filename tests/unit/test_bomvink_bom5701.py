@@ -91,6 +91,7 @@ class FakeBOM5701Serial:
         self.first_s_command = True
         self.pending_secondack = False
         self.s_commands = []
+        self.w_commands = []
         self.timeout = 1
 
     def _queue(self, data):
@@ -121,6 +122,21 @@ class FakeBOM5701Serial:
                 self.pending_secondack = False
                 self._queue(b'\x06')
             return
+
+        if len(self.wbuf) >= 4 and self.wbuf[0:1] == b'X':
+            # An X write frame: 1 cmd + 2 addr + 1 size + data
+            _cmd, addr, size = struct.unpack('>BHB', self.wbuf[0:4])
+            if len(self.wbuf) >= 4 + size:
+                data = self.wbuf[4:4 + size]
+                self.wbuf = b''
+                self.w_commands.append((addr, size, data))
+                if not self.session_over:
+                    self._queue(b'\x06')
+                    if addr < 0x1800 and addr + size >= 0x1800:
+                        # The last main block ends the clone session,
+                        # mirroring the download behavior
+                        self.session_over = True
+                return
 
         if len(self.wbuf) == 4 and self.wbuf[0:1] == b'S':
             cmd, addr, size = struct.unpack('>BHB', self.wbuf)
@@ -222,15 +238,95 @@ class BOMVINKBOM5701Test(unittest.TestCase):
                 radio.sync_in()
         self.assertIn('0x1ec0', str(ctx.exception))
 
-    def test_upload_blocked(self):
-        """Uploading must be blocked until the protocol is validated."""
-        radio, pipe = self._download(uv5r.BOMVINKBOM5701)
-        commands_before = len(pipe.s_commands)
-        with self.assertRaises(errors.RadioError) as ctx:
+    def test_upload_roundtrip_and_order(self):
+        """Upload writes the aux block BEFORE the main block (the radio
+        ends the session after the main block), transfers the image
+        faithfully, and never touches the unmapped 0x1E80 region."""
+        radio, _pipe = self._download(uv5r.BOMVINKBOM5701)
+        fresh = FakeBOM5701Serial()
+        radio.pipe = fresh
+        with mock.patch('time.sleep'):
             radio.sync_out()
-        self.assertIn('not supported', str(ctx.exception))
-        # The failed upload attempt must not have issued any new command
-        self.assertEqual(commands_before, len(pipe.s_commands))
+
+        addrs = [addr for addr, size, data in fresh.w_commands]
+        first_main = next(i for i, a in enumerate(addrs) if a < 0x1800)
+        # All aux writes happen first, over exactly the image-mapped
+        # range 0x1EC0-0x2000
+        self.assertEqual(list(range(0x1EC0, 0x2000, 0x10)),
+                         addrs[:first_main])
+        # The unmapped 0x1E80-0x1EC0 area must never be written
+        self.assertNotIn(0x1E80, addrs)
+        # Main writes cover the standard upload ranges
+        expected_main = []
+        for start, end in [(0x0008, 0x0CF8), (0x0D08, 0x0DF8),
+                           (0x0E08, 0x1808)]:
+            expected_main += [i - 0x08 for i in range(start, end, 0x10)]
+        self.assertEqual(expected_main, addrs[first_main:])
+        # Every transferred block matches the image byte for byte
+        image = radio.get_mmap().get_packed()
+        self.assertEqual(0x1948, len(image))
+        for addr, size, data in fresh.w_commands:
+            if addr >= 0x1EC0:
+                img_addr = 0x1808 + addr - 0x1EC0
+            else:
+                img_addr = addr + 0x08
+            self.assertEqual(image[img_addr:img_addr + size], data)
+
+    def test_generic_uv5r_upload_fails(self):
+        """The stock UV-5R upload writes main first and then the aux
+        block, which this radio ignores once the main block completes.
+        This documents why the aux-first family exists (and why the
+        stock full-range aux list, which starts at the image-unmapped
+        0x1E80, must not be used with these radios)."""
+        bom = uv5r.BOMVINKBOM5701(None)
+        bom.pipe = FakeBOM5701Serial()
+        with mock.patch('time.sleep'):
+            bom.sync_in()
+        image = bom.get_mmap().get_packed()
+        with tempfile.NamedTemporaryFile(suffix='.img',
+                                         delete=False) as f:
+            f.write(image)
+            path = f.name
+        try:
+            radio = uv5r.BaofengUV5RGeneric(path)
+            fresh = FakeBOM5701Serial()
+            radio.pipe = fresh
+            with mock.patch('time.sleep'):
+                with self.assertRaises(errors.RadioError) as ctx:
+                    radio.sync_out()
+        finally:
+            os.unlink(path)
+        addrs = [addr for addr, size, data in fresh.w_commands]
+        # Main writes happened first...
+        self.assertTrue(any(a < 0x1800 for a in addrs))
+        # ...and the first aux write was refused once the session had
+        # already ended with the main block
+        self.assertIn('refused to accept', str(ctx.exception))
+
+    def test_registered_models(self):
+        """All owner-verified additions are registered as proper,
+        separate models with documented hardware."""
+        from chirp.drivers import h777
+        bom = uv5r.BOMVINKBOM5701(None)
+        self.assertEqual('BOMVINK', bom.VENDOR)
+        self.assertEqual('BOM-5701', bom.MODEL)
+        # The radio presents channels 000-126 (127 channels)
+        self.assertEqual((0, 126), bom.get_features().memory_bounds)
+        for rclass in (uv5r.BOMVINKBOM5701,
+                       h777.BaofengBF777SRadio,
+                       h777.IntelbrasRC3002G2Radio):
+            self.assertEqual([], rclass.ALIASES)
+            self.assertIn('two-pin', rclass.HARDWARE_REQUIREMENTS)
+        self.assertEqual('Baofeng', h777.BaofengBF777SRadio.VENDOR)
+        self.assertEqual('BF-777S', h777.BaofengBF777SRadio.MODEL)
+        self.assertEqual('Intelbras', h777.IntelbrasRC3002G2Radio.VENDOR)
+        self.assertEqual('RC 3002 G2', h777.IntelbrasRC3002G2Radio.MODEL)
+        # The BF-888-family additions expose the same 16 channels as
+        # the BF-888 they were verified against
+        for rclass in (h777.BaofengBF777SRadio,
+                       h777.IntelbrasRC3002G2Radio):
+            self.assertEqual((1, 16),
+                             rclass(None).get_features().memory_bounds)
 
     def test_download_mid_main_silence(self):
         """A radio that goes silent mid-download must raise, never

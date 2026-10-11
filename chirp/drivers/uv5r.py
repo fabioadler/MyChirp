@@ -766,6 +766,29 @@ def _do_upload(radio):
 
     # Main block
     mmap = radio.get_mmap().get_byte_compatible()
+
+    if getattr(radio, '_aux_first', False) and radio._aux_block:
+        # These radios end the clone session when the main block
+        # transfer completes (verified on the download), so the aux
+        # block must be written FIRST. Only the image-mapped range is
+        # written: the upstream full aux range starts at 0x1E80, which
+        # has no mapping in the 0x1948-byte image of these radios.
+        if len(mmap.get_packed()) == 0x1808:
+            LOG.info("Old image, not writing aux block")
+        else:
+            LOG.debug("uploading aux block first...")
+            for i in range(0x1EC0, 0x2000, 0x10):
+                addr = 0x1808 + (i - 0x1EC0)
+                _send_block(radio, i, mmap[addr:addr + 0x10])
+            _do_status(radio, "to", radio.get_memsize())
+        for start_addr, end_addr in ranges_main:
+            for i in range(start_addr, end_addr, 0x10):
+                _send_block(radio, i - 0x08, mmap[i:i + 0x10])
+                _do_status(radio, "to", i)
+            _do_status(radio, "to", radio.get_memsize())
+        LOG.debug("done.")
+        return
+
     for start_addr, end_addr in ranges_main:
         for i in range(start_addr, end_addr, 0x10):
             _send_block(radio, i - 0x08, mmap[i:i + 0x10])
@@ -2247,37 +2270,38 @@ class BaofengUV5RGeneric(BaofengUV5R):
                ROUV5REXAlias, A5RAlias]
 
 
-@directory.register
-class BOMVINKBOM5701(BaofengUV5R):
-    """BOMVINK BOM-5701
+class UV5RAuxFirstClone(BaofengUV5R):
+    """Shared base for UV-5R clones that end the clone session as soon
+    as the main block transfer completes.
 
-    A UV-5R clone whose firmware ends the clone session as soon as the
-    main block (0x0000-0x1800) has been transferred, after which any
-    further request is ignored until the radio is power-cycled. Requests
-    for the aux area are served normally while they happen before the
-    main block is read, so this class downloads the aux block first and
-    appends it after the main block, producing an image byte-for-byte
-    compatible with a standard UV-5R download (0x1948 bytes).
+    Validated on a BOMVINK BOM-5701 (serial traces plus real-hardware
+    downloads, see chirpmyradio.com issue #12332): any request issued
+    after the main block completes is ignored until the radio is
+    power-cycled, while aux-area requests are served normally before
+    the main block is transferred. The download therefore reads the
+    aux block first and appends it after the main block, and the
+    upload writes the aux block first. Both directions produce and
+    expect byte-for-byte standard UV-5R images (0x1948 bytes).
 
-    Observed units report a blank (all 0xFF) firmware version string, so
-    image files cannot be matched against the usual basetype list; a
-    dedicated match_model() accepts exactly that signature.
+    Observed units report a blank (all 0xFF) firmware version string,
+    so image files cannot be matched against the usual basetype list;
+    a dedicated match_model() accepts exactly that signature.
     """
-    VENDOR = "BOMVINK"
-    MODEL = "BOM-5701"
     _aux_first = True
 
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
         rp.experimental = \
-            ('This driver is based on the observed behavior of the '
-             'BOM-5701 clone protocol (see chirpmyradio.com issue '
-             '#12332). Downloading reads the auxiliary memory block '
-             'before the main block because the radio ends the clone '
-             'session after the main block. Uploading to the radio is '
-             'NOT supported until that direction of the protocol is '
-             'validated. Proceed at your own risk!')
+            ('This driver is based on the observed behavior of this '
+             'radio family (see chirpmyradio.com issue #12332). The '
+             'radio ends the clone session when the main block '
+             'transfer completes, so the download reads the auxiliary '
+             'memory block before the main block and the upload '
+             'writes it first. Downloading is validated on real '
+             'hardware; uploading follows the same logic but has not '
+             'been exercised on hardware yet: always download a '
+             'backup first. Proceed at your own risk!')
         rp.pre_download = _(
             "1. Turn radio off.\n"
             "2. Connect cable to mic/spkr connector.\n"
@@ -2287,26 +2311,46 @@ class BOMVINKBOM5701(BaofengUV5R):
             " activity.\n"
             "6. Click OK to download image from device.\n")
         rp.pre_upload = _(
-            "Uploading to the BOMVINK BOM-5701 is not supported yet.\n"
-            "The upload protocol has not been validated with this "
-            "device.")
+            "1. Turn radio off.\n"
+            "2. Connect cable to mic/spkr connector.\n"
+            "3. Make sure connector is firmly connected.\n"
+            "4. Turn radio on (volume may need to be set at 100%).\n"
+            "5. Ensure that the radio is tuned to channel with no"
+            " activity.\n"
+            "6. Click OK to upload image to device.\n\n"
+            "NOTE: Uploading is experimental on this radio. Keep a "
+            "backup of the downloaded image and do not disconnect "
+            "the cable during the transfer.")
         return rp
 
     @classmethod
     def match_model(cls, filedata, filename):
         if len(filedata) == 0x1948:
-            # BOM-5701 units report a blank (all 0xFF) firmware version
+            # These units report a blank (all 0xFF) firmware version
             # string, so match on that instead of the basetype list.
             version = filedata[cls._fw_ver_file_start:cls._fw_ver_file_stop]
             return version == b"\xff" * (cls._fw_ver_file_stop -
                                          cls._fw_ver_file_start)
         return False
 
-    def sync_out(self):
-        raise errors.RadioError(
-            "Upload to the BOMVINK BOM-5701 is not supported yet. The "
-            "upload direction of this radio's protocol has not been "
-            "validated, so no data has been sent to the device.")
+
+@directory.register
+class BOMVINKBOM5701(UV5RAuxFirstClone):
+    """BOMVINK BOM-5701
+
+    Downloads validated on real hardware (two byte-identical repeated
+    reads; see issue #12332). The radio presents channels 000-126
+    (127 channels), so the memory bounds are narrowed accordingly even
+    though the image layout is the standard 128-slot UV-5R format.
+    """
+    VENDOR = "BOMVINK"
+    MODEL = "BOM-5701"
+
+    def get_features(self):
+        rf = super().get_features()
+        # The radio presents channels 000-126
+        rf.memory_bounds = (0, 126)
+        return rf
 
 
 @directory.register

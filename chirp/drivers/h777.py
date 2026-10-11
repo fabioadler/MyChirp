@@ -974,3 +974,53 @@ class MAVERICKRA425Radio(BF1904Radio):
     def match_model(cls, filedata, filename):
         # This model is only ever matched via metadata
         return False
+
+
+@directory.register
+class BaofengBF777SRadio(H777Radio):
+    """Baofeng BF-777S
+
+    Uses exactly the same protocol, connection and memory layout as
+    the BF-888 (verified by the owner with both read and write
+    through this driver family).
+    """
+    VENDOR = "Baofeng"
+    MODEL = "BF-777S"
+    ALIASES = []
+    HARDWARE_REQUIREMENTS = (
+        'Kenwood-style K1 two-pin programming cable connected to the '
+        'mic/speaker connector')
+
+    @classmethod
+    def get_prompts(cls):
+        rp = chirp_common.RadioPrompts()
+        rp.info = _(
+            'This model uses exactly the same protocol and memory '
+            'layout as the Baofeng BF-888 (verified by the owner '
+            'with read and write).')
+        return rp
+
+
+@directory.register
+class IntelbrasRC3002G2Radio(H777Radio):
+    """Intelbras RC 3002 G2
+
+    Uses exactly the same protocol, connection and memory layout as
+    the Baofeng BF-888 (verified by the owner with both read and
+    write through this driver family).
+    """
+    VENDOR = "Intelbras"
+    MODEL = "RC 3002 G2"
+    ALIASES = []
+    HARDWARE_REQUIREMENTS = (
+        'Kenwood-style K1 two-pin programming cable connected to the '
+        'mic/speaker connector')
+
+    @classmethod
+    def get_prompts(cls):
+        rp = chirp_common.RadioPrompts()
+        rp.info = _(
+            'This model uses exactly the same protocol and memory '
+            'layout as the Baofeng BF-888 (verified by the owner '
+            'with read and write).')
+        return rp
