@@ -90,8 +90,10 @@ class FakeBOM5701Serial:
         self.session_over = False
         self.first_s_command = True
         self.pending_secondack = False
+        self.write_busy = False
         self.s_commands = []
         self.w_commands = []
+        self.accepted_writes = []
         self.timeout = 1
 
     def _queue(self, data):
@@ -130,12 +132,21 @@ class FakeBOM5701Serial:
                 data = self.wbuf[4:4 + size]
                 self.wbuf = b''
                 self.w_commands.append((addr, size, data))
-                if not self.session_over:
-                    self._queue(b'\x06')
-                    if addr < 0x1800 and addr + size >= 0x1800:
-                        # The last main block ends the clone session,
-                        # mirroring the download behavior
-                        self.session_over = True
+                if self.session_over:
+                    return  # silence after the session ended
+                if self.write_busy:
+                    # Observed on the real radio: the write issued right
+                    # after an accepted one is NACKed while the radio
+                    # commits; the retry is then accepted
+                    self.write_busy = False
+                    return  # no ack
+                self._queue(b'\x06')
+                self.write_busy = True
+                self.accepted_writes.append((addr, size, data))
+                if addr < 0x1800 and addr + size >= 0x1800:
+                    # The last main block ends the clone session,
+                    # mirroring the download behavior
+                    self.session_over = True
                 return
 
         if len(self.wbuf) == 4 and self.wbuf[0:1] == b'S':
@@ -240,15 +251,18 @@ class BOMVINKBOM5701Test(unittest.TestCase):
 
     def test_upload_roundtrip_and_order(self):
         """Upload writes the aux block BEFORE the main block (the radio
-        ends the session after the main block), transfers the image
-        faithfully, and never touches the unmapped 0x1E80 region."""
+        ends the session after the main block), retries the NACK that
+        the radio gives after every accepted write, transfers the
+        image faithfully, and never touches the unmapped 0x1E80
+        region."""
         radio, _pipe = self._download(uv5r.BOMVINKBOM5701)
         fresh = FakeBOM5701Serial()
         radio.pipe = fresh
         with mock.patch('time.sleep'):
             radio.sync_out()
 
-        addrs = [addr for addr, size, data in fresh.w_commands]
+        accepted = fresh.accepted_writes
+        addrs = [addr for addr, size, data in accepted]
         first_main = next(i for i, a in enumerate(addrs) if a < 0x1800)
         # All aux writes happen first, over exactly the image-mapped
         # range 0x1EC0-0x2000
@@ -262,10 +276,20 @@ class BOMVINKBOM5701Test(unittest.TestCase):
                            (0x0E08, 0x1808)]:
             expected_main += [i - 0x08 for i in range(start, end, 0x10)]
         self.assertEqual(expected_main, addrs[first_main:])
+        # The radio NACKs the write after every accepted one: each block
+        # must have needed its retry (except the very first)
+        attempts = {}
+        for addr, size, data in fresh.w_commands:
+            attempts[addr] = attempts.get(addr, 0) + 1
+        self.assertEqual(1, attempts[addrs[0]])
+        for addr in addrs[1:]:
+            self.assertEqual(2, attempts[addr],
+                             'block 0x%04x should have taken one NACK '
+                             'plus one retry' % addr)
         # Every transferred block matches the image byte for byte
         image = radio.get_mmap().get_packed()
         self.assertEqual(0x1948, len(image))
-        for addr, size, data in fresh.w_commands:
+        for addr, size, data in accepted:
             if addr >= 0x1EC0:
                 img_addr = 0x1808 + addr - 0x1EC0
             else:
@@ -273,11 +297,13 @@ class BOMVINKBOM5701Test(unittest.TestCase):
             self.assertEqual(image[img_addr:img_addr + size], data)
 
     def test_generic_uv5r_upload_fails(self):
-        """The stock UV-5R upload writes main first and then the aux
-        block, which this radio ignores once the main block completes.
-        This documents why the aux-first family exists (and why the
-        stock full-range aux list, which starts at the image-unmapped
-        0x1E80, must not be used with these radios)."""
+        """The stock UV-5R upload path writes main first and carries no
+        retry: with this radio, which NACKs the write issued right
+        after an accepted one, the stock driver dies on the second main
+        block. This documents why the aux-first family with
+        retry-on-NACK exists (and why the stock full-range aux list,
+        which starts at the image-unmapped 0x1E80, must not be used
+        with these radios)."""
         bom = uv5r.BOMVINKBOM5701(None)
         bom.pipe = FakeBOM5701Serial()
         with mock.patch('time.sleep'):
@@ -297,10 +323,9 @@ class BOMVINKBOM5701Test(unittest.TestCase):
         finally:
             os.unlink(path)
         addrs = [addr for addr, size, data in fresh.w_commands]
-        # Main writes happened first...
+        # The stock driver wrote the first main block fine...
         self.assertTrue(any(a < 0x1800 for a in addrs))
-        # ...and the first aux write was refused once the session had
-        # already ended with the main block
+        # ...and then failed without a retry mechanism
         self.assertIn('refused to accept', str(ctx.exception))
 
     def test_registered_models(self):

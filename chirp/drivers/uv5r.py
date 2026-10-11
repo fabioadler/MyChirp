@@ -643,6 +643,27 @@ def _send_block(radio, addr, data):
         raise errors.RadioError("Radio refused to accept block 0x%04x" % addr)
 
 
+def _send_block_retry(radio, addr, data, tries=6, pause=0.15):
+    """Write a block, retrying while the radio NACKs it.
+
+    Observed on the BOMVINK BOM-5701 (see issue #12332 and PLAN.md):
+    after an accepted write the radio is briefly busy committing to
+    EEPROM and NACKs the write that arrives immediately afterwards;
+    every block is accepted on the following try. Retrying is safe
+    because a refused block was not taken (and even a spurious repeat
+    would carry the same data).
+    """
+    last = None
+    for _ in range(tries):
+        try:
+            _send_block(radio, addr, data)
+            return
+        except errors.RadioError as e:
+            last = e
+            time.sleep(pause)
+    raise last
+
+
 def _do_upload(radio):
     ident = _ident_radio(radio)
     radio_upper_band = ident[3:4]
@@ -773,17 +794,20 @@ def _do_upload(radio):
         # block must be written FIRST. Only the image-mapped range is
         # written: the upstream full aux range starts at 0x1E80, which
         # has no mapping in the 0x1948-byte image of these radios.
+        # Every block is written with retry-on-NACK, because these
+        # radios NACK the write issued right after an accepted one
+        # (see _send_block_retry).
         if len(mmap.get_packed()) == 0x1808:
             LOG.info("Old image, not writing aux block")
         else:
             LOG.debug("uploading aux block first...")
             for i in range(0x1EC0, 0x2000, 0x10):
                 addr = 0x1808 + (i - 0x1EC0)
-                _send_block(radio, i, mmap[addr:addr + 0x10])
+                _send_block_retry(radio, i, mmap[addr:addr + 0x10])
             _do_status(radio, "to", radio.get_memsize())
         for start_addr, end_addr in ranges_main:
             for i in range(start_addr, end_addr, 0x10):
-                _send_block(radio, i - 0x08, mmap[i:i + 0x10])
+                _send_block_retry(radio, i - 0x08, mmap[i:i + 0x10])
                 _do_status(radio, "to", i)
             _do_status(radio, "to", radio.get_memsize())
         LOG.debug("done.")
@@ -2275,13 +2299,17 @@ class UV5RAuxFirstClone(BaofengUV5R):
     as the main block transfer completes.
 
     Validated on a BOMVINK BOM-5701 (serial traces plus real-hardware
-    downloads, see chirpmyradio.com issue #12332): any request issued
-    after the main block completes is ignored until the radio is
-    power-cycled, while aux-area requests are served normally before
-    the main block is transferred. The download therefore reads the
-    aux block first and appends it after the main block, and the
-    upload writes the aux block first. Both directions produce and
-    expect byte-for-byte standard UV-5R images (0x1948 bytes).
+    downloads AND a byte-identical read/write/read round-trip, see
+    chirpmyradio.com issue #12332): any request issued after the main
+    block completes is ignored until the radio is power-cycled, while
+    aux-area requests are served normally before the main block is
+    transferred. The download therefore reads the aux block first and
+    appends it after the main block, and the upload writes the aux
+    block first. These radios also NACK the write issued immediately
+    after an accepted one (commit window), so uploads retry each
+    block, and they need a short cooldown between clone sessions.
+    Both directions produce and expect byte-for-byte standard UV-5R
+    images (0x1948 bytes).
 
     Observed units report a blank (all 0xFF) firmware version string,
     so image files cannot be matched against the usual basetype list;
@@ -2297,11 +2325,11 @@ class UV5RAuxFirstClone(BaofengUV5R):
              'radio family (see chirpmyradio.com issue #12332). The '
              'radio ends the clone session when the main block '
              'transfer completes, so the download reads the auxiliary '
-             'memory block before the main block and the upload '
-             'writes it first. Downloading is validated on real '
-             'hardware; uploading follows the same logic but has not '
-             'been exercised on hardware yet: always download a '
-             'backup first. Proceed at your own risk!')
+             'memory block before the main block and the upload writes '
+             'it first, retrying each block until the radio accepts '
+             'it. Both directions are validated on real hardware '
+             '(byte-identical round-trip). Always keep a downloaded '
+             'backup. Proceed at your own risk!')
         rp.pre_download = _(
             "1. Turn radio off.\n"
             "2. Connect cable to mic/spkr connector.\n"
@@ -2318,9 +2346,10 @@ class UV5RAuxFirstClone(BaofengUV5R):
             "5. Ensure that the radio is tuned to channel with no"
             " activity.\n"
             "6. Click OK to upload image to device.\n\n"
-            "NOTE: Uploading is experimental on this radio. Keep a "
-            "backup of the downloaded image and do not disconnect "
-            "the cable during the transfer.")
+            "NOTE: If a clone session just ran (including a failed "
+            "one), wait a few seconds before starting, because the "
+            "radio needs a short cooldown between sessions. Keep a "
+            "backup of the downloaded image.")
         return rp
 
     @classmethod
