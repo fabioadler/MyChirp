@@ -73,7 +73,28 @@ Sequência observada no rastreio:
 5. `graphify . --update` (incremental)
 6. `git add <arquivos específicos> && git commit` (sem push)
 
-## 7. Log de progresso
+## 7. VALIDAÇÃO EM HARDWARE REAL — CONCLUÍDA (2026-10-10)
+
+**Resultado: o download do BOMVINK BOM-5701 funciona com a ordem aux-antes-do-main. Hipótese confirmada em hardware.**
+
+| Leitura | Hora | Resultado | Backup |
+|---|---|---|---|
+| 1 | 22:36:29 | OK — imagem 0x1948, ~15 s | `~/.chirp/backups/BOMVINK_BOM-5701_validation_20261010_223629.img` (CRC32 725C668E) |
+| 2 | 22:43:02 | OK — imagem 0x1948, ~16 s | `~/.chirp/backups/BOMVINK_BOM-5701_validation_20261010_224302.img` |
+
+**Integridade verificada (não é só "barra em 100%"):**
+- As duas leituras são **byte a byte idênticas** (0 bytes divergentes na imagem inteira; 0 canais divergentes).
+- Ident `AA 30 76 04 00 05 20 DD` — idêntico ao rastreio original que motivou o diagnóstico.
+- Bloco de radio 0x1FC0 idêntico ao rastreio original (exceto 1 byte de contador que mudou entre 14:42 e 22:36 e ficou estável entre as duas leituras: `1A`→`1B`).
+- Região 0x1EC0 toda `0xFF` (versão em branco) — coerente com o comportamento observado.
+- Canais decodificados: **146.520 MHz (canal 1, igual ao rastreio), 462.125 (canal 2, igual ao rastreio)**, 462.225…463.225, 450.225, 460.325 — plano de canais real e plausível.
+- Os arquivos `.img` reabrem automaticamente como **BOMVINK BOM-5701** (`match_model` validado com dados reais).
+
+**Observação de campo:** uma tentativa logo após o boot do rádio falhou de forma transitória em 0x1FC0 (fase de versão, código pré-existente); uma nova tentativa segundos depois funcionou. Recomenda-se aguardar alguns segundos após ligar o rádio antes de iniciar a leitura (nota adicionada às instruções).
+
+**Estado do upload:** continua bloqueado no driver (por design). A condição "leitura validada" para investigar o upload está agora atendida — aguardando autorização explícita do usuário.
+
+## 8. Log de progresso
 
 | Data | Fase | Commit | Resumo |
 |---|---|---|---|
@@ -89,8 +110,9 @@ Sequência observada no rastreio:
 | 2026-10-10 | 6c | 3e90ff86 | **Reconhecimento automático de qualquer cabo conhecido**: base `KNOWN_USB_CHIPS` ampliada (CH340/CH341, CH9102, PL2303, FT232R/FT2232/FT232H/FT231X, CP210x, STM32 CDC), `is_known_cable()` + `record_detected()` persistindo o último dispositivo detectado; watcher ativo na **janela principal** ("Programming cable detected: ..." no status bar) além do diálogo de clonagem; painel de diagnóstico lista cabos conhecidos conectados + último detectado. Testes: cada chip mapeado é reconhecido; IDs desconhecidos não viram "cabo conhecido" (descrição honesta por VID:PID). 32 testes da área passando; smoke sem exceções |
 | 2026-10-10 | 7 | 2a6ef5c4 | **Gates finais**: suíte unitária completa 752 passed/13 skipped (baseline 720 + 32 novos); driver UV5R 140 passed (idêntico ao baseline); PEP8/flake8 limpo nos arquivos alterados; probe funcional da UI com janelas reais ALL OK (janela, CSV aberto, troca de tema, diálogos de download/upload, erro em duas camadas, diagnóstico — sem exceções). **i18n**: 70 strings novas traduzidas e fundidas em `chirp/locale/pt_BR.po` + `CHIRP.mo` compilado (polib; msgfmt indisponível) → versão dev roda em PT-BR ("Translation loaded=True"). **Screenshots automáticos bloqueados** pelo GNOME Wayland (wx.ScreenDC/Gdk-root/xwd retornam vazio; DBus do GNOME Shell negado; portal é interativo) — procedimento manual documentado no relatório. **Smoke final** sem erros |
 | 2026-10-10 | 8 | — | **Relatório final entregue** no chat da sessão (diagnóstico, diff, testes reais, instruções, limitações, reversão). Trabalho concluído nesta branch: 11 commits, sem push, instalação original intocada |
+| 2026-10-10 | VALIDAÇÃO | (pendente) | **Validação em hardware real do BOM-5701: CONFIRMADA.** Duas leituras completas com o driver novo (aux-antes-do-main), byte a byte idênticas (0x1948, 0 bytes divergentes, 0 canais divergentes), ident e blocos idênticos ao rastreio original, canais decodificados coerentes (146.520/462.125…), backups salvos em `~/.chirp/backups/` e reabertos como BOMVINK BOM-5701. Nota de campo: aguardar alguns segundos após ligar o rádio (1 falha transitória em 0x1FC0 logo após o boot; nova tentativa OK). Upload permanece bloqueado — condição para investigá-lo agora atendida, aguardando autorização |
 
-## 8. Ambiente de desenvolvimento (Linux/Debian 13)
+## 9. Ambiente de desenvolvimento (Linux/Debian 13)
 
 ```
 python3 -m venv --system-site-packages .venv   # wx 4.2.3 vem do pacote apt python3-wxgtk4.0
@@ -100,12 +122,12 @@ python3 -m venv --system-site-packages .venv   # wx 4.2.3 vem do pacote apt pyth
 .venv/bin/pytest tests/unit -v                  # testes unitários
 ```
 
-## 9. Reversão
+## 10. Reversão
 
 - Por fase: `git revert <commit>` (commits atômicos por alteração)
 - Total: `git reset --hard origin/master && git clean -fd` (remove também graphify-out/, .venv/ e PLAN.md não commitado)
 
-## 10. Teste real com o rádio (após Fases 1–1b)
+## 11. Teste real com o rádio (após Fases 1–1b)
 
 1. Rádio **desligado** → conectar o cabo de 2 pinos → ligar o rádio (volume 100%).
 2. Executar a versão de desenvolvimento e escolher **Radio → Download From Radio**.
