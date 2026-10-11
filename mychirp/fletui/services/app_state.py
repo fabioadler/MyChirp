@@ -134,6 +134,14 @@ class AppState:
         self.conf.set("last_open", "$".join(files), "state")
         self.conf.save()
 
+    def clear_recent_files(self):
+        """Forget the recent files list (files on disk are untouched)."""
+        try:
+            self.conf.remove_option("last_open", "state")
+        except Exception:
+            LOG.debug("No recent files to clear")
+        self.conf.save()
+
     # ----- session persistence -----
     def save_session(self):
         """Persist the open radios and theme for the next startup."""

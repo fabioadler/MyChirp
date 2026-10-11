@@ -133,6 +133,13 @@ class RecentFilesScreen(ft.Container):
                             color=p.fg_text),
                         ft.Container(expand=True),
                         ft.IconButton(
+                            icon=ft.Icons.DELETE_SWEEP_OUTLINED,
+                            icon_color=p.error if exists else p.fg_muted,
+                            tooltip=_("Clear recent files"),
+                            on_click=self._on_clear,
+                            disabled=not exists,
+                        ),
+                        ft.IconButton(
                             icon=ft.Icons.REFRESH,
                             icon_color=p.fg_muted,
                             tooltip=_("Refresh"),
@@ -148,6 +155,43 @@ class RecentFilesScreen(ft.Container):
     def _on_open(self, filename):
         if self.state.shell:
             self.state.shell.open_file(filename)
+
+    def _on_clear(self, e):
+        """Clear the recents list after a confirmation dialog."""
+        p = AppColors.for_mode(self.state.is_dark())
+
+        def do_clear(ev):
+            self.state.clear_recent_files()
+            self._page.close(dlg)
+            self.refresh()
+            if self.state.shell:
+                self.state.shell.set_status(_("Recent files cleared"))
+
+        def cancel(ev):
+            self._page.close(dlg)
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            bgcolor=p.bg_panel,
+            title=ft.Text(_("Clear recent files?"), color=p.fg_text),
+            content=ft.Text(
+                _("This removes the list only; the files on disk are "
+                  "not deleted."),
+                color=p.fg_muted),
+            actions=[
+                ft.TextButton(_("Cancel"), on_click=cancel),
+                ft.FilledButton(
+                    _("Clear"), on_click=do_clear,
+                    style=ft.ButtonStyle(
+                        bgcolor=p.error,
+                        color="#FFFFFF",
+                        shape=ft.RoundedRectangleBorder(
+                            radius=BORDER_RADIUS["sm"]),
+                    )),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        self._page.open(dlg)
 
     def refresh(self):
         self._build()
