@@ -61,6 +61,17 @@ from chirp import CHIRP_VERSION
 EditorSetChanged, EVT_EDITORSET_CHANGED = wx.lib.newevent.NewCommandEvent()
 CONF = config.get()
 LOG = logging.getLogger(__name__)
+_ = wx.GetTranslation
+
+# Languages offered by this build's selector (see PLAN.md): Brazilian
+# Portuguese is the default, plus English, Chinese and Japanese. Labels
+# are translated at import time, which is after the locale is active.
+SUPPORTED_LANGUAGES = [
+    ('pt_BR', _('Portuguese (Brazil)')),
+    ('en_US', _('English')),
+    ('zh_CN', _('Chinese (Simplified)')),
+    ('ja_JP', _('Japanese')),
+]
 
 EMPTY_MENU_LABEL = '(none)'
 KEEP_RECENT = 8
@@ -1672,30 +1683,22 @@ class ChirpMain(wx.Frame):
 
     @common.error_proof()
     def _menu_language(self, event):
-        def fmt_lang(lang):
-            return '%s - %s' % (lang.DescriptionNative,
-                                lang.Description.split(' ')[0])
-
-        trans = wx.Translations.Get()
-        langs = {fmt_lang(wx.Locale.FindLanguageInfo(code)): code
-                 for code in trans.GetAvailableTranslations('CHIRP')
-                 if code != 'messages'}
-        # This is stupid, but wx.GetSingleChoice does not honor the width
-        # parameter. But, we can pad out the automatic selection to get some
-        # extra padding in the dialog since we don't otherwise index it.
-        choices = ([_('Automatic from system') + ' ' * 30] +
-                   sorted(langs.keys(), key=str.casefold))
-        try:
-            current = wx.Locale.FindLanguageInfo(
-                CONF.get('force_language', 'prefs'))
-            initial = choices.index(fmt_lang(current))
-        except TypeError:
-            # Unset in the config (i.e. None)
+        # Curated language selector for this build (see PLAN.md):
+        # Portuguese (Brazil) is the default, plus English, Chinese
+        # and Japanese. 'Automatic from system' remains available.
+        languages = SUPPORTED_LANGUAGES
+        choices = ([_('Automatic from system')] +
+                   [label for code, label in languages])
+        prefs_lang = CONF.get('force_language', 'prefs')
+        if prefs_lang == 'system':
             initial = 0
-        except IndexError:
-            LOG.debug('Unable to find current language selection; '
-                      'defaulting to auto')
-            initial = 0
+        else:
+            if not prefs_lang:
+                # Unset means the build default: Brazilian Portuguese
+                prefs_lang = 'pt_BR'
+            initial = next((i + 1 for i, (code, label) in
+                            enumerate(languages)
+                            if code == prefs_lang), 1)
 
         choice = wx.GetSingleChoice(_('Select Language'), _('Language'),
                                     choices, parent=self,
@@ -1704,12 +1707,14 @@ class ChirpMain(wx.Frame):
             return
 
         try:
+            code = next(c for c, label in languages
+                        if label == choice)
             LOG.debug('User chose override language %r (%r)',
-                      choice, langs[choice])
-            CONF.set('force_language', langs[choice], 'prefs')
-        except KeyError:
+                      choice, code)
+            CONF.set('force_language', code, 'prefs')
+        except StopIteration:
             LOG.debug('User chose automatic language')
-            CONF.remove_option('force_language', 'prefs')
+            CONF.set('force_language', 'system', 'prefs')
 
         if initial != choices.index(choice):
             wx.MessageBox(_('CHIRP must be restarted for the new selection '

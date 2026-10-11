@@ -22,8 +22,11 @@ communication step and original error message). Never guesses: if a
 piece of information is unknown, it is shown as unknown.
 """
 
+import glob
 import logging
+import os
 
+import serial
 import serial.tools.list_ports
 import wx
 
@@ -170,6 +173,28 @@ class ChirpDiagnosticsDialog(wx.Dialog):
                             panel, label=' - %s' % suggestion),
                             0, wx.LEFT, border=8)
 
+        # Connection tests: read-only actions
+        _add_section(panel, psizer, _('Connection tests'))
+        self._test_output = wx.TextCtrl(
+            panel, style=wx.TE_MULTILINE | wx.TE_READONLY |
+            wx.TE_DONTWRAP | wx.BORDER_SUNKEN)
+        self._test_output.SetMinSize((-1, 90))
+        psizer.Add(self._test_output, 0, wx.EXPAND | wx.BOTTOM, border=8)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        test_port = wx.Button(panel, label=_('Test port'))
+        test_port.Bind(wx.EVT_BUTTON, self._test_port)
+        hbox.Add(test_port, 0, wx.ALL, border=4)
+        ident_btn = wx.Button(panel, label=_('Identify radio (read-only)'))
+        ident_btn.Bind(wx.EVT_BUTTON, self._identify_radio)
+        hbox.Add(ident_btn, 0, wx.ALL, border=4)
+        trace_btn = wx.Button(panel, label=_('Open last serial trace'))
+        trace_btn.Bind(wx.EVT_BUTTON, self._open_last_trace)
+        hbox.Add(trace_btn, 0, wx.ALL, border=4)
+        backup_btn = wx.Button(panel, label=_('Open backup location'))
+        backup_btn.Bind(wx.EVT_BUTTON, self._open_backups)
+        hbox.Add(backup_btn, 0, wx.ALL, border=4)
+        psizer.Add(hbox, 0, wx.EXPAND)
+
         # Debug log section
         _add_section(panel, psizer, _('Debug log'))
         hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -198,3 +223,126 @@ class ChirpDiagnosticsDialog(wx.Dialog):
     def _open_debug_log(self, event):
         dst = common.temporary_debug_log()
         wx.LaunchDefaultApplication(dst)
+
+    def _report(self, msg):
+        self._test_output.AppendText('%s\n' % msg)
+
+    def _current_port_and_rclass(self):
+        """Best-known port and radio class for the tests."""
+        port = clone.LAST_CLONE_RESULT.get('port')
+        if not port:
+            port = CONF.get('last_port', 'state')
+        vendor = CONF.get('last_vendor', 'state')
+        model = CONF.get('last_model', 'state')
+        rclass = _get_rclass_for(vendor, model)
+        return port, rclass
+
+    @common.error_proof()
+    def _test_port(self, event):
+        """Open and close the serial port to verify it is usable."""
+        port, rclass = self._current_port_and_rclass()
+        if not port:
+            self._report(_('No port selected or remembered yet'))
+            return
+        baud = getattr(rclass, 'BAUD_RATE', 9600)
+        try:
+            s = serial.Serial(port=port, baudrate=baud, timeout=0.5)
+            s.close()
+        except Exception as e:
+            self._report(_('Failed to open %s: %s') % (port, e))
+            return
+        driver = ''
+        try:
+            link = os.path.realpath(
+                '/sys/class/tty/%s/device/driver' % os.path.basename(port))
+            driver = os.path.basename(link)
+        except Exception:
+            pass
+        self._report(_('%s opened and closed fine at %i baud%s') % (
+            port, baud, ' (%s)' % driver if driver else ''))
+
+    @common.error_proof()
+    def _identify_radio(self, event):
+        """Perform the read-only programming-mode handshake.
+
+        Only the standard ident exchange is executed; no block is read
+        or written. Depending on the radio, it may need to be turned
+        off and on again afterwards to leave programming mode.
+        """
+        port, rclass = self._current_port_and_rclass()
+        if not port:
+            self._report(_('No port selected or remembered yet'))
+            return
+        if rclass is None:
+            self._report(_('Select a vendor and model in the clone '
+                           'dialog first'))
+            return
+        if not issubclass(rclass, chirp_common.CloneModeRadio):
+            self._report(_('%s %s is not a cable-programmable radio') % (
+                rclass.VENDOR, rclass.MODEL))
+            return
+        try:
+            s = serial.Serial(port=port, baudrate=rclass.BAUD_RATE,
+                              timeout=1)
+        except Exception as e:
+            self._report(_('Failed to open %s: %s') % (port, e))
+            return
+        try:
+            if hasattr(rclass, '_idents'):
+                # UV-5R protocol family
+                from chirp.drivers import uv5r
+                radio = rclass(s)
+                ident = uv5r._ident_radio(radio)
+            elif hasattr(rclass, 'IDENT'):
+                # H777/BF-888 protocol family
+                from chirp.drivers import h777
+                ident = h777._h777_enter_programming_mode(s, rclass)
+            else:
+                self._report(_('Handshake test not implemented for the '
+                               '%s %s driver family') % (rclass.VENDOR,
+                                                         rclass.MODEL))
+                return
+        except Exception as e:
+            self._report(_('%s %s did not answer: %s') % (
+                rclass.VENDOR, rclass.MODEL, e))
+            return
+        finally:
+            try:
+                s.close()
+            except Exception:
+                pass
+        if ident:
+            try:
+                shown = ' '.join('%02X' % b for b in ident)
+            except TypeError:
+                shown = repr(ident)
+            msg = _('%s %s answered: %s') % (rclass.VENDOR,
+                                             rclass.MODEL, shown)
+            self._report(msg)
+        else:
+            msg = _('%s %s did not answer') % (rclass.VENDOR,
+                                               rclass.MODEL)
+            self._report(msg)
+        self._report(_('Only the handshake was executed; no data was '
+                       'read or written'))
+
+    @common.error_proof()
+    def _open_last_trace(self, event):
+        traces = sorted(glob.glob('/tmp/chirp-trace-*.txt'))
+        if not traces:
+            wx.MessageBox(_('No serial trace recorded yet in this '
+                            'session'), _('Serial trace'),
+                          wx.ICON_INFORMATION, parent=self)
+            return
+        wx.LaunchDefaultApplication(traces[-1])
+
+    @common.error_proof()
+    def _open_backups(self, event):
+        from chirp import platform as chirp_platform
+        backup_dir = chirp_platform.get_platform().config_file('backups')
+        try:
+            os.makedirs(backup_dir, exist_ok=True)
+        except Exception as e:
+            LOG.warning('Failed to create backup dir: %s', e)
+            return
+        common.reveal_location(backup_dir)

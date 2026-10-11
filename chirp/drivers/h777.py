@@ -992,6 +992,13 @@ class BaofengBF777SRadio(H777Radio):
         'mic/speaker connector')
 
     @classmethod
+    def match_model(cls, filedata, filename):
+        # This model is only ever matched via metadata; without this,
+        # the size-only match of the BF-888 base class would make every
+        # 0x3E0 image ambiguous
+        return False
+
+    @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
         rp.info = _(
@@ -1015,6 +1022,13 @@ class IntelbrasRC3002G2Radio(H777Radio):
     HARDWARE_REQUIREMENTS = (
         'Kenwood-style K1 two-pin programming cable connected to the '
         'mic/speaker connector')
+
+    @classmethod
+    def match_model(cls, filedata, filename):
+        # This model is only ever matched via metadata; without this,
+        # the size-only match of the BF-888 base class would make every
+        # 0x3E0 image ambiguous
+        return False
 
     @classmethod
     def get_prompts(cls):

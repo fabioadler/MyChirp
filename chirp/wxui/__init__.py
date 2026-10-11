@@ -158,17 +158,29 @@ def chirpmain():
         lang = force_lang.Language
     elif CONF.is_defined('force_language', 'prefs'):
         prefs_lang = CONF.get('force_language', 'prefs')
-        force_lang = wx.Locale.FindLanguageInfo(prefs_lang)
-        if force_lang is None:
-            LOG.warning('Config prefs.force_language specifies unknown '
-                        'language %r', prefs_lang)
+        if prefs_lang == 'system':
+            # Explicitly following the system language
             lang = wx.Locale.GetSystemLanguage()
         else:
-            LOG.info('Forcing locale to %r (%s) via config', prefs_lang,
-                     force_lang.Description)
-            lang = force_lang.Language
+            force_lang = wx.Locale.FindLanguageInfo(prefs_lang)
+            if force_lang is None:
+                LOG.warning('Config prefs.force_language specifies unknown '
+                            'language %r', prefs_lang)
+                lang = wx.Locale.GetSystemLanguage()
+            else:
+                LOG.info('Forcing locale to %r (%s) via config', prefs_lang,
+                         force_lang.Description)
+                lang = force_lang.Language
     else:
-        lang = wx.Locale.GetSystemLanguage()
+        # Default language of this build when nothing is set:
+        # Brazilian Portuguese (see PLAN.md)
+        default_lang = wx.Locale.FindLanguageInfo('pt_BR')
+        if default_lang is None:
+            LOG.warning('Default language pt_BR unknown to this wx build; '
+                        'falling back to system language')
+            lang = wx.Locale.GetSystemLanguage()
+        else:
+            lang = default_lang.Language
 
     localedir = str(os.path.join(resources.files('chirp'), 'locale'))
     app._lc = wx.Locale()

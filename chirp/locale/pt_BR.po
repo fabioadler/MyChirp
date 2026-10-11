@@ -4030,6 +4030,66 @@ msgstr ""
 "Este modelo usa exatamente o mesmo protocolo e leiaute de memória do Baofeng "
 "BF-888 (verificado pelo proprietário com leitura e gravação)."
 
+msgid "Portuguese (Brazil)"
+msgstr "Português (Brasil)"
+
+msgid "English"
+msgstr "Inglês"
+
+msgid "Chinese (Simplified)"
+msgstr "Chinês (Simplificado)"
+
+msgid "Japanese"
+msgstr "Japonês"
+
+msgid "Connection tests"
+msgstr "Testes de conexão"
+
+msgid "Only the handshake was executed; no data was read or written"
+msgstr "Somente o handshake foi executado; nenhum dado foi lido ou gravado"
+
+msgid "Test port"
+msgstr "Testar porta"
+
+msgid "Identify radio (read-only)"
+msgstr "Identificar rádio (somente leitura)"
+
+msgid "Open backup location"
+msgstr "Abrir local dos backups"
+
+msgid "No port selected or remembered yet"
+msgstr "Nenhuma porta selecionada ou memorizada ainda"
+
+msgid "%s opened and closed fine at %i baud%s"
+msgstr "%s abriu e fechou normalmente a %i baud%s"
+
+msgid "Select a vendor and model in the clone dialog first"
+msgstr "Selecione um fabricante e modelo no diálogo de comunicação primeiro"
+
+msgid "%s %s answered: %s"
+msgstr "%s %s respondeu: %s"
+
+msgid "%s %s did not answer"
+msgstr "%s %s não respondeu"
+
+msgid "No serial trace recorded yet in this session"
+msgstr "Nenhum rastreio serial gravado nesta sessão ainda"
+
+msgid "Serial trace"
+msgstr "Rastreio serial"
+
+msgid "%s %s is not a cable-programmable radio"
+msgstr "%s %s não é um rádio programável por cabo"
+
+msgid "Failed to open %s: %s"
+msgstr "Falha ao abrir %s: %s"
+
+msgid "%s %s did not answer: %s"
+msgstr "%s %s não respondeu: %s"
+
+msgid "Handshake test not implemented for the %s %s driver family"
+msgstr "Teste de handshake não implementado para a família de driver %s %s"
+
 #~ msgid "Adding memory {number}"
 #~ msgstr "Adicionando memï¿œria {number}"
 
