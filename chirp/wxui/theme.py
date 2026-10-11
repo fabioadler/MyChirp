@@ -158,6 +158,10 @@ def register(window):
 
 def _style_window_tree(window, panel_color, text_color):
     for child in window.GetChildren():
+        # Windows that manage their own colors (e.g. the welcome
+        # splash) are exempt from theming
+        if getattr(child, '_theme_exempt', False):
+            continue
         try:
             if isinstance(child, (wx.Panel, wx.ScrolledWindow)):
                 child.SetBackgroundColour(panel_color)

@@ -395,28 +395,28 @@ class ChirpLiveEditorSet(ChirpEditorSet):
 
 
 class ChirpWelcomePanel(wx.Panel):
-    """Fake "editorset" that just displays the welcome image."""
+    """Fake "editorset" that just displays the welcome splash.
+
+    Shows this build's transparent logo over a dark background,
+    independent of the selected theme (the panel is theme-exempt).
+    """
+
+    DARK_BACKGROUND = (0x1E, 0x1F, 0x24)
 
     def __init__(self, *a, **k):
         super(ChirpWelcomePanel, self).__init__(*a, **k)
 
+        # This panel paints itself; the theme must not recolor it
+        self._theme_exempt = True
+        self.SetBackgroundColour(wx.Colour(*self.DARK_BACKGROUND))
+
         vbox = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(vbox)
 
-        # Search for welcome_screen_en_US, welcome_screen_en, welcome_screen
-        locale = wx.App.Get()._lc.GetCanonicalName()
-        locale_base_path = resources.files('chirp.share')
-        welcome_file = locale_base_path.joinpath(
-            'welcome_screen_%s.png' % locale)
-        if not os.path.exists(welcome_file):
-            welcome_file = locale_base_path.joinpath(
-                'welcome_screen_%s.png' % locale[0:2])
-        if not os.path.exists(welcome_file):
-            welcome_file = locale_base_path.joinpath('welcome_screen.png')
-
-        with resources.as_file(welcome_file) as welcome:
-            bmp = wx.Bitmap(str(welcome))
-        width, height = self.GetSize()
+        with resources.as_file(
+                resources.files('chirp.share').joinpath(
+                    'logo transparente.png')) as logo:
+            bmp = wx.Bitmap(str(logo), wx.BITMAP_TYPE_PNG)
         img = wx.StaticBitmap(self, wx.ID_ANY, bmp)
         vbox.Add(img, 1, flag=wx.EXPAND)
 

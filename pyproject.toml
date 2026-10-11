@@ -1,0 +1,6 @@
+[build-system]
+# Modern editable installs (PEP 660): without this, pip falls back to
+# the legacy `setup.py develop` mode, which is deprecated and will be
+# removed (pip >= 25.3). Project metadata itself stays in setup.py.
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
