@@ -4109,6 +4109,71 @@ msgstr ""
 "\n"
 "NOTA: se uma sessão de clonagem acabou de rodar (inclusive com falha), aguarde alguns segundos antes de começar, pois o rádio precisa de um pequeno intervalo entre sessões. Mantenha um backup da imagem baixada."
 
+msgid "Select the serial port"
+msgstr "Selecione a porta serial"
+
+msgid "Full window read"
+msgstr "Leitura da janela completa"
+
+msgid "Export full cable-visible memory"
+msgstr "Exportar memória completa visível pelo cabo"
+
+msgid "Reading everything the cable can see (0x0000-0x2000)..."
+msgstr "Lendo tudo o que o cabo consegue ver (0x0000-0x2000)..."
+
+msgid ""
+"Open a BOMVINK BOM-5701 image first (this tool reads the live radio with that"
+" driver)"
+msgstr ""
+"Abra primeiro uma imagem do BOMVINK BOM-5701 (esta ferramenta lê o rádio ao "
+"vivo com esse driver)"
+
+msgid ""
+"This tool reads the complete cable-visible window of the BOMVINK BOM-5701 "
+"family; the open image is from another radio"
+msgstr ""
+"Esta ferramenta lê a janela completa visível pelo cabo da família BOMVINK "
+"BOM-5701; a imagem aberta é de outro rádio"
+
+msgid "Export full cable-visible memory (live read)..."
+msgstr "Exportar memória completa visível pelo cabo (leitura ao vivo)..."
+
+msgid "Read chip with CH341A programmer..."
+msgstr "Ler chip com a programadora CH341A..."
+
+msgid "Complete cable-visible memory"
+msgstr "Memória completa visível pelo cabo"
+
+msgid ""
+"Read %i bytes from the radio (CRC32 %08X).\n"
+"\n"
+"This is the complete memory window the cable can see, including the calibration area. It is not firmware: the clone protocol does not expose the radio's program memory."
+msgstr ""
+"Lidos %i bytes do rádio (CRC32 %08X).\n"
+"\n"
+"Esta é a janela completa de memória que o cabo consegue ver, incluindo a área de calibração. Não é firmware: o protocolo de clonagem não expõe a memória de programa do rádio."
+
+msgid "Reading failed: %s"
+msgstr "A leitura falhou: %s"
+
+msgid ""
+"Radio address space 0x0000-0x2000 (8 KiB); includes the calibration area at "
+"0x1800-0x1EC0 that the standard image does not cover. This is everything the "
+"programming cable can read; it is not firmware."
+msgstr ""
+"Espaço de endereços do rádio 0x0000-0x2000 (8 KiB); inclui a área de "
+"calibração em 0x1800-0x1EC0 que a imagem padrão não cobre. Isto é tudo o que "
+"o cabo de programação consegue ler; não é firmware."
+
+msgid "Model: %s %s"
+msgstr "Modelo: %s %s"
+
+msgid "Port: %s"
+msgstr "Porta: %s"
+
+msgid "Failed to save: %s"
+msgstr "Falha ao salvar: %s"
+
 #~ msgid "Adding memory {number}"
 #~ msgstr "Adicionando memï¿œria {number}"
 
