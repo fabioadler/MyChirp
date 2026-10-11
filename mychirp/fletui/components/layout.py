@@ -1,3 +1,4 @@
+import logging
 import os
 
 import flet as ft
@@ -6,6 +7,7 @@ from mychirp import chirp_common
 from mychirp.fletui.components.statusbar import StatusBar
 from mychirp.fletui.components.tabs import MyTabs
 from mychirp.fletui.screens.memories_screen import MemoriesScreen
+from mychirp.fletui.screens.recent_screen import RecentFilesScreen
 from mychirp.fletui.screens.settings_screen import SettingsScreen
 from mychirp.fletui.screens.welcome_screen import WelcomeScreen
 from mychirp.fletui.services.app_state import get_state
@@ -14,8 +16,10 @@ from mychirp.fletui.theme import (
     SPACING,
     AppColors,
 )
+from mychirp.fletui.i18n import _
 
-_ = lambda s: s
+LOG = logging.getLogger(__name__)
+
 
 
 class RadioTabsView(ft.Column):
@@ -100,11 +104,15 @@ class AppShell(ft.Container):
         self.bgcolor = p.bg_window
 
         self.welcome = WelcomeScreen(self._page, self.state)
+        self.recents = RecentFilesScreen(self._page, self.state)
 
         self.outer_tabs = MyTabs(self._page, self.state,
                                  on_change=self._on_tab_change)
         self.outer_tabs.add_tab(
             _("Welcome"), ft.Icons.WAVING_HAND_OUTLINED, self.welcome,
+            select=False)
+        self.outer_tabs.add_tab(
+            _("Recent files"), ft.Icons.HISTORY, self.recents,
             select=False)
 
         self.statusbar = StatusBar(self._page, self.state)
@@ -122,7 +130,7 @@ class AppShell(ft.Container):
             spacing=0,
             expand=True,
         )
-        self._tab_map = [None]
+        self._tab_map = [None, None]
         self._update_radio_field()
 
     def palette(self):
@@ -190,7 +198,6 @@ class AppShell(ft.Container):
                     leading=ft.Icons.FILE_OPEN_OUTLINED,
                     on_click=lambda e: self.pick_open(),
                 ),
-                *self._recent_items(),
                 ft.Divider(height=1, color=p.border_soft),
                 ft.MenuItemButton(
                     content=_("Save"),
@@ -203,6 +210,11 @@ class AppShell(ft.Container):
                     on_click=lambda e: self.save_current(as_new=True),
                 ),
                 ft.Divider(height=1, color=p.border_soft),
+                ft.MenuItemButton(
+                    content=_("Restore last session"),
+                    leading=ft.Icons.RESTORE,
+                    on_click=lambda e: self.restore_session(),
+                ),
                 ft.MenuItemButton(
                     content=_("Close Tab"),
                     leading=ft.Icons.CLOSE,
@@ -248,6 +260,17 @@ class AppShell(ft.Container):
                     leading=ft.Icons.REFRESH,
                     on_click=lambda e: self.refresh_current(),
                 ),
+                ft.MenuItemButton(
+                    content=(
+                        _("Disable session restore")
+                        if self.state.session_restore_enabled()
+                        else _("Enable session restore")),
+                    leading=(
+                        ft.Icons.CHECK_BOX
+                        if self.state.session_restore_enabled()
+                        else ft.Icons.CHECK_BOX_OUTLINE_BLANK),
+                    on_click=lambda e: self.toggle_session_restore(),
+                ),
             ],
         )
 
@@ -267,24 +290,8 @@ class AppShell(ft.Container):
             controls=[file_menu, radio_menu, view_menu, help_menu],
             style=ft.MenuStyle(
                 alignment=ft.Alignment.CENTER_LEFT,
-            ),
-        )
-
-    def _recent_items(self):
-        recents = self.state.get_recent_files()
-        if not recents:
-            return []
-        p = self.palette()
-        items = [ft.Container(height=SPACING.XS)]
-        for fn in recents[:6]:
-            items.append(
-                ft.MenuItemButton(
-                    content=os.path.basename(fn)[:40],
-                    leading=ft.Icons.HISTORY,
-                    on_click=lambda e, f=fn: self.state.shell.open_file(f),
-                )
-            )
-        return items
+             ),
+         )
 
     # ----- file actions -----
     def pick_open(self):
@@ -312,6 +319,7 @@ class AppShell(ft.Container):
             from mychirp.fletui.services.app_state import EditorSetState
             eset = EditorSetState(radio, filename)
             self.state.push_recent_file(filename)
+            self.recents.refresh()
             self.state.add_editorset(eset)
             self.state.set_status(
                 _("Loaded %s") % os.path.basename(filename))
@@ -357,6 +365,29 @@ class AppShell(ft.Container):
         if eset:
             self.state.remove_editorset(eset)
 
+    def restore_session(self):
+        """Reopen the radios from the previous session (menu action)."""
+        restored = self.state.restore_session()
+        if restored:
+            self.state.set_status(
+                _("Restored %i radio(s)") % restored)
+        else:
+            self.state.set_status(_("Nothing to restore"))
+
+    def toggle_session_restore(self):
+        enabled = not self.state.session_restore_enabled()
+        self.state.set_session_restore(enabled)
+        self.state.set_status(
+            _("Session restore enabled") if enabled
+            else _("Session restore disabled"))
+        # Rebuild the menu so the item label/state updates
+        p = self.palette()
+        self.content.controls[0] = self._build_appbar(p)
+        try:
+            self.update()
+        except (AssertionError, RuntimeError):
+            pass
+
     def refresh_current(self):
         view = self._current_view()
         if view:
@@ -400,12 +431,21 @@ class AppShell(ft.Container):
         self._page.open(dlg)
 
     # ----- tabs management -----
+    def _welcome_index(self) -> int | None:
+        """Index of the Welcome tab, or None when it is not open."""
+        for i in range(self.outer_tabs.count):
+            if self.outer_tabs.view_at(i) is self.welcome:
+                return i
+        return None
+
     def add_radio_tab(self, eset, select=True):
         view = RadioTabsView(self._page, self.state, eset)
         # Remove the welcome tab once a real radio is opened
-        if self._tab_map == [None]:
-            self._tab_map = []
-            self.outer_tabs.remove_tab(0)
+        # (the Recent files tab stays available)
+        welcome_index = self._welcome_index()
+        if welcome_index is not None:
+            self._tab_map.pop(welcome_index)
+            self.outer_tabs.remove_tab(welcome_index)
         self._tab_map.append(eset)
         self.outer_tabs.add_tab(
             eset.tab_title, ft.Icons.SETTINGS_INPUT_ANTENNA, view,
@@ -417,10 +457,11 @@ class AppShell(ft.Container):
             index = self._tab_map.index(eset)
             self._tab_map.pop(index)
             self.outer_tabs.remove_tab(index)
-            if not self._tab_map:
-                self._tab_map = [None]
-                self.outer_tabs.add_tab(
-                    _("Welcome"), ft.Icons.WAVING_HAND_OUTLINED,
+            if not any(es is not None for es in self._tab_map):
+                # No radios left: bring the Welcome tab back at front
+                self._tab_map.insert(0, None)
+                self.outer_tabs.insert_tab(
+                    0, _("Welcome"), ft.Icons.WAVING_HAND_OUTLINED,
                     self.welcome, select=True)
         self._update_radio_field()
 
@@ -466,7 +507,12 @@ class AppShell(ft.Container):
         self._build()
         for view in radio_views:
             if isinstance(view, RadioTabsView):
-                view.apply_theme()
+                # One broken view must never abort the whole re-theme
+                # (that would leave the appbar/statusbar stale)
+                try:
+                    view.apply_theme()
+                except Exception:
+                    LOG.exception("apply_theme failed for radio tab")
                 self._tab_map.append(view.eset)
                 self.outer_tabs.add_tab(
                     view.eset.tab_title,

@@ -51,6 +51,15 @@ class MyTabs(ft.Container):
         if select:
             self.set_selected(len(self._entries) - 1)
 
+    def insert_tab(self, index: int, label, icon, view, select=False):
+        """Insert a tab at @index keeping the others in order."""
+        index = max(0, min(index, len(self._entries)))
+        self._entries.insert(
+            index, {"label": label, "icon": icon, "view": view})
+        self._rebuild()
+        if select:
+            self.set_selected(index)
+
     def remove_tab(self, index: int):
         if 0 <= index < len(self._entries):
             self._entries.pop(index)

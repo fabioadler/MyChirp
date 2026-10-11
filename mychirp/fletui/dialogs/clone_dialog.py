@@ -15,9 +15,9 @@ from mychirp.fletui.theme import (
     SPACING,
     AppColors,
 )
+from mychirp.fletui.i18n import _
 
 LOG = logging.getLogger(__name__)
-_ = lambda s: s
 
 
 class CloneDialog(ft.AlertDialog):
@@ -69,12 +69,12 @@ class CloneDialog(ft.AlertDialog):
         self.vendor_dd = ft.Dropdown(
             label=_("Vendor"),
             options=[ft.dropdown.Option(v) for v in self._vendors],
-            on_change=self._on_vendor,
+            on_select=self._on_vendor,
             **input_common)
         self.model_dd = ft.Dropdown(
             label=_("Model"),
             options=[],
-            on_change=self._on_model,
+            on_select=self._on_model,
             **input_common)
         self.port_dd = ft.Dropdown(
             label=_("Port"),
@@ -96,6 +96,13 @@ class CloneDialog(ft.AlertDialog):
             if want in self._models:
                 self.model_dd.value = want
             self.model_dd.disabled = True
+            # Still pre-fill the last used port
+            port = self.state.conf.get("clone_last_port", "state") or ""
+            if port and port in self._ports:
+                self.port_dd.value = port
+        elif downloading:
+            # Restore the last used vendor/model/port
+            self._load_last_selection()
 
         self.progress = ft.ProgressBar(
             value=0, color=p.accent,
@@ -127,7 +134,7 @@ class CloneDialog(ft.AlertDialog):
             icon=(
                 ft.Icons.DOWNLOADING
                 if downloading else ft.Icons.UPLOAD),
-            text=title,
+            content=title,
             on_click=self._on_start,
             style=ft.ButtonStyle(
                 shape=ft.RoundedRectangleBorder(radius=BORDER_RADIUS["md"]),
@@ -155,6 +162,35 @@ class CloneDialog(ft.AlertDialog):
     def _on_model(self, e):
         if self._page:
             self.model_dd.update()
+
+    # ----- last selection persistence -----
+    def _load_last_selection(self):
+        """Pre-fill vendor/model/port from the last successful clone."""
+        conf = self.state.conf
+        vendor = conf.get("clone_last_vendor", "state") or ""
+        model = conf.get("clone_last_model", "state") or ""
+        port = conf.get("clone_last_port", "state") or ""
+        if vendor and vendor in self._vendors:
+            self.vendor_dd.value = vendor
+            self._models = list_models(vendor)
+            self.model_dd.options = [
+                ft.dropdown.Option(m) for m in self._models]
+            if model and model in self._models:
+                self.model_dd.value = model
+        if port and port in self._ports:
+            self.port_dd.value = port
+
+    def _save_last_selection(self):
+        conf = self.state.conf
+        if self.mode == "download":
+            if self.vendor_dd.value:
+                conf.set("clone_last_vendor", self.vendor_dd.value,
+                         "state")
+            if self.model_dd.value:
+                conf.set("clone_last_model", self.model_dd.value, "state")
+        if self.port_dd.value:
+            conf.set("clone_last_port", self.port_dd.value, "state")
+        conf.save()
 
     def _close(self, e=None):
         self._page.close(self)
@@ -189,12 +225,14 @@ class CloneDialog(ft.AlertDialog):
                 self.progress_label.value = _("Model not found")
                 self._page.update()
                 return
+            self._save_last_selection()
             self._start_ui()
             service.download_radio(
                 rclass, port,
                 on_done=self._download_done,
                 on_progress=self._on_progress)
         else:
+            self._save_last_selection()
             self._start_ui()
             service.upload_radio(
                 self.eset.radio, port,

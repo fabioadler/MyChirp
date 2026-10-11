@@ -6,8 +6,8 @@ from mychirp.fletui.theme import (
     WELCOME_LOGO_SIZE,
     AppColors,
 )
+from mychirp.fletui.i18n import _
 
-_ = lambda s: s
 
 
 class WelcomeScreen(ft.Container):

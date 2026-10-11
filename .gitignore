@@ -3,12 +3,15 @@
 **.pyc
 **.orig
 **.rej
+# logs
+*.log
+logs/
+debug.log
 dist
 build
 tmp
 tools/cpep8.venv/
 tests/logs/
-logs/
 ignored/
 patch_queue/
 archived_builds/

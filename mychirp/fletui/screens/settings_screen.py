@@ -10,9 +10,9 @@ from mychirp.fletui.theme import (
     SPACING,
     AppColors,
 )
+from mychirp.fletui.i18n import _
 
 LOG = logging.getLogger(__name__)
-_ = lambda s: s
 
 
 class SettingsScreen(ft.Container):
@@ -74,13 +74,11 @@ class SettingsScreen(ft.Container):
             group_alignment=-0.9,
             indicator_shape=ft.RoundedRectangleBorder(
                 radius=BORDER_RADIUS["sm"]),
-            selected_icon=ft.Icons.SETTINGS,
             on_change=self._on_rail_change,
             destinations=[
                 ft.NavigationRailDestination(
                     icon=ft.Icons.SETTINGS_OUTLINED,
-                    selected_icon=ft.Icons.SETTINGS,
-                    label=label,
+                            label=label,
                 )
                 for label in group_labels
             ],
@@ -97,7 +95,7 @@ class SettingsScreen(ft.Container):
             border_radius=BORDER_RADIUS["sm"],
             text_style=ft.TextStyle(color=p.fg_text, size=13),
             dense=True,
-            on_change=self._on_mobile_select,
+            on_select=self._on_mobile_select,
         )
 
         self.group_body = ft.Container(
@@ -153,7 +151,7 @@ class SettingsScreen(ft.Container):
 
         apply_btn = ft.FilledButton(
             icon=ft.Icons.CHECK,
-            text=_("Apply to radio"),
+            content=_("Apply to radio"),
             on_click=self._on_apply,
             style=ft.ButtonStyle(
                 shape=ft.RoundedRectangleBorder(radius=BORDER_RADIUS["md"]),
@@ -181,7 +179,7 @@ class SettingsScreen(ft.Container):
     def _section_header(self, p, group):
         return ft.Container(
             margin=ft.Margin.only(top=SPACING.MD),
-            child=ft.Text(
+            content=ft.Text(
                 group.get_shortname(),
                 size=13, weight=ft.FontWeight.BOLD,
                 color=p.accent),

@@ -11,7 +11,6 @@ from mychirp.fletui.theme.spacing import (
     WELCOME_LOGO_SIZE,
 )
 
-_ = lambda s: s
 
 
 def get_theme(dark: bool) -> ft.Theme:

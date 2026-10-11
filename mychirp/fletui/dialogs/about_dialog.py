@@ -8,8 +8,8 @@ from mychirp.fletui.theme import (
     SPACING,
     AppColors,
 )
+from mychirp.fletui.i18n import _
 
-_ = lambda s: s
 
 
 class AboutDialog(ft.AlertDialog):

@@ -10,9 +10,9 @@ from mychirp.fletui.theme import (
     SPACING,
     AppColors,
 )
+from mychirp.fletui.i18n import _
 
 LOG = logging.getLogger(__name__)
-_ = lambda s: s
 
 
 def _visible_columns(features) -> list[str]:
@@ -171,7 +171,7 @@ class MemoryEditDialog(ft.AlertDialog):
             return ft.TextField(
                 value=current, bgcolor=input_bg, border=border,
                 border_radius=radius, text_size=13,
-                text_color=p.fg_text, dense=True, expand=True,
+                color=p.fg_text, dense=True, expand=True,
                 keyboard_type=keyboard, hint_text=hint)
 
         try:
@@ -287,14 +287,14 @@ class MemoriesScreen(ft.Container):
             bgcolor=p.input,
             border=ft.Border.all(1, p.border),
             border_radius=BORDER_RADIUS["sm"],
-            text_size=13, text_color=p.fg_text, dense=True,
+            text_size=13, color=p.fg_text, dense=True,
             on_submit=lambda e: self.apply_filter(),
         )
         self.hide_empty_switch = ft.Switch(
             label=_("Hide empty"),
             value=self.hide_empty,
             active_color=p.accent,
-            label_style=ft.TextStyle(color=p.fg_muted, size=12),
+            label_text_style=ft.TextStyle(color=p.fg_muted, size=12),
             on_change=lambda e: self.toggle_hide_empty(),
         )
         self.table = self._build_table(p)
@@ -321,8 +321,8 @@ class MemoriesScreen(ft.Container):
             heading_row_height=40,
             data_row_min_height=38,
             data_row_max_height=38,
-            border=ft.TableBorder.all(1, p.border_soft),
-            border_radius=ft.BorderRadius(BORDER_RADIUS["md"]),
+            border=ft.Border.all(1, p.border_soft),
+            border_radius=BORDER_RADIUS["md"],
             horizontal_margin=SPACING.SM,
             column_spacing=SPACING.MD,
             expand=True,
@@ -431,7 +431,7 @@ class MemoriesScreen(ft.Container):
     def _make_row(self, p, mem, index):
         alt = index % 2 == 1
         return ft.DataRow(
-            on_select_changed=lambda e, m=mem: self._edit_memory(m),
+            on_select_change=lambda e, m=mem: self._edit_memory(m),
             color=p.table_row_alt if alt else p.table_row,
             cells=[
                 ft.DataCell(ft.Text(
@@ -448,7 +448,7 @@ class MemoriesScreen(ft.Container):
             mem, "extd_number", None) else str(mem.number)
 
     def _apply_table_colors(self, p):
-        self.table.border = ft.TableBorder.all(1, p.border_soft)
+        self.table.border = ft.Border.all(1, p.border_soft)
         for cell in self.table.columns:
             pass
         # header row colors are baked into rows via DataTable heading

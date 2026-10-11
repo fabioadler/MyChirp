@@ -8,6 +8,7 @@ from mychirp import logger as chirp_logger
 from mychirp.fletui.components.layout import AppShell
 from mychirp.fletui.services.app_state import MODE_DARK, MODE_LIGHT, get_state
 from mychirp.fletui.theme import AppColors, get_theme
+from mychirp.fletui.i18n import _
 
 LOG = logging.getLogger(__name__)
 
@@ -38,6 +39,13 @@ def main(page: ft.Page):
 
     shell = AppShell(page)
     page.add(shell)
+
+    # Restore the previous session: radios that were open last time
+    # (theme is already restored by the config-backed theme_mode)
+    restored = state.restore_session()
+    if restored:
+        state.set_status(
+            _("Restored %i radio(s) from last session") % restored)
 
     LOG.info("MyChirp flet UI started")
 

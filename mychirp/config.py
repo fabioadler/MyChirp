@@ -119,6 +119,10 @@ class ChirpConfigProxy:
     def set(self, key, value, section=None):
         return self._config.set(key, value, section or self._section)
 
+    def save(self):
+        """Flush in-memory settings to disk."""
+        return self._config.save()
+
     def set_password(self, key, value, section):
         """Store a password slightly obfuscated.
 

@@ -69,8 +69,11 @@ def model_label_to_class(vendor: str, label: str):
 class RadioJob:
     """Result of an operation executed in a worker thread."""
 
-    def __init__(self, fn, *args, **kwargs):
+    def __init__(self, fn, radio=None, *args, **kwargs):
         self.fn = fn
+        # Target radio kept SEPARATE from fn args: the closures already
+        # capture what they need; ``radio`` only feeds progress_cb
+        self.radio = radio
         self.args = args
         self.kwargs = kwargs
         self.result = None
@@ -94,19 +97,16 @@ class RadioService:
     def _run_async(self, job, on_done, progress_cb=None):
         """Run ``job`` in a thread; call ``on_done(job)`` on the UI loop.
 
-        ``progress_cb`` (if given) is installed as the radio's
+        ``progress_cb`` (if given) is installed as the job radio's
         ``status_fn`` while the job runs.
         """
 
         def worker():
-            if progress_cb:
-                target_radio = job.kwargs.get("radio") or (
-                    job.args[0] if job.args else None)
-                if target_radio is not None:
-                    try:
-                        target_radio.status_fn = progress_cb
-                    except Exception:
-                        pass
+            if progress_cb and job.radio is not None:
+                try:
+                    job.radio.status_fn = progress_cb
+                except Exception:
+                    pass
             job.run()
             self.page.run_task(self._deliver, job, on_done)
 
@@ -177,7 +177,7 @@ class RadioService:
             radio.save(filename)
             return filename
 
-        job = RadioJob(_save, radio, filename)
+        job = RadioJob(_save, radio=radio)
         self._run_async(job, on_done)
 
     def load_memories(self, radio, on_done, progress=None):
@@ -201,7 +201,7 @@ class RadioService:
                     LOG.warning("Failed special channel %s: %s", name, e)
             return result
 
-        job = RadioJob(_load, radio)
+        job = RadioJob(_load, radio=radio)
         self._run_async(job, on_done)
 
     def set_memory(self, radio, memory, on_done):
@@ -209,14 +209,14 @@ class RadioService:
             radio.set_memory(memory)
             return memory
 
-        job = RadioJob(_set, radio, memory)
+        job = RadioJob(_set, radio=radio)
         self._run_async(job, on_done)
 
     def load_settings(self, radio, on_done):
         def _load():
             return radio.get_settings()
 
-        job = RadioJob(_load, radio)
+        job = RadioJob(_load, radio=radio)
         self._run_async(job, on_done)
 
     def save_settings(self, radio, settings, on_done):
@@ -224,7 +224,7 @@ class RadioService:
             radio.set_settings(settings)
             return True
 
-        job = RadioJob(_save, radio, settings)
+        job = RadioJob(_save, radio=radio)
         self._run_async(job, on_done)
 
 
