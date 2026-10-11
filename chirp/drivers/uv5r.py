@@ -633,6 +633,49 @@ def _do_download(radio):
     return memmap.MemoryMapBytes(data)
 
 
+def _download_full_window(radio, status_fn=None):
+    """Live read of the complete cable-visible memory window.
+
+    Empirically mapped on a BOMVINK BOM-5701 (address-space probe,
+    see PLAN.md): the clone protocol exposes exactly 8 KiB
+    (radio addresses 0x0000-0x1FFF), mirrored eight times across the
+    16-bit address space (942 probed blocks, 810 aliases byte-identical,
+    128 unique). This is EVERYTHING the programming cable can ever
+    read: channel memory, settings, band limits AND the calibration
+    area at 0x1800-0x1EC0 that the standard CHIRP image does not
+    include. The radio's firmware (program code) is not addressable
+    through the clone protocol.
+
+    Order respects the session rules: the warm-up block first, then
+    the gap and aux areas, and the main block last (a completed main
+    block ends the session).
+    """
+    _ident_radio(radio)
+
+    # Warm-up read outside the aux area (mirrors _do_download)
+    _read_block(radio, 0x1E80, 0x40, True)
+
+    # Assembled by radio address; read order respects the session
+    # rules: gap and aux first, main block last
+    data = bytearray(0x2000)
+    # Calibration gap, not part of the standard image
+    for addr in range(0x1800, 0x1E80, 0x40):
+        data[addr:addr + 0x40] = _read_block(radio, addr, 0x40, False)
+        if status_fn:
+            status_fn(addr)
+    # Aux area
+    for addr in range(0x1E80, 0x2000, 0x40):
+        data[addr:addr + 0x40] = _read_block(radio, addr, 0x40, False)
+        if status_fn:
+            status_fn(addr)
+    # Main block last: completing it ends the clone session
+    for addr in range(0x0000, 0x1800, 0x40):
+        data[addr:addr + 0x40] = _read_block(radio, addr, 0x40, False)
+        if status_fn:
+            status_fn(addr)
+    return bytes(data)
+
+
 def _send_block(radio, addr, data):
     msg = struct.pack(">BHB", ord("X"), addr, len(data))
     radio.pipe.write(msg + data)
@@ -2361,6 +2404,16 @@ class UV5RAuxFirstClone(BaofengUV5R):
             return version == b"\xff" * (cls._fw_ver_file_stop -
                                          cls._fw_ver_file_start)
         return False
+
+    def download_full_window(self, status_fn=None):
+        """Live read of the complete 8 KiB cable-visible window.
+
+        Returns the raw radio-address-space bytes (0x0000-0x2000),
+        which include the calibration area at 0x1800-0x1EC0 that the
+        standard image does not cover. Read-only: no write command is
+        ever issued. See _download_full_window for the evidence.
+        """
+        return _download_full_window(self, status_fn=status_fn)
 
 
 @directory.register

@@ -328,6 +328,34 @@ class BOMVINKBOM5701Test(unittest.TestCase):
         # ...and then failed without a retry mechanism
         self.assertIn('refused to accept', str(ctx.exception))
 
+    def test_download_full_window(self):
+        """The full-window live read returns the complete 8 KiB the
+        cable can see, reading the calibration gap and aux BEFORE the
+        main block (which ends the session)."""
+        radio = uv5r.BOMVINKBOM5701(None)
+        pipe = FakeBOM5701Serial()
+        radio.pipe = pipe
+        seen = []
+        with mock.patch('time.sleep'):
+            data = radio.download_full_window(status_fn=seen.append)
+        self.assertEqual(0x2000, len(data))
+        addrs = [a for a, s in pipe.s_commands]
+        # Warm-up block first (no ACK expected on the first command)
+        self.assertEqual(0x1E80, addrs[0])
+        first_main = next(i for i, a in enumerate(addrs) if a < 0x1800)
+        # Gap + aux are all read before the main block
+        self.assertEqual(sorted(range(0x1800, 0x2000, 0x40)),
+                         sorted(addrs[1:first_main]))
+        # Main block covers its full range
+        self.assertEqual(sorted(range(0x0000, 0x1800, 0x40)),
+                         sorted(addrs[first_main:]))
+        # Content: main region, FF filler in the gap, real aux
+        self.assertEqual(_build_main(), data[0x0000:0x1800])
+        self.assertEqual(b'\xff' * 0x6C0, data[0x1800:0x1EC0])
+        self.assertEqual(_build_aux(), data[0x1EC0:0x2000])
+        # Progress reported once per block (128 blocks total)
+        self.assertEqual(128, len(seen))
+
     def test_registered_models(self):
         """All owner-verified additions are registered as proper,
         separate models with documented hardware."""

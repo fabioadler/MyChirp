@@ -901,6 +901,36 @@ def error_hints(text):
     return None, []
 
 
+def write_raw_bytes_dump(data, filename, title, extra_lines=None):
+    """Write raw bytes to disk for inspection, with a hexdump
+    companion and a CRC32, honestly labeled with @title and any
+    @extra_lines.
+
+    Writes @filename (raw binary) and <filename>.txt (hexdump).
+    Returns (size, crc32).
+    """
+    import zlib
+    from datetime import datetime
+
+    crc = zlib.crc32(data) & 0xFFFFFFFF
+    with open(filename, 'wb') as f:
+        f.write(data)
+
+    txtname = filename + '.txt'
+    with open(txtname, 'w', encoding='utf-8') as f:
+        f.write(title + '\n')
+        f.write('=' * 40 + '\n')
+        for line in (extra_lines or []):
+            f.write('%s\n' % line)
+        f.write('%s: %s\n' % (_('Size'), len(data)))
+        f.write('%s: %08X\n' % (_('CRC32'), crc))
+        f.write('%s: %s\n' % (_('Date'),
+                              datetime.now().isoformat(timespec='seconds')))
+        f.write('\n')
+        f.write(util.hexprint(data))
+    return len(data), crc
+
+
 def write_raw_memory_dump(radio, filename):
     """Write the radio's raw memory image to disk for inspection.
 
