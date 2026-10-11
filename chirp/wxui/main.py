@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import threading
 import functools
 import hashlib
 from importlib import resources
@@ -42,6 +43,7 @@ from chirp.sources import base
 from chirp.wxui import config
 from chirp.wxui import bankedit
 from chirp.wxui import bugreport
+from chirp.wxui import chipprog
 from chirp.wxui import common
 from chirp.wxui import clone
 from chirp.wxui import developer
@@ -779,6 +781,15 @@ class ChirpMain(wx.Frame):
             dump_item = file_menu.Append(wx.MenuItem(
                 file_menu, wx.NewId(), _('Export raw memory dump...')))
             self.Bind(wx.EVT_MENU, self._menu_export_dump, dump_item)
+            fullwin_item = file_menu.Append(wx.MenuItem(
+                file_menu, wx.NewId(),
+                _('Export full cable-visible memory (live read)...')))
+            self.Bind(wx.EVT_MENU, self._menu_export_full_window,
+                      fullwin_item)
+            chip_item = file_menu.Append(wx.MenuItem(
+                file_menu, wx.NewId(),
+                _('Read chip with CH341A programmer...')))
+            self.Bind(wx.EVT_MENU, self._menu_chip_prog, chip_item)
 
         if developer.developer_mode():
             loadmod_item = file_menu.Append(wx.MenuItem(file_menu, wx.NewId(),
@@ -2127,6 +2138,117 @@ GNU General Public License for more details."""
               'clone protocol does not expose the radio\'s program '
               'memory.') % (size, crc),
             _('Raw memory dump'), wx.ICON_INFORMATION)
+
+    @common.error_proof()
+    def _menu_export_full_window(self, event):
+        """Live read of everything the programming cable can see.
+
+        Reads the complete 8 KiB window (0x0000-0x2000) directly from
+        the connected radio, including the calibration area at
+        0x1800-0x1EC0 that the standard image does not cover. Read-only:
+        no write command is ever sent.
+        """
+        eset = self.current_editorset
+        if eset is None:
+            common.error_proof.show_error(
+                _('Open a BOMVINK BOM-5701 image first (this tool reads '
+                  'the live radio with that driver)'))
+            return
+        from chirp.drivers import uv5r as _uv5r
+        if not isinstance(eset.radio, _uv5r.UV5RAuxFirstClone):
+            common.error_proof.show_error(
+                _('This tool reads the complete cable-visible window '
+                  'of the BOMVINK BOM-5701 family; the open image is '
+                  'from another radio'))
+            return
+
+        ports = [p.device for p in portwatch.snapshot()]
+        if not ports:
+            ports = [CONF.get('last_port', 'state') or '/dev/ttyUSB0']
+        last = CONF.get('last_port', 'state')
+        if last in ports:
+            ports.remove(last)
+            ports.insert(0, last)
+        port = wx.GetSingleChoice(_('Select the serial port'),
+                                  _('Full window read'), ports, parent=self)
+        if not port:
+            return
+        d = wx.FileDialog(self, _('Export full cable-visible memory'),
+                          defaultFile='%s_full_window.bin' % (
+                              eset.radio.MODEL.replace(' ', '_')),
+                          wildcard='Raw binary (*.bin)|*.bin',
+                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        if d.ShowModal() != wx.ID_OK:
+            return
+
+        import serial as _serial
+
+        def worker(progress, done):
+            try:
+                s = _serial.Serial(port=port, timeout=1)
+                try:
+                    radio = eset.radio.__class__(s)
+                    data = radio.download_full_window(
+                        status_fn=lambda a: wx.CallAfter(
+                            progress.Update,
+                            min(a + 0x40, 0x2000) // 0x40))
+                finally:
+                    try:
+                        s.close()
+                    except Exception:
+                        pass
+                wx.CallAfter(done, data, None)
+            except Exception as e:
+                wx.CallAfter(done, None, e)
+
+        progress = wx.GenericProgressDialog(
+            _('Full window read'),
+            _('Reading everything the cable can see (0x0000-0x2000)...'),
+            maximum=0x2000 // 0x40, parent=self,
+            style=wx.PD_AUTO_HIDE | wx.PD_APP_MODAL | wx.PD_CAN_ABORT)
+
+        def done(data, error):
+            progress.Destroy()
+            if error is not None:
+                LOG.error('Full window read failed: %s', error)
+                wx.MessageBox(_('Reading failed: %s') % error,
+                              _('Full window read'), wx.ICON_ERROR)
+                return
+            try:
+                size, crc = common.write_raw_bytes_dump(
+                    data, d.GetPath(),
+                    _('Complete cable-visible memory'),
+                    [_('Model: %s %s') % (eset.radio.VENDOR,
+                                          eset.radio.MODEL),
+                     _('Port: %s') % port,
+                     _('Radio address space 0x0000-0x2000 (8 KiB); '
+                       'includes the calibration area at 0x1800-0x1EC0 '
+                       'that the standard image does not cover. This '
+                       'is everything the programming cable can read; '
+                       'it is not firmware.')])
+            except Exception as e:
+                wx.MessageBox(_('Failed to save: %s') % e,
+                              _('Full window read'), wx.ICON_ERROR)
+                return
+            LOG.info('Full window dump of %s %s via %s: %i bytes, '
+                     'CRC32 %08X', eset.radio.VENDOR, eset.radio.MODEL,
+                     port, size, crc)
+            wx.MessageBox(
+                _('Read %i bytes from the radio (CRC32 %08X).\n\n'
+                  'This is the complete memory window the cable can '
+                  'see, including the calibration area. It is not '
+                  'firmware: the clone protocol does not expose the '
+                  'radio\'s program memory.') % (size, crc),
+                _('Full window read'), wx.ICON_INFORMATION)
+
+        t = threading.Thread(target=worker, args=(progress, done),
+                             daemon=True)
+        t.start()
+
+    @common.error_proof()
+    def _menu_chip_prog(self, event):
+        """Open the read-only CH341A chip programmer dialog."""
+        chipprog.ChirpChipProgDialog(self).ShowModal()
 
     @common.error_proof()
     def _menu_debug_loc(self, event):
