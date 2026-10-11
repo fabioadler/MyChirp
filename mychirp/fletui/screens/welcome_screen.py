@@ -125,5 +125,5 @@ class WelcomeScreen(ft.Container):
         self._build()
         try:
             self.update()
-        except AssertionError:
+        except (AssertionError, RuntimeError):
             pass

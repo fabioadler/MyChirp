@@ -234,7 +234,7 @@ class AppShell(ft.Container):
                         _("Switch to Light Theme")
                         if self.state.is_dark()
                         else _("Switch to Dark Theme")),
-                    icon=(
+                    leading=(
                         ft.Icons.LIGHT_MODE
                         if self.state.is_dark()
                         else ft.Icons.DARK_MODE),
@@ -262,7 +262,7 @@ class AppShell(ft.Container):
 
         return ft.MenuBar(
             controls=[file_menu, radio_menu, view_menu, help_menu],
-            style=ft.MenuBarStyle(
+            style=ft.MenuStyle(
                 alignment=ft.Alignment.CENTER_LEFT,
             ),
         )
@@ -475,5 +475,5 @@ class AppShell(ft.Container):
         self._update_radio_field()
         try:
             self.update()
-        except AssertionError:
+        except (AssertionError, RuntimeError):
             pass

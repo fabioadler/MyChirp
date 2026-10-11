@@ -275,7 +275,7 @@ class SettingsScreen(ft.Container):
                 self._build()
                 try:
                     self.update()
-                except AssertionError:
+                except (AssertionError, RuntimeError):
                     pass
                 return
             try:
@@ -287,7 +287,7 @@ class SettingsScreen(ft.Container):
             self._build()
             try:
                 self.update()
-            except AssertionError:
+            except (AssertionError, RuntimeError):
                 pass
 
         service.load_settings(self.eset.radio, done)
@@ -372,7 +372,7 @@ class SettingsScreen(ft.Container):
                 self.current_group)
             try:
                 self.update()
-            except AssertionError:
+            except (AssertionError, RuntimeError):
                 pass
 
     def _on_mobile_select(self, e):
@@ -386,7 +386,7 @@ class SettingsScreen(ft.Container):
                 self.current_group)
             try:
                 self.update()
-            except AssertionError:
+            except (AssertionError, RuntimeError):
                 pass
 
     # ----- theme -----
@@ -398,5 +398,5 @@ class SettingsScreen(ft.Container):
                 self.current_group)
         try:
             self.update()
-        except AssertionError:
+        except (AssertionError, RuntimeError):
             pass

@@ -425,7 +425,7 @@ class MemoriesScreen(ft.Container):
         self._apply_table_colors(p)
         try:
             self.update()
-        except AssertionError:
+        except (AssertionError, RuntimeError):
             pass
 
     def _make_row(self, p, mem, index):
@@ -497,7 +497,7 @@ class MemoriesScreen(ft.Container):
         )
         try:
             self.update()
-        except AssertionError:
+        except (AssertionError, RuntimeError):
             pass
 
     # ----- theme -----

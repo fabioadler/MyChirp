@@ -11,6 +11,11 @@ from mychirp.fletui.theme import AppColors, get_theme
 
 LOG = logging.getLogger(__name__)
 
+# The flet transport logs every protocol frame at DEBUG, which is far
+# too verbose (and caused reentrant writes to the shared debug log)
+logging.getLogger("flet").setLevel(logging.INFO)
+logging.getLogger("flet_transport").setLevel(logging.WARNING)
+
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
 
@@ -31,11 +36,6 @@ def main(page: ft.Page):
 
     shell = AppShell(page)
     page.add(shell)
-
-    def on_disconnect(e):
-        pass
-
-    page.window.prevent_close = True
 
     LOG.info("MyChirp flet UI started")
 

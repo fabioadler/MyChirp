@@ -124,10 +124,8 @@ class RadioService:
         """Open an image/csv file, returning the radio instance."""
 
         def _open():
-            rclass = directory.get_radio_by_image(filename)
-            radio = rclass(filename)
-            # Preload memories into the mmap-backed object
-            return radio
+            # get_radio_by_image returns an instantiated radio
+            return directory.get_radio_by_image(filename)
 
         job = RadioJob(_open)
         self._run_async(job, on_done)

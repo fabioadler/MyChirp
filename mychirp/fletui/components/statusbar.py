@@ -73,7 +73,7 @@ class StatusBar(ft.Container):
         self._build()
         try:
             self.update()
-        except AssertionError:
+        except (AssertionError, RuntimeError):
             pass
 
     def set_status(self, message: str, field: int = 0):
@@ -83,5 +83,5 @@ class StatusBar(ft.Container):
             fields[field].value = message
             try:
                 self.update()
-            except AssertionError:
+            except (AssertionError, RuntimeError):
                 pass
