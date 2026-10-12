@@ -209,8 +209,12 @@ class MemoryEditDialog(QDialog):
                 setattr(mem, name, level)
             elif name in ("freq", "offset"):
                 setattr(mem, name, chirp_common.parse_freq(raw) if raw else 0)
-            elif name in ("rtone", "ctone", "tuning_step"):
+            elif name in ("rtone", "ctone"):
                 setattr(mem, name, float(raw) if raw else 88.5)
+            elif name == "tuning_step":
+                steps = getattr(
+                    self._features, "valid_tuning_steps", None) or [5.0]
+                setattr(mem, name, float(raw) if raw else float(steps[0]))
             elif name == "dtcs":
                 setattr(mem, name, int(raw) if raw else 23)
             else:

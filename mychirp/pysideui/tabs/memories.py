@@ -307,8 +307,12 @@ class MemoryChunkDelegate(__import__("PySide6.QtWidgets", fromlist=[
                 new_val = chirp_common.parse_freq(str(new_val).strip())
             elif col == "power":
                 new_val = _power_from_text(self.features, new_val)
-            elif col in ("rtone", "ctone", "tuning_step"):
+            elif col in ("rtone", "ctone"):
                 new_val = float(new_val or "88.5")
+            elif col == "tuning_step":
+                steps = getattr(self.features, "valid_tuning_steps", None)
+                default = "%.2f" % steps[0] if steps else "5.00"
+                new_val = float(new_val or default)
             elif col == "dtcs":
                 new_val = int(new_val or 23)
             was_empty = mem.empty
