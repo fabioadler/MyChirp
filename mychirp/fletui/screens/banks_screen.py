@@ -67,7 +67,12 @@ class BanksScreen(ft.Container):
                     content=ft.Column(
                         scroll=ft.ScrollMode.AUTO,
                         expand=True,
-                        controls=[self.table]),
+                        controls=[
+                            ft.ResponsiveRow(
+                                controls=[self.table],
+                                expand=True,
+                            ),
+                        ]),
                 ),
             ],
         )
@@ -89,6 +94,7 @@ class BanksScreen(ft.Container):
             border_radius=BORDER_RADIUS["md"],
             horizontal_margin=SPACING.SM,
             column_spacing=SPACING.MD,
+            col=12,  # full width inside the responsive row
             expand=True,
         )
 

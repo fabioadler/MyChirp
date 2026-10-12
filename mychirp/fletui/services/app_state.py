@@ -191,7 +191,10 @@ class AppState:
             if filename in (es.filename for es in self.editorsets):
                 continue
             try:
-                self.shell.open_file(filename)
+                # Auto-restored radios must not be re-added to the
+                # recent-files list (otherwise a cleared list keeps
+                # 'coming back' with one entry — the restored radio)
+                self.shell.open_file(filename, record_recent=False)
                 restored += 1
             except Exception:
                 LOG.exception("Failed to restore %s", filename)

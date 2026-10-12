@@ -106,7 +106,49 @@ com o clone via conector de 2 pinos; cabo CH340 em `/dev/ttyUSB0`.
   `mychirp/config.py`, assets únicos em share, scripts raiz removidos,
   README/PLAN reescritos
 
-## 7. Ritual por alteração
+## 7. Correções pós-migração Flet (ordem de entrada)
+
+### F7 — Lista de recentes era reconstruída após restart
+- **Sintoma**: "quando clicamos em limpar os arquivos recentes, ele não
+  limpa todos sempre fica um" — após limpar e reiniciar, um item voltava.
+- **Causa raiz**: `restore_session()` chamava `shell.open_file()` que
+  empurrava os arquivos auto-restaurados para a lista de recentes.
+- **Correção**: novo parâmetro `record_recent` em `open_file()`, o
+  restore passa `record_recent=False`. Teste `test_clear_restart.py`
+  valida que a lista fica vazia após clear + restart simulado.
+
+### F8 — Download do rádio terminava com pipe string
+- **Sintoma**: `'NoneType' object has no attribute 'timeout'` no
+  `sync_in()` — `RadioJob` passava a string da porta como `pipe`.
+- **Causa raiz**: `download_radio()` fazia `rclass(port)` ao invés de
+  `rclass(open_serial(port, rclass))`.
+- **Correção**: nova função `open_serial(port, rclass)` em
+  `radio_service.py` configurando `serial.Serial` com ba/RTS/DTR/
+  timeout, idêntica ao `open_serial` do CHIRP original.
+
+### F9 — Memórias/Settings não carregam após download (bug crítico)
+- **Sintoma**: após download concluído, a aba abre mas a grade e os
+  settings ficam vazios.
+- **Causa raiz**: `add_radio_tab()` só criava a view; ninguém chamava
+  `refresh_data()`/ `load_settings()` depois de adicionar a aba.
+- **Correção**: `add_radio_tab()` agora chama `view.refresh_data()`
+  (memórias + bancos encadeados) e `view.settings.load_settings()` se
+  existir. Validado com FakeUV17 e rádios de teste reais.
+
+### F10 — Tabelas não ocupavam a largura total da seção
+- **Sintoma**: tabela de canais/configurações encolhia ao conteúdo ao
+  invés de preencher o painel.
+- **Correção**: `ft.ResponsiveRow(expand=True, controls=[table])` com
+  `col=12` na DataTable + `horizontal_alignment=STRETCH` na coluna de
+  settings para garantir fundo completo nas linhas.
+
+### F11 — Atalhos de teclado do CHIRP original (paridade)
+- **Objetivo**: manter os mesmos atalhos da interface anterior.
+- **Implementados**: Ctrl+N (novo arquivo CSV), Ctrl+O/S/E/W, Ctrl+D/U,
+  Ctrl+X/C/V/G, Ctrl+A (select all), Ctrl+Shift+T (restore), Ctrl+Backspace
+  (delete channel), F5 (refresh em qualquer aba).
+
+## 8. Ritual por alteração
 
 1. Alteração mínima, testes (`venv/bin/python -m pytest tests/unit -q`).
 2. App abre sem erros (`: > ~/.chirp/debug.log; venv/bin/mychirp`,

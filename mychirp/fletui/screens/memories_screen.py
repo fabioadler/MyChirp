@@ -327,6 +327,7 @@ class MemoriesScreen(ft.Container):
             border_radius=BORDER_RADIUS["md"],
             horizontal_margin=SPACING.SM,
             column_spacing=SPACING.MD,
+            col=12,  # full width inside the responsive row
             expand=True,
         )
 
@@ -354,13 +355,21 @@ class MemoriesScreen(ft.Container):
                     ],
                 ),
                 self._ops_bar(p),
+                # Table fills the whole available width of the row:
+                # ResponsiveRow + col=12 stretches the table, and the
+                # outer Column scrolls it vertically
                 ft.Container(
                     expand=True,
                     border_radius=BORDER_RADIUS["md"],
                     content=ft.Column(
                         scroll=ft.ScrollMode.AUTO,
                         expand=True,
-                        controls=[self.table]),
+                        controls=[
+                            ft.ResponsiveRow(
+                                controls=[self.table],
+                                expand=True,
+                            ),
+                        ]),
                 ),
             ],
         )
@@ -678,6 +687,37 @@ class MemoriesScreen(ft.Container):
             ],
         )
         self._page.show_dialog(dlg)
+
+    # ----- public channel shortcuts (parity with original wxui keys) -----
+    def copy_selected(self):
+        self._op_copy()
+
+    def paste_selected(self):
+        self._op_paste()
+
+    def cut_selected(self):
+        if not self._require_selection():
+            return
+        self._op_copy()
+        self._op_delete(None)
+
+    def delete_selected(self, shift=None):
+        self._op_delete(shift)
+
+    def move_selected_up(self):
+        self._op_move(-1)
+
+    def move_selected_down(self):
+        self._op_move(1)
+
+    def goto_channel_dialog(self):
+        self._op_goto_channel()
+
+    def select_all(self):
+        # No-op for grid parity; single-row selection model
+        if self._rows_cache:
+            self.selected_number = self._rows_cache[0].number
+            self.refresh_rows()
 
     def _jump_to_number(self, number):
         """Move the pagination to the page containing @number."""

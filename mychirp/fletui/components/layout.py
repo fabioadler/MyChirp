@@ -99,24 +99,79 @@ class AppShell(ft.Container):
         page.services.append(self._picker)
 
         # Global keyboard shortcuts (flet 1.0 removed MenuItemButton
-        # shortcuts, so we handle keys at the page level)
+        # shortcuts, so we handle keys at the page level). Mirrors the
+        # original CHIRP bindings: Ctrl+O/N/S/E/Q/W, Ctrl+D/U, Ctrl+X/C/V,
+        # Ctrl+A (not global - text safe), Ctrl+G, Ctrl+Shift+T, F5.
         page.on_keyboard_event = self._on_keyboard
 
     def _on_keyboard(self, e: ft.KeyboardEvent):
-        if not e.ctrl and not e.meta:
+        key = (e.key or "").lower()
+        ctrl = bool(e.ctrl or e.meta)
+        shift = bool(e.shift)
+
+        if not ctrl:
             if e.key == "F5":
                 self.refresh_current()
             return
+
+        # with shift modifier
+        if shift and key == "t":
+            self.restore_session()
+            return
+        if shift and key == "n":
+            self.state.add_editorset(self._new_file_radio())
+            return
+
+        if shift or not ctrl:
+            return
+
         handlers = {
+            "n": lambda: self.state.add_editorset(self._new_file_radio()),
             "o": self.pick_open,
             "s": self.save_current,
+            "e": self.export_current_csv,
+            "w": self.close_current,
             "d": self.download_from_radio,
             "u": self.upload_to_radio,
-            "w": self.close_current,
         }
-        handler = handlers.get((e.key or "").lower())
+        handler = handlers.get(key)
         if handler:
             handler()
+            return
+
+        # channel operations (Memories tab, needs selection)
+        mems = self._current_memories_view()
+        if mems is None:
+            return
+        channel_handlers = {
+            "c": mems.copy_selected,
+            "v": mems.paste_selected,
+            "x": mems.cut_selected,
+            "g": mems.goto_channel_dialog,
+            "a": mems.select_all,
+        }
+        chandler = channel_handlers.get(key)
+        if chandler:
+            chandler()
+            return
+        if e.key == "Backspace":
+            mems.delete_selected(shift=None)
+
+    def _new_file_radio(self):
+        """Ctrl+N: open a blank CSV radio for building a new image
+        (same semantics as the original File > New)."""
+        from mychirp.drivers import generic_csv
+        from mychirp.fletui.services.app_state import EditorSetState
+        radio = generic_csv.CSVRadio(None)
+        eset = EditorSetState(radio, "new.csv")
+        eset.memories = {}
+        return eset
+
+    def _current_memories_view(self):
+        view = self._current_view()
+        if view:
+            return getattr(view, "memories", None)
+        return None
 
     # ----- construction -----
     def _build(self, with_welcome: bool = True):
@@ -336,7 +391,7 @@ class AppShell(ft.Container):
                 self.open_file(files[0].path)
         self._page.run_task(_flow)
 
-    def open_file(self, filename):
+    def open_file(self, filename, record_recent=True):
         from mychirp.fletui.services.radio_service import get_service
         self.state.set_status(_("Opening %s...") % filename)
         service = get_service(self._page)
@@ -349,7 +404,8 @@ class AppShell(ft.Container):
             radio = job.result
             from mychirp.fletui.services.app_state import EditorSetState
             eset = EditorSetState(radio, filename)
-            self.state.push_recent_file(filename)
+            if record_recent:
+                self.state.push_recent_file(filename)
             self.recents.refresh()
             self.state.add_editorset(eset)
             self.state.set_status(
@@ -525,6 +581,11 @@ class AppShell(ft.Container):
             eset.tab_title, ft.Icons.SETTINGS_INPUT_ANTENNA, view,
             select=select)
         self._update_radio_field()
+        # Load the radio data right away: memories (and banks chained
+        # via refresh_data) plus settings if the radio exposes them
+        view.refresh_data()
+        if view.settings:
+            view.settings.load_settings()
 
     def remove_radio_tab(self, eset):
         if eset in self._tab_map:

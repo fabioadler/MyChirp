@@ -164,6 +164,7 @@ class SettingsScreen(ft.Container):
             expand=True,
             scroll=ft.ScrollMode.AUTO,
             spacing=SPACING.SM,
+            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
             controls=[
                 ft.Text(
                     group.get_shortname(),
@@ -194,6 +195,7 @@ class SettingsScreen(ft.Container):
         doc = setting.__doc__
         return ft.Container(
             padding=ft.Padding.symmetric(vertical=SPACING.XS),
+            expand=True,  # stretch across the available row width
             content=ft.Row(
                 spacing=SPACING.MD,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,

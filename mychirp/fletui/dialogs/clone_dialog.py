@@ -147,22 +147,18 @@ class CloneDialog(ft.AlertDialog):
                 spacing=SPACING.LG,
                 tight=True,
                 controls=[
-                    ft.Container(
-                        padding=ft.Padding.symmetric(
-                            horizontal=SPACING.LG, vertical=SPACING.LG),
-                        content=ft.Column(
-                            spacing=SPACING.LG,
-                            tight=True,
-                            controls=[
-                                *([section(_("Radio"), ft.Icons.RADIO),
-                                    self.vendor_dd,
-                                    self.model_dd]
-                                  if downloading else []),
-                                section(_("Connection"),
-                                        ft.Icons.SETTINGS_INPUT_COMPONENT),
-                                self.port_dd,
-                            ]),
-                    ),
+                    ft.Column(
+                        spacing=SPACING.MD,
+                        tight=True,
+                        controls=[
+                            *([section(_("Radio"), ft.Icons.RADIO),
+                                self.vendor_dd,
+                                self.model_dd]
+                              if downloading else []),
+                            section(_("Connection"),
+                                    ft.Icons.SETTINGS_INPUT_COMPONENT),
+                            self.port_dd,
+                        ]),
                     self.progress,
                     self.progress_label,
                 ],
