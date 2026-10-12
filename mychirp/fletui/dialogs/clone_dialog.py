@@ -85,29 +85,38 @@ class CloneDialog(ft.AlertDialog):
             dense=True,
         )
 
-        def section(text, icon):
-            return ft.Row(
-                spacing=SPACING.SM,
-                controls=[
-                    ft.Icon(icon, size=14, color=p.fg_muted),
-                    ft.Text(text, size=12, weight=ft.FontWeight.BOLD,
-                            color=p.fg_muted,
-                            ),
-                ])
+        SELECT_WIDTH = 320
+
+        def labeled_field(label, dropdown):
+            """Select with a small title above; fixed width + side
+            margins so every select lines up identically."""
+            return ft.Container(
+                width=SELECT_WIDTH + 2 * SPACING.MD,
+                padding=ft.Padding.symmetric(horizontal=SPACING.MD),
+                content=ft.Column(
+                    spacing=4,
+                    tight=True,
+                    controls=[
+                        ft.Text(label, size=11, weight=ft.FontWeight.BOLD,
+                                color=p.fg_muted),
+                        ft.Container(width=SELECT_WIDTH, content=dropdown),
+                    ],
+                ),
+            )
 
         self.vendor_dd = ft.Dropdown(
-            label=_("Vendor"),
             options=[ft.dropdown.Option(v) for v in self._vendors],
             on_select=self._on_vendor,
+            expand=True,
             **input_common)
         self.model_dd = ft.Dropdown(
-            label=_("Model"),
             options=[],
             on_select=self._on_model,
+            expand=True,
             **input_common)
         self.port_dd = ft.Dropdown(
-            label=_("Port"),
             options=[ft.dropdown.Option(pt) for pt in self._ports],
+            expand=True,
             **input_common)
 
         if not downloading and self.eset:
@@ -157,13 +166,10 @@ class CloneDialog(ft.AlertDialog):
                         tight=True,
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
-                            *([section(_("Radio"), ft.Icons.RADIO),
-                                self.vendor_dd,
-                                self.model_dd]
-                              if downloading else []),
-                            section(_("Connection"),
-                                    ft.Icons.SETTINGS_INPUT_COMPONENT),
-                            self.port_dd,
+                            *((labeled_field(_("Vendor"), self.vendor_dd),
+                               labeled_field(_("Model"), self.model_dd))
+                              if downloading else ()),
+                            labeled_field(_("Port"), self.port_dd),
                         ]),
                     self.progress,
                     self.progress_label,
