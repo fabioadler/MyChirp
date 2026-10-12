@@ -265,6 +265,11 @@ class MemoryChunkDelegate(__import__("PySide6.QtWidgets", fromlist=[
                               minimum=minimum, maximum=maximum,
                               single_step=step)
         w.setMinimumHeight(30)
+        if col == "name":
+            from PySide6.QtWidgets import QLineEdit
+            limit = getattr(self.features, "valid_name_length", 0) or 0
+            if isinstance(w, QLineEdit) and limit > 0:
+                w.setMaxLength(limit)
         return w
 
     def setEditorData(self, editor, index):
