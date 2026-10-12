@@ -73,8 +73,14 @@ class BanksScreen(ft.Container):
         )
 
     def _build_table(self, p):
+        # Flet requires at least one column: seed a placeholder so the
+        # table mounts cleanly before refresh() fills it in
         return ft.DataTable(
-            columns=[],  # filled by refresh()
+            columns=[
+                ft.DataColumn(label=ft.Text(
+                    _("Banks"), size=12, weight=ft.FontWeight.BOLD,
+                    color=p.fg_text))
+            ],
             rows=[],
             heading_row_height=40,
             data_row_min_height=38,

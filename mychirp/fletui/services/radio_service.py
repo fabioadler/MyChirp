@@ -22,6 +22,35 @@ LOG = logging.getLogger(__name__)
 _services: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
 
 
+def open_serial(port, rclass):
+    """Create and open the serial pipe for @rclass at @port.
+
+    Same setup as the CHIRP-next clone dialog: pyserial Serial with the
+    radio's BAUD_RATE, hardware flow, RTS/DTR pin configuration and a
+    short timeout so the clone protocol retries work.
+    """
+    import serial
+
+    pipe = serial.Serial(
+        baudrate=getattr(rclass, "BAUD_RATE", 9600),
+        rtscts=getattr(rclass, "HARDWARE_FLOW", False),
+        timeout=0.25,
+    )
+    pipe.rts = getattr(rclass, "WANTS_RTS", True)
+    pipe.dtr = getattr(rclass, "WANTS_DTR", True)
+    pipe.port = port
+    pipe.open()
+    LOG.debug('Serial opened: %s (rts=%s dtr=%s br=%s)',
+              pipe, pipe.rts, pipe.dtr, getattr(rclass, 'BAUD_RATE', None))
+    return pipe
+
+
+# keep public API
+__all__ = ["RadioService", "get_service", "list_serial_ports",
+           "list_vendors", "list_models", "model_label_to_class",
+           "RadioJob", "open_serial"]
+
+
 def list_serial_ports():
     """Return a list of available serial port device paths."""
     try:
@@ -64,6 +93,29 @@ def model_label_to_class(vendor: str, label: str):
         if cand.strip() == label:
             return rclass
     return None
+
+
+def open_serial(port, rclass):
+    """Create and open the serial pipe for @rclass at @port.
+
+    Same setup as the CHIRP-next clone dialog: pyserial Serial with the
+    radio's BAUD_RATE, hardware flow, RTS/DTR pin configuration and a
+    short timeout so the clone protocol retries work.
+    """
+    import serial
+
+    pipe = serial.Serial(
+        baudrate=getattr(rclass, "BAUD_RATE", 9600),
+        rtscts=getattr(rclass, "HARDWARE_FLOW", False),
+        timeout=0.25,
+    )
+    pipe.rts = getattr(rclass, "WANTS_RTS", True)
+    pipe.dtr = getattr(rclass, "WANTS_DTR", True)
+    pipe.port = port
+    pipe.open()
+    LOG.debug('Serial opened: %s (rts=%s dtr=%s br=%s)',
+              pipe, pipe.rts, pipe.dtr, getattr(rclass, 'BAUD_RATE', None))
+    return pipe
 
 
 class RadioJob:
@@ -134,13 +186,18 @@ class RadioService:
         """Clone from a physical radio into memory."""
 
         def _download():
-            radio = rclass(port)
+            pipe = open_serial(port, rclass)
+            radio = rclass(pipe)
             radio.status_fn = (
                 lambda status: self.page.run_task(
                     self._emit_progress, on_progress, status)
                 if on_progress else None)
             radio.sync_in()
             # Detach the pipe so the in-memory radio can be edited/saved
+            try:
+                radio.pipe.close()
+            except Exception:
+                pass
             radio.pipe = None
             return radio
 
@@ -157,19 +214,15 @@ class RadioService:
         """Write the current radio contents back to the device."""
 
         def _upload():
-            radio.pipe = chirp_common.serial_for_url(
-                port, timeout=0.5) if hasattr(
-                    chirp_common, "serial_for_url") else None
-            if radio.pipe is None:
-                import serial
-                radio.pipe = serial.Serial(port=port, timeout=0.5)
+            pipe = open_serial(port, type(radio))
+            radio.pipe = pipe
             radio.status_fn = (
                 lambda status: self.page.run_task(
                     self._emit_progress, on_progress, status)
                 if on_progress else None)
             radio.sync_out()
 
-        job = RadioJob(_upload)
+        job = RadioJob(_upload, radio=radio)
         self._run_async(job, on_done)
 
     def save_radio(self, radio, filename, on_done):

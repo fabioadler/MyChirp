@@ -51,20 +51,47 @@ class CloneDialog(ft.AlertDialog):
             title = _("Upload to radio")
             icon = ft.Icons.BACKUP
 
-        self.title = ft.Row(
-            controls=[
-                ft.Icon(icon, color=p.accent, size=22),
-                ft.Text(title, color=p.fg_text,
-                        weight=ft.FontWeight.BOLD, size=18),
-            ])
+        self.title = ft.Container(
+            bgcolor=p.bg_panel_alt,
+            border_radius=ft.BorderRadius.only(
+                top_left=BORDER_RADIUS["lg"],
+                top_right=BORDER_RADIUS["lg"]),
+            padding=ft.Padding.symmetric(
+                horizontal=SPACING.LG, vertical=SPACING.MD),
+            content=ft.Row(
+                spacing=SPACING.SM,
+                controls=[
+                    ft.Icon(icon, color=p.accent, size=24),
+                    ft.Column(
+                        spacing=0,
+                        tight=True,
+                        controls=[
+                            ft.Text(title, color=p.fg_text,
+                                    weight=ft.FontWeight.BOLD, size=17),
+                            ft.Text(
+                                _("Clone radio settings") if downloading
+                                else _("Write settings back to radio"),
+                                size=11, color=p.fg_muted),
+                        ]),
+                ]))
 
         input_common = dict(
             bgcolor=p.input,
             border=ft.Border.all(1, p.border),
-            border_radius=BORDER_RADIUS["sm"],
+            border_radius=BORDER_RADIUS["md"],
             text_style=ft.TextStyle(color=p.fg_text, size=13),
             dense=True,
         )
+
+        def section(text, icon):
+            return ft.Row(
+                spacing=SPACING.SM,
+                controls=[
+                    ft.Icon(icon, size=14, color=p.fg_muted),
+                    ft.Text(text, size=12, weight=ft.FontWeight.BOLD,
+                            color=p.fg_muted,
+                            ),
+                ])
 
         self.vendor_dd = ft.Dropdown(
             label=_("Vendor"),
@@ -106,25 +133,36 @@ class CloneDialog(ft.AlertDialog):
 
         self.progress = ft.ProgressBar(
             value=0, color=p.accent,
-            bgcolor=p.bg_panel_alt, visible=False)
+            bgcolor=p.bg_panel_alt,
+            border_radius=BORDER_RADIUS["full"],
+            visible=False)
         self.progress_label = ft.Text(
-            "", size=12, color=p.fg_muted, visible=False)
+            "", size=12, color=p.fg_muted, visible=False,
+            overflow=ft.TextOverflow.ELLIPSIS)
 
-        field_row = (
-            ft.Row(controls=[self.vendor_dd, self.model_dd],
-                   spacing=SPACING.MD)
-            if downloading
-            else ft.Container()
-        )
-
+        # Vertical column layout (form-style, one field per row)
         self.content = ft.Container(
-            width=440,
+            width=420,
             content=ft.Column(
-                spacing=SPACING.MD,
+                spacing=SPACING.LG,
                 tight=True,
                 controls=[
-                    *([field_row] if downloading else []),
-                    self.port_dd,
+                    ft.Container(
+                        padding=ft.Padding.symmetric(
+                            horizontal=SPACING.LG, vertical=SPACING.LG),
+                        content=ft.Column(
+                            spacing=SPACING.LG,
+                            tight=True,
+                            controls=[
+                                *([section(_("Radio"), ft.Icons.RADIO),
+                                    self.vendor_dd,
+                                    self.model_dd]
+                                  if downloading else []),
+                                section(_("Connection"),
+                                        ft.Icons.SETTINGS_INPUT_COMPONENT),
+                                self.port_dd,
+                            ]),
+                    ),
                     self.progress,
                     self.progress_label,
                 ],
