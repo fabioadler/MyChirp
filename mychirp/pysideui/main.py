@@ -24,6 +24,18 @@ def main():
     app.setApplicationName("MyChirp")
     app.setOrganizationName("MyChirp")
 
+    # Default to pt_BR unless the user already configured a language
+    # (config `state.lang` or LANG/LANGUAGE env override). This makes the
+    # whole interface come up in Portuguese by default.
+    from mychirp import config as chirp_config
+    conf = chirp_config.get()
+    if not conf.get("lang", "state") and not any(
+            os.environ.get(v) for v in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG")):
+        conf.set("lang", "pt_BR", "state")
+        conf.save()
+    from mychirp.pysideui import i18n
+    i18n._install()  # ensure catalog loads before any UI is built
+
     from mychirp.pysideui.services.app_state import AppState
     state = AppState()
 

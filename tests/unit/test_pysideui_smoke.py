@@ -90,3 +90,21 @@ def test_image_open_offscreen(qapp, state, bom_radio):
         assert other['limits_new.vhf.upper'].value.get_value() == 176
         assert other['limits_new.uhf.lower'].value.get_value() == 384
         assert other['limits_new.uhf.upper'].value.get_value() == 524
+
+        view = win.tabs.widget(win.tabs.count() - 1)
+        st = view.settings
+        assert st.groups, "settings groups not loaded"
+        for i in range(st.group_list.count()):
+            if st.group_list.item(i).group.get_name() == 'other':
+                st.group_list.setCurrentRow(i)
+                qapp.processEvents()
+                break
+        names = [s.get_name() for s, _ in st._controls]
+        assert 'limits_new.vhf.lower' in names
+        assert 'limits_new.uhf.lower' in names
+        lower = next(
+            c for s, c in st._controls
+            if s.get_name() == 'limits_new.vhf.lower')
+        from PySide6.QtWidgets import QSpinBox
+        assert isinstance(lower, QSpinBox)
+        assert lower.value() == 128

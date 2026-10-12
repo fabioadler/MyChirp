@@ -72,6 +72,7 @@ class SettingsTab(QWidget):
 
         self.group_title = QLabel("")
         self.group_title.setProperty("heading", True)
+        self.group_title.setStyleSheet("font-size: 16px;")
         right_layout.addWidget(self.group_title)
 
         self.fields_scroll = QScrollArea()
@@ -157,9 +158,7 @@ class SettingsTab(QWidget):
 
         label_layout = QVBoxLayout()
         name = QLabel(text)
-        name.setStyleSheet(
-            "font-weight: 500; " + ("margin-left: %ipx;" % (depth * 8))
-            if depth else "font-weight: 500;")
+        name.setStyleSheet("font-size: 13px; font-weight: 500;")
         label_layout.addWidget(name)
         if doc:
             d = QLabel(doc)
@@ -172,6 +171,7 @@ class SettingsTab(QWidget):
         container.setLayout(label_layout)
 
         control = self._control_for(setting, value)
+        control.setMinimumWidth(180)
         control.setMaximumWidth(_CONTROL_WIDTH)
         control.setToolTip(setting.get_name())
         if not mutable:
