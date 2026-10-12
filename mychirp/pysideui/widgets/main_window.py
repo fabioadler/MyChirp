@@ -9,16 +9,20 @@ import logging
 import os
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QAction, QIcon, QKeySequence, QPixmap
+from PySide6.QtGui import QAction, QActionGroup, QIcon, QKeySequence, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
+    QDialogButtonBox,
     QFileDialog,
+    QFormLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMessageBox,
     QTabWidget,
     QToolButton,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -87,6 +91,64 @@ class RadioTabWidget(QTabWidget):
             self.settings.retheme()
 
 
+class NetworkSourceDialog(QDialog):
+    """Prompt for a host:port network radio source."""
+
+    def __init__(self, parent, state):
+        super().__init__(parent)
+        self.state = state
+        self.setWindowTitle(_("Network source..."))
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(16, 16, 16, 16)
+        root.setSpacing(12)
+
+        form = QFormLayout()
+        form.setLabelAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.address = QLineEdit()
+        self.address.setPlaceholderText(_("hostname:port"))
+        last = state.conf.get("network_source_last", "state")
+        if last:
+            self.address.setText(last)
+        form.addRow(_("Source:"), self.address)
+        root.addLayout(form)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        root.addWidget(buttons)
+
+    def accept(self):
+        address = self.address.text().strip()
+        if ":" not in address:
+            QMessageBox.warning(
+                self, _("Network source"),
+                _("Enter the source as host:port"))
+            return
+        host, _sep, port = address.rpartition(":")
+        try:
+            from mychirp.sources import base as _base
+            radio = _base.NetworkResultRadio()
+            radio._nethost = host
+            radio._netport = int(port)
+        except Exception:
+            LOG.exception("Failed to create network radio source")
+            QMessageBox.warning(
+                self, _("Network source"),
+                _("Could not create the network radio source."))
+            return
+        self.state.conf.set("network_source_last", address, "state")
+        self.state.conf.save()
+        base = "Network_%s_%s" % (host, port)
+        eset = EditorSetState(radio, "%s.img" % base.replace(" ", "_"))
+        self.state.add_editorset(eset)
+        self.state.set_status(_("Added network source %s") % address)
+        super().accept()
+
+
 class MainWindow(QMainWindow):
     """CHIRP-style main window with modern theming."""
 
@@ -150,6 +212,24 @@ class MainWindow(QMainWindow):
         self.action_export.setShortcut(QKeySequence("Ctrl+E"))
         self.action_export.triggered.connect(self.export_current_csv)
         file_menu.addAction(self.action_export)
+
+        self.action_export_itm = QAction(_("Export to ITM..."), self)
+        self.action_export_itm.triggered.connect(
+            lambda: self.export_current_csv(fmt='itm'))
+        file_menu.addAction(self.action_export_itm)
+
+        self.action_export_hmk = QAction(_("Export to HMK..."), self)
+        self.action_export_hmk.triggered.connect(
+            lambda: self.export_current_csv(fmt='hmk'))
+        file_menu.addAction(self.action_export_hmk)
+
+        file_menu.addSeparator()
+
+        file_menu.addSeparator()
+
+        self.action_import = QAction(_("&Import..."), self)
+        self.action_import.triggered.connect(self.import_into_current)
+        file_menu.addAction(self.action_import)
 
         file_menu.addSeparator()
 
@@ -216,6 +296,27 @@ class MainWindow(QMainWindow):
         self.action_session.triggered.connect(self.toggle_session_restore)
         view_menu.addAction(self.action_session)
 
+        bandplan_menu = view_menu.addMenu(_("Band plan"))
+        self._bandplan_group = QActionGroup(self)
+        self._bandplan_group.setExclusive(True)
+        current_plan = self.state.conf.get("set_bandplan", "state") or ""
+        for shortname, details in sorted(
+                self._bandplan_registry().items(),
+                key=lambda item: item[1][0]):
+            name = details[0]
+            act = QAction(name, self)
+            act.setCheckable(True)
+            act.setData(shortname)
+            act.setChecked(shortname == current_plan)
+            act.triggered.connect(
+                lambda checked, sn=shortname, label=name:
+                    self.set_bandplan(sn, label))
+            self._bandplan_group.addAction(act)
+            bandplan_menu.addAction(act)
+        if not self._bandplan_group.checkedAction() and bandplan_menu.actions():
+            first = bandplan_menu.actions()[0]
+            first.setChecked(True)
+
         # Radio menu
         radio_menu = menubar.addMenu(_("&Radio"))
         self.action_download = QAction(_("Download from radio"), self)
@@ -226,6 +327,23 @@ class MainWindow(QMainWindow):
         self.action_upload.setShortcut("Ctrl+U")
         self.action_upload.triggered.connect(self.upload_to_radio)
         radio_menu.addAction(self.action_upload)
+
+        radio_menu.addSeparator()
+
+        self.action_network_source = QAction(_("Network source..."), self)
+        self.action_network_source.triggered.connect(self.open_network_source)
+        radio_menu.addAction(self.action_network_source)
+
+        radio_menu.addSeparator()
+
+        query_menu = radio_menu.addMenu(_("Query Source"))
+        from mychirp.pysideui.dialogs.query_source import SOURCES
+        for source_name, (_module, _class, label) in SOURCES.items():
+            action = QAction(label, self)
+            action.triggered.connect(
+                lambda checked=False, name=source_name:
+                    self.query_source(name))
+            query_menu.addAction(action)
 
         # Help menu
         help_menu = menubar.addMenu(_("&Help"))
@@ -438,40 +556,127 @@ class MainWindow(QMainWindow):
         index = self.tabs.currentIndex()
         self._tab_close_requested(index)
 
-    def export_current_csv(self):
+    def import_into_current(self):
+        """CHIRP-next parity: File > Import merges another image/CSV into
+        the currently open radio (via import_logic.import_mem), instead
+        of opening a separate tab."""
         eset = self.current_editorset
         if not eset:
             self.state.set_status(_("Open a radio first"))
             return
-        filename, _filter = QFileDialog.getSaveFileName(
-            self, _("Export to CSV"),
-            "%s.csv" % eset.default_filename.rsplit(".", 1)[0],
-            "CSV files (*.csv);;All files (*)")
+        filename, _filter = QFileDialog.getOpenFileName(
+            self, _("Import into open radio"), "",
+            "Radio image files (*.img *.csv *.chirp);;All files (*)")
         if not filename:
             return
-        self._do_export_csv(filename)
-
-    def _do_export_csv(self, path):
-        eset = self.current_editorset
-        if not eset:
-            return
+        self.state.set_status(_("Importing %s...") % filename)
         service = get_service(self)
-        self.state.set_status(_("Exporting to %s...") % path)
+
+        def _do_import():
+            src = directory.get_radio_by_image(filename)
+            from mychirp import import_logic
+            count = 0
+            for number, mem in src.get_memories():
+                if mem.empty:
+                    continue
+                if not isinstance(number, int):
+                    continue
+                try:
+                    import_logic.import_mem(
+                        eset.radio,
+                        src.get_features(),
+                        mem,
+                        overrides={"number": number, "empty": False})
+                    count += 1
+                except Exception as e:
+                    LOG.warning("import %s failed: %s", number, e)
+            return count
+
+        job_done_msg = None
 
         def done(job):
             if job.error:
-                self.state.set_status(_("Export failed"))
-                self._error_dialog(_("Failed to export"), job.error)
+                self._error_dialog(_("Import failed"), job.error)
+                self.state.set_status("")
                 return
-            count = job.result or 0
-            if not count:
-                self.state.set_status(_("Nothing to export"))
-                return
+            eset.modified = True
             self.state.set_status(
-                _("Exported %i channels to %s") % (
-                    count, os.path.basename(path)))
+                _("Imported %i channel(s)") % job.result)
+            # Reload the grid
+            view = self.tabs.currentWidget()
+            if isinstance(view, RadioTabWidget):
+                view.refresh_data()
 
-        service.export_csv(eset.radio, path, done)
+        service.run_memory_op(_do_import, eset.radio, on_done=done)
+
+    def export_current_csv(self, fmt="csv"):
+        eset = self.current_editorset
+        if not eset:
+            self.state.set_status(_("Open a radio first"))
+            return
+        default_name = "%s.%s" % (
+            eset.default_filename.rsplit(".", 1)[0], fmt)
+        filename, _filter = QFileDialog.getSaveFileName(
+            self, _("Export to %s") % fmt.upper(),
+            default_name,
+            "%s files (*.%s);;All files (*)" % (fmt.upper(), fmt))
+        if not filename:
+            return
+        self._do_export_csv(filename, fmt)
+
+    def _do_export_csv(self, path, fmt="csv"):
+        eset = self.current_editorset
+        if not eset:
+            return
+        self.state.set_status(_("Exporting to %s...") % path)
+
+        def _export(fmt_name=fmt, out_path=path, radio=eset.radio,
+                    features=eset.features):
+            if fmt_name == "csv":
+                from mychirp import memory_ops
+                return memory_ops.export_csv(radio, out_path)
+            # Kenwood ITM / HMK use the same CSV writer but via the
+            # specialised driver classes that emit compatible headers
+            radio_cls = None
+            if fmt_name == "itm":
+                from mychirp.drivers.kenwood_itm import ITMRadio
+                radio_cls = ITMRadio
+            elif fmt_name == "hmk":
+                from mychirp.drivers.kenwood_hmk import HMKRadio
+                radio_cls = HMKRadio
+            if radio_cls is None:
+                return 0
+
+            radio_out = radio_cls(None)
+            count = 0
+            lo, hi = features.memory_bounds
+            for number in range(lo, hi + 1):
+                mem = radio.get_memory(number)
+                if mem.empty or not isinstance(mem.number, int):
+                    continue
+                radio_out.set_memory(mem)
+                count += 1
+            if count:
+                radio_out.save(out_path)
+            return count
+
+        svc = get_service(self)
+        svc.run_memory_op(_export, eset.radio, on_done=self._export_done)
+
+    def _export_done(self, job):
+        self.state.set_status("")
+        if job.error:
+            self.state.set_status(_("Export failed"))
+            self._error_dialog(_("Failed to export"), job.error)
+            return
+        count = job.result or 0
+        if not count:
+            self.state.set_status(_("Nothing to export"))
+            return
+        self.state.set_status(
+            _("Exported %i channels to %s")
+            % (count, os.path.basename(job.result
+               if isinstance(job.result, str) else "")))
 
     def restore_session(self):
         restored = self.state.restore_session()
@@ -499,6 +704,31 @@ class MainWindow(QMainWindow):
         if dlg.exec() == QDialog.DialogCode.Accepted:
             pass  # dialog already pushed the editorset
 
+    def open_network_source(self):
+        dlg = NetworkSourceDialog(self, self.state)
+        dlg.exec()
+
+    # ----- band plan -----
+    def _bandplan_registry(self):
+        """Known band plans: {shortname: (display name, module)}."""
+        from mychirp import bandplan
+        return bandplan.BandPlans(self.state.conf).plans
+
+    def set_bandplan(self, shortname, label):
+        try:
+            self.state.conf.set("set_bandplan", shortname, "state")
+            for plan_shortname in self._bandplan_registry():
+                self.state.conf.set_bool(
+                    plan_shortname, plan_shortname == shortname, "bandplan")
+            self.state.conf.save()
+            for i in range(self.tabs.count()):
+                view = self.tabs.widget(i)
+                if isinstance(view, RadioTabWidget):
+                    view.memories.retheme()
+            self.state.set_status(_("Band plan: %s") % label)
+        except Exception:
+            LOG.exception("Failed to set band plan")
+
     def upload_to_radio(self):
         eset = self.current_editorset
         if not eset:
@@ -515,6 +745,15 @@ class MainWindow(QMainWindow):
             return
 
         dlg = CloneDialog(self, self.state, mode="upload", eset=eset)
+        dlg.exec()
+
+    def query_source(self, source_name):
+        eset = self.current_editorset
+        if not eset:
+            self.state.set_status(_("Open a radio first"))
+            return
+        from mychirp.pysideui.dialogs.query_source import QuerySourceDialog
+        dlg = QuerySourceDialog(self, self.state, eset, source_name)
         dlg.exec()
 
     # ----- about -----

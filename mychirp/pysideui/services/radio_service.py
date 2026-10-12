@@ -274,8 +274,14 @@ class RadioService(QObject):
 
     # ----- memory grid operations (see mychirp/memory_ops.py) -----
     def run_memory_op(self, fn, radio, *args, on_done=None):
-        """Run a pure memory operation in a worker thread."""
+        """Run a pure operation in a worker thread and call ``on_done``
+        on the GUI thread with the populated RadioJob."""
         def _run():
+            if not args:
+                # Allow callers that close over everything (e.g. the
+                # export path in the main window, which already holds
+                # what it needs)
+                return fn()
             return fn(radio, *args)
 
         job = RadioJob(_run, radio=radio)
