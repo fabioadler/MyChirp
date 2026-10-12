@@ -131,6 +131,7 @@ venv/bin/python -m pytest tests/unit/test_fletui_memory_ops.py -q
 | # | Tarefa | Prioridade | Esforço estimado |
 |---|--------|------------|------------------|
 | 1 | Verificar todos os códigos incompletos ou com bugs | **Alta** | Grande |
+| 1a | ✅ SettingsScreen: botão "Apply" não gravava (fields nunca populados), subgrupos recursivos, warnings, apply callbacks — **corrigido** (commit `0cab3ebd`) | — | — |
 | 2 | Verificar paridade total de funções/recursos do CHIRP original | **Alta** | Grande |
 | 3 | Inventariar funções/recursos faltantes e adicionar ao backlog | **Alta** | Médio |
 | 4 | Auditar commits/histórico para identificar recursos perdidos/removidos | **Alta** | Médio |
