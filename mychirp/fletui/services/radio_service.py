@@ -274,6 +274,15 @@ class RadioService:
         job = RadioJob(_run, radio=radio)
         self._run_async(job, on_done or (lambda job: None))
 
+    def run_callable(self, radio, fn, on_done=None):
+        """Run an arbitrary callable (already bound) in a thread."""
+
+        def _run():
+            fn()
+
+        job = RadioJob(_run, radio=radio)
+        self._run_async(job, on_done or (lambda job: None))
+
     def export_csv(self, radio, filename, on_done):
         def _export():
             from mychirp.fletui.services import memory_ops

@@ -606,7 +606,7 @@ class MemoriesScreen(ft.Container):
             return False
         return True
 
-    def _run_op(self, fn, *args, status_ok=""):
+    def _run_op(self, fn, *args, status_ok="", undoable=None, label=""):
         from mychirp.fletui.services.memory_ops import MemoryOpError
         service = get_service(self._page)
         self.state.set_status(_("Working..."))
@@ -623,13 +623,64 @@ class MemoriesScreen(ft.Container):
                     self._error_dialog(msg)
                 self.load_memories()
                 return
+            if undoable is not None:
+                undo_fn, redo_fn = job.result
+                self.eset.undo_stack.push(label, undo_fn, redo_fn)
             if status_ok:
                 self.state.set_status(status_ok)
             self.eset.modified = True
             # re-read from the radio so the grid always mirrors reality
             self.load_memories()
 
-        service.run_memory_op(fn, self.eset.radio, *args, on_done=done)
+        if undoable is not None:
+            def _run():
+                return undoable(self.eset.radio, *args)
+
+            job_fn = lambda radio: _run()
+            service.run_memory_op(job_fn, self.eset.radio, on_done=done)
+        else:
+            service.run_memory_op(fn, self.eset.radio, *args, on_done=done)
+
+    def _run_undoable(self, which):
+        """Execute undo or redo of the top entry in the editor's stack."""
+        stack = self.eset.undo_stack
+        can = stack.can_undo() if which == "undo" else stack.can_redo()
+        if not can:
+            self.state.set_status(
+                _("Nothing to undo") if which == "undo"
+                else _("Nothing to redo"))
+            return
+        service = get_service(self._page)
+
+        def work(radio):
+            def _run():
+                label = (
+                    stack.undo() if which == "undo" else stack.redo())
+                return label
+
+            return _run()
+
+        def done(job):
+            if job.error:
+                msg = str(job.error)
+                LOG.exception("%s failed", which)
+                self.state.set_status(_("Operation failed"))
+                self._error_dialog(msg)
+            else:
+                label = job.result
+                self.eset.modified = True
+                self.state.set_status(
+                    _("Undid %s") % label if which == "undo"
+                    else _("Redid %s") % label)
+            self.load_memories()
+
+        service.run_memory_op(work, self.eset.radio, on_done=done)
+
+    def undo(self):
+        self._run_undoable("undo")
+
+    def redo(self):
+        self._run_undoable("redo")
 
     def _error_dialog(self, message):
         p = AppColors.for_mode(self.state.is_dark())
@@ -677,7 +728,9 @@ class MemoriesScreen(ft.Container):
     def _paste_into(self, view, src_mem, src_features, number):
         from mychirp.fletui.services import memory_ops
         view._run_op(
-            memory_ops.paste_memory, src_mem, src_features, number,
+            None, src_mem, src_features, number,
+            undoable=memory_ops.undoable_paste,
+            label=_("paste %s") % number,
             status_ok=_("Pasted into channel %s") % number)
 
     def _paste_target_dialog(self, src_mem, src_features, others):
@@ -744,7 +797,9 @@ class MemoriesScreen(ft.Container):
             return
         from mychirp.fletui.services import memory_ops
         self._run_op(
-            memory_ops.insert_memories, self.selected_number, 1,
+            None, self.selected_number, 1,
+            undoable=memory_ops.undoable_insert,
+            label=_("insert at %s") % self.selected_number,
             status_ok=_("Inserted empty channel at %s")
             % self.selected_number)
 
@@ -756,7 +811,9 @@ class MemoriesScreen(ft.Container):
         if shift:
             status = _("Deleted %s and shifted up") % self.selected_number
         self._run_op(
-            memory_ops.delete_memories, [self.selected_number], shift,
+            None, [self.selected_number], shift,
+            undoable=memory_ops.undoable_delete,
+            label=_("delete %s") % self.selected_number,
             status_ok=status)
 
     def _op_move(self, delta):
@@ -764,7 +821,9 @@ class MemoriesScreen(ft.Container):
             return
         from mychirp.fletui.services import memory_ops
         self._run_op(
-            memory_ops.move_memory, self.selected_number, delta,
+            None, self.selected_number, delta,
+            undoable=memory_ops.undoable_move,
+            label=_("move %s") % self.selected_number,
             status_ok=_("Moved channel %s") % self.selected_number)
 
     def _op_goto_channel(self):

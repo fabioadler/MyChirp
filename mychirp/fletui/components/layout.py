@@ -149,6 +149,8 @@ class AppShell(ft.Container):
             "x": mems.cut_selected,
             "g": mems.goto_channel_dialog,
             "a": mems.select_all,
+            "z": mems.undo,
+            "y": mems.redo,
         }
         chandler = channel_handlers.get(key)
         if chandler:

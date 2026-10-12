@@ -19,6 +19,71 @@ class MemoryOpError(Exception):
     """Raised when an operation cannot be safely performed."""
 
 
+def _snapshot(radio, numbers):
+    """Capture the current contents of @numbers (duped)."""
+    snap = {}
+    for number in numbers:
+        try:
+            snap[number] = radio.get_memory(number).dupe()
+        except Exception:
+            LOG.debug("snapshot of %s failed", number)
+    return snap
+
+
+def restore_snapshots(radio, snapshots):
+    """Restore snapshots taken with _snapshot (undo helper)."""
+    for number, mem in snapshots.items():
+        try:
+            if mem.empty:
+                radio.erase_memory(number)
+            else:
+                radio.set_memory(mem.dupe())
+        except chirp_errors.RadioError as e:
+            raise MemoryOpError(str(e))
+
+
+class UndoStack:
+    """Bounded undo/redo queue for memory operations.
+
+    Each entry is (label, undo_fn, redo_fn). Mirrors the wxui editor
+    history (which capped at 50 entries).
+    """
+
+    MAX = 50
+
+    def __init__(self):
+        self._undo = []
+        self._redo = []
+
+    def push(self, label, undo_fn, redo_fn):
+        self._undo.append((label, undo_fn, redo_fn))
+        if len(self._undo) > self.MAX:
+            self._undo.pop(0)
+        self._redo.clear()
+
+    def can_undo(self):
+        return bool(self._undo)
+
+    def can_redo(self):
+        return bool(self._redo)
+
+    def undo(self):
+        if not self._undo:
+            return None
+        label, undo_fn, redo_fn = self._undo.pop()
+        undo_fn()
+        self._redo.append((label, undo_fn, redo_fn))
+        return label
+
+    def redo(self):
+        if not self._redo:
+            return None
+        label, undo_fn, redo_fn = self._redo.pop()
+        redo_fn()
+        self._undo.append((label, undo_fn, redo_fn))
+        return label
+
+
 def _bounds(radio):
     lo, hi = radio.get_features().memory_bounds
     return lo, hi
@@ -166,6 +231,65 @@ def paste_memory(radio, src_mem, src_features, dst_number):
     except chirp_errors.RadioError as e:
         raise MemoryOpError(str(e))
     return dst_mem
+
+
+def _snapshot_all(radio):
+    lo, hi = _bounds(radio)
+    return _snapshot(radio, range(lo, hi + 1))
+
+
+def undoable_delete(radio, numbers, shift=None):
+    snap = _snapshot_all(radio)
+    delete_memories(radio, numbers, shift)
+
+    def undo():
+        restore_snapshots(radio, snap)
+
+    def redo():
+        delete_memories(radio, numbers, shift)
+
+    return undo, redo
+
+
+def undoable_insert(radio, at_number, count=1):
+    snap = _snapshot_all(radio)
+    insert_memories(radio, at_number, count)
+
+    def undo():
+        restore_snapshots(radio, snap)
+
+    def redo():
+        insert_memories(radio, at_number, count)
+
+    return undo, redo
+
+
+def undoable_move(radio, number, delta):
+    number = int(number)
+    other = number + delta
+    snap = _snapshot(radio, {number, other})
+    move_memory(radio, number, delta)
+
+    def undo():
+        restore_snapshots(radio, snap)
+
+    def redo():
+        move_memory(radio, number, delta)
+
+    return undo, redo
+
+
+def undoable_paste(radio, src_mem, src_features, dst_number):
+    snap = _snapshot(radio, {int(dst_number)})
+    mem = paste_memory(radio, src_mem, src_features, dst_number)
+
+    def undo():
+        restore_snapshots(radio, snap)
+
+    def redo():
+        radio.set_memory(mem.dupe())
+
+    return undo, redo
 
 
 def export_csv(radio, filename, memories=None):

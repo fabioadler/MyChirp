@@ -26,6 +26,8 @@ class EditorSetState:
         self.features = radio.get_features()
         self.memories = {}
         self.settings = None
+        from mychirp.fletui.services.memory_ops import UndoStack
+        self.undo_stack = UndoStack()
 
     @property
     def tab_title(self):
