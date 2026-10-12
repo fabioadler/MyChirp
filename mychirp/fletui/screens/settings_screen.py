@@ -140,14 +140,7 @@ class SettingsScreen(ft.Container):
         fields.clear()
 
         rows = []
-        for element in group.values():
-            if isinstance(element, chirp_settings.RadioSettingGroup):
-                rows.append(self._section_header(p, element))
-                for sub in element.values():
-                    if isinstance(sub, chirp_settings.RadioSetting):
-                        rows.append(self._setting_row(p, sub))
-            elif isinstance(element, chirp_settings.RadioSetting):
-                rows.append(self._setting_row(p, element))
+        self._render_elements(p, group, rows, fields, depth=0)
 
         apply_btn = ft.FilledButton(
             icon=ft.Icons.CHECK,
@@ -177,6 +170,14 @@ class SettingsScreen(ft.Container):
             ],
         )
 
+    def _render_elements(self, p, group, rows, fields, depth):
+        for element in group.values():
+            if isinstance(element, chirp_settings.RadioSetting):
+                rows.append(self._setting_row(p, element, fields))
+            elif isinstance(element, chirp_settings.RadioSettingGroup):
+                rows.append(self._section_header(p, element))
+                self._render_elements(p, element, rows, fields, depth + 1)
+
     def _section_header(self, p, group):
         return ft.Container(
             margin=ft.Margin.only(top=SPACING.MD),
@@ -186,11 +187,14 @@ class SettingsScreen(ft.Container):
                 color=p.accent),
         )
 
-    def _setting_row(self, p, setting):
+    def _setting_row(self, p, setting, fields):
         value = setting.value
         mutable = value.get_mutable()
         label = setting.get_shortname()
-        control = self._control_for_value(p, value, mutable)
+        control = self._control_for_value(p, setting, value, mutable)
+        fields.append((setting, control))
+        if setting.has_apply_callback():
+            self._wire_apply_callback(setting, control)
 
         doc = setting.__doc__
         return ft.Container(
@@ -221,7 +225,7 @@ class SettingsScreen(ft.Container):
             ),
         )
 
-    def _control_for_value(self, p, value, mutable):
+    def _control_for_value(self, p, setting, value, mutable):
         input_bg = p.input
         border = ft.Border.all(1, p.border)
         radius = ft.RoundedRectangleBorder(radius=BORDER_RADIUS["sm"])
@@ -236,7 +240,7 @@ class SettingsScreen(ft.Container):
                 value=bool(value.get_value()),
                 active_color=p.accent,
                 disabled=not mutable,
-                data=value,
+                data=setting,
             )
         if isinstance(value, chirp_settings.RadioSettingValueList):
             options = value.get_options()
@@ -245,16 +249,16 @@ class SettingsScreen(ft.Container):
             if current not in [str(o) for o in options]:
                 opts.append(ft.dropdown.Option(current))
             return ft.Dropdown(
-                options=opts, value=current, data=value, **common)
+                options=opts, value=current, data=setting, **common)
         if isinstance(value, (
                 chirp_settings.RadioSettingValueInteger,
                 chirp_settings.RadioSettingValueFloat)):
             return ft.TextField(
-                value=str(value.get_value()), data=value,
+                value=str(value.get_value()), data=setting,
                 keyboard_type=ft.KeyboardType.NUMBER, **common)
         if isinstance(value, chirp_settings.RadioSettingValueString):
             return ft.TextField(
-                value=str(value.get_value()), data=value, **common)
+                value=str(value.get_value()), data=setting, **common)
         # Unknown value type: read-only text
         return ft.TextField(
             value=str(value.get_value()), read_only=True,
@@ -300,18 +304,69 @@ class SettingsScreen(ft.Container):
         for group in result:
             self.groups.append(group)
 
+    def _wire_apply_callback(self, setting, control):
+        """Replicate wxui: run apply callback as soon as control changes."""
+
+        def handler(e):
+            try:
+                self._apply_control(setting, control)
+                setting.run_apply_callback()
+            except Exception as ex:
+                LOG.debug("apply callback failed for %s: %s",
+                          setting.get_name(), ex)
+
+        if isinstance(control, ft.Switch):
+            control.on_change = handler
+        elif isinstance(control, ft.Dropdown):
+            control.on_select = handler
+        elif isinstance(control, ft.TextField):
+            control.on_blur = handler
+
+    def _apply_control(self, setting, control):
+        """Push one control value into its RadioSetting, honoring
+        warning prompts. Returns the warning text or None."""
+        value = setting.value
+        if isinstance(control, ft.Switch):
+            new_value = bool(control.value)
+        else:
+            new_value = control.value
+        new_value = self._coerce_value(value, new_value)
+        warning = setting.get_warning(new_value)
+        value.set_value(new_value)
+        return warning
+
+    @staticmethod
+    def _coerce_value(value, new_value):
+        """Best-effort conversion of UI strings into the value type the
+        RadioSettingValue expects (int/float fields come back as str)."""
+        if isinstance(new_value, str):
+            if isinstance(value, chirp_settings.RadioSettingValueInteger):
+                new_value = int(new_value)
+            elif isinstance(value, chirp_settings.RadioSettingValueFloat):
+                new_value = float(new_value)
+        return new_value
+
     def _collect_values(self):
-        """Read control values back into the RadioSetting objects."""
+        """Read control values back into the RadioSetting objects.
+
+        Returns (errors, warnings): errors abort the apply; warnings are
+        shown once asking the user to confirm.
+        """
+        errors = []
+        warnings = []
         for fields in self._group_fields.values():
-            for control in fields:
-                value = control.data
+            for setting, control in fields:
+                if isinstance(control, ft.TextField) and control.disabled:
+                    continue
+                if control.value is None:
+                    continue
                 try:
-                    if isinstance(control, ft.Switch):
-                        value.set_value(bool(control.value))
-                    elif control.value is not None:
-                        value.set_value(control.value)
+                    warning = self._apply_control(setting, control)
+                    if warning:
+                        warnings.append(warning)
                 except Exception as e:
-                    LOG.debug("set failed: %s", e)
+                    errors.append("%s: %s" % (setting.get_shortname(), e))
+        return errors, warnings
 
     def _walk_controls(self, container):
         """Yield all input controls of the current group body."""
@@ -333,7 +388,40 @@ class SettingsScreen(ft.Container):
         return result
 
     def _on_apply(self, e):
-        self._collect_values()
+        errors, warnings = self._collect_values()
+        if errors:
+            self._apply_error(
+                _("Invalid value(s):") + "\n" + "\n".join(errors))
+            return
+        if warnings:
+            self._confirm_warnings(warnings)
+            return
+        self._do_apply()
+
+    def _confirm_warnings(self, warnings):
+        p = AppColors.for_mode(self.state.is_dark())
+
+        def proceed(e):
+            self._page.pop_dialog()
+            self._do_apply()
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(_("Warning"), color=p.fg_text),
+            content=ft.Text(
+                _("Some settings reported warnings:")
+                + "\n" + "\n".join(warnings),
+                color=p.fg_muted),
+            actions=[
+                ft.TextButton(
+                    _("Cancel"),
+                    on_click=lambda e: self._page.pop_dialog()),
+                ft.FilledButton(_("Proceed anyway"), on_click=proceed),
+            ],
+        )
+        self._page.show_dialog(dlg)
+
+    def _do_apply(self):
         service = get_service(self._page)
         self.state.set_status(_("Applying settings..."))
 
