@@ -161,16 +161,20 @@ class CloneDialog(ft.AlertDialog):
                 tight=True,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    ft.Column(
-                        spacing=SPACING.MD,
-                        tight=True,
-                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                        controls=[
-                            *((labeled_field(_("Vendor"), self.vendor_dd),
-                               labeled_field(_("Model"), self.model_dd))
-                              if downloading else ()),
-                            labeled_field(_("Port"), self.port_dd),
-                        ]),
+                    ft.Container(
+                        margin=ft.Margin.only(
+                            top=SPACING.MD, bottom=SPACING.LG),
+                        content=ft.Column(
+                            spacing=SPACING.MD,
+                            tight=True,
+                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                            controls=[
+                                *((labeled_field(_("Vendor"), self.vendor_dd),
+                                   labeled_field(_("Model"), self.model_dd))
+                                  if downloading else ()),
+                                labeled_field(_("Port"), self.port_dd),
+                            ]),
+                    ),
                     self.progress,
                     self.progress_label,
                 ],
