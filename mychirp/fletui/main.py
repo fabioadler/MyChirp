@@ -40,13 +40,6 @@ def main(page: ft.Page):
     shell = AppShell(page)
     page.add(shell)
 
-    # Restore the previous session: radios that were open last time
-    # (theme is already restored by the config-backed theme_mode)
-    restored = state.restore_session()
-    if restored:
-        state.set_status(
-            _("Restored %i radio(s) from last session") % restored)
-
     LOG.info("MyChirp flet UI started")
 
 

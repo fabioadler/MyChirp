@@ -55,7 +55,43 @@ class RadioTabsView(ft.Column):
             self.inner_tabs.add_tab(
                 _("Settings"), ft.Icons.TUNE, self.settings, select=False)
         self.inner_tabs.set_selected(0)
-        self.controls = [self.inner_tabs]
+
+        p = AppColors.for_mode(state.is_dark())
+        self._close_btn = ft.IconButton(
+            icon=ft.Icons.CLOSE,
+            icon_size=16,
+            icon_color=p.fg_muted,
+            bgcolor=p.bg_panel_alt,
+            tooltip=_("Close tab"),
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(
+                    radius=BORDER_RADIUS["sm"])),
+            on_click=lambda e: self.state.remove_editorset(self.eset),
+        )
+        header = ft.Container(
+            bgcolor=p.bg_panel,
+            padding=ft.Padding.symmetric(
+                horizontal=SPACING.SM, vertical=0),
+            content=ft.Row(
+                spacing=SPACING.SM,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                controls=[
+                    ft.Icon(
+                        ft.Icons.SETTINGS_INPUT_ANTENNA,
+                        size=16, color=p.accent),
+                    ft.Text(
+                        self.eset.radio_label or self.eset.tab_title,
+                        size=13, weight=ft.FontWeight.W_600,
+                        color=p.fg_text),
+                    ft.Container(expand=True),
+                    self._close_btn,
+                ],
+            ),
+        )
+        self.controls = [
+            header,
+            ft.Container(expand=True, content=self.inner_tabs),
+        ]
 
     def refresh_data(self):
         # banks refresh is chained after memories finish loading
@@ -67,6 +103,16 @@ class RadioTabsView(ft.Column):
             self.banks.refresh()
 
     def apply_theme(self):
+        p = AppColors.for_mode(self.state.is_dark())
+        try:
+            header_row = self.controls[0].content
+            header_row.controls[0].color = p.accent
+            header_row.controls[1].color = p.fg_text
+            header_row.controls[3].icon_color = p.fg_muted
+            header_row.controls[3].bgcolor = p.bg_panel_alt
+            self.controls[0].bgcolor = p.bg_panel
+        except Exception:
+            pass
         self.memories.apply_theme()
         if self.banks:
             self.banks.apply_theme()
