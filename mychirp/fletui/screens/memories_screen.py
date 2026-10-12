@@ -656,18 +656,88 @@ class MemoriesScreen(ft.Container):
             _("Copied channel %s") % self._loc_value(mem))
 
     def _op_paste(self):
-        if not self._require_selection():
-            return
         if not self.state.memory_clipboard:
             self.state.set_status(_("Clipboard is empty"))
             return
         src_mem, src_features = self.state.memory_clipboard
+
+        # Cross-model paste: when other radios are open, offer the
+        # choice of target radio (CHIRP parity: paste into any editor).
+        others = [
+            es for es in self.state.editorsets
+            if es is not self.eset]
+        if others and self.selected_number is None:
+            self._paste_target_dialog(src_mem, src_features, others)
+            return
+        if not self._require_selection():
+            return
+        self._paste_into(
+            self, src_mem, src_features, self.selected_number)
+
+    def _paste_into(self, view, src_mem, src_features, number):
         from mychirp.fletui.services import memory_ops
-        self._run_op(
-            memory_ops.paste_memory, src_mem, src_features,
-            self.selected_number,
-            status_ok=_("Pasted into channel %s")
-            % self.selected_number)
+        view._run_op(
+            memory_ops.paste_memory, src_mem, src_features, number,
+            status_ok=_("Pasted into channel %s") % number)
+
+    def _paste_target_dialog(self, src_mem, src_features, others):
+        """Ask which open radio should receive the pasted channel."""
+        p = AppColors.for_mode(self.state.is_dark())
+        options = [(None, self.eset)] + [(None, es) for es in others]
+        labels = [es.tab_title for _, es in options]
+        selector = ft.Dropdown(
+            options=[
+                ft.dropdown.Option(str(i), labels[i])
+                for i in range(len(options))],
+            value="0",
+            bgcolor=p.input, border=ft.Border.all(1, p.border),
+            border_radius=BORDER_RADIUS["sm"],
+            text_style=ft.TextStyle(color=p.fg_text, size=13),
+            dense=True)
+
+        def confirm(e):
+            self._page.pop_dialog()
+            idx = int(selector.value or 0)
+            target_es = options[idx][1]
+            target_view = self._view_for_eset(target_es)
+            if target_view is None or target_view.selected_number is None:
+                self.state.set_status(
+                    _("Select a channel in the target radio first"))
+                return
+            self._paste_into(
+                target_view, src_mem, src_features,
+                target_view.selected_number)
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            bgcolor=p.bg_panel,
+            title=ft.Text(_("Paste into radio"), color=p.fg_text),
+            content=ft.Column(
+                tight=True, spacing=SPACING.SM,
+                controls=[
+                    ft.Text(
+                        _("Choose the target radio for channel %s:")
+                        % self._loc_value(src_mem), color=p.fg_muted),
+                    selector,
+                ]),
+            actions=[
+                ft.TextButton(
+                    _("Cancel"),
+                    on_click=lambda e: self._page.pop_dialog()),
+                ft.FilledButton(_("Paste"), on_click=confirm),
+            ],
+        )
+        self._page.show_dialog(dlg)
+
+    def _view_for_eset(self, eset):
+        shell = self.state.shell
+        if not shell:
+            return None
+        for i, es in enumerate(shell._tab_map):
+            if es is eset:
+                view = shell.outer_tabs.view_at(i)
+                return getattr(view, "memories", None)
+        return None
 
     def _op_insert(self):
         if not self._require_selection():
