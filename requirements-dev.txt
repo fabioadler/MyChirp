@@ -18,7 +18,6 @@ requests
 yattag
 suds
 lark
-flet
 PySide6
 
 # --- test toolchain ---

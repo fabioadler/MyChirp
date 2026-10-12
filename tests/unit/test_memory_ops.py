@@ -1,4 +1,4 @@
-"""Tests for the flet UI memory operations (data-layer, mock-free).
+"""Tests for the memory operations (data-layer, mock-free).
 
 Uses real file-backed radios from tests/images so every operation is
 exercised against the actual driver code paths (no GUI involved).
@@ -12,7 +12,7 @@ import unittest
 from mychirp import chirp_common
 from mychirp import directory
 from mychirp import settings as chirp_settings
-from mychirp.fletui.services import memory_ops
+from mychirp import memory_ops
 
 directory.import_drivers()
 

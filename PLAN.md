@@ -1,8 +1,8 @@
-# PLANO DE TRABALHO — MyChirp (BOM-5701 + Interface Flet)
+# PLANO DE TRABALHO — MyChirp (BOM-5701 + Interface PySide6)
 
-> Regra de segurança: **nenhuma gravação (upload) no rádio físico** sem
-> validação e autorização explícita. `sync_out` do BOM-5701 segue bloqueado
-> até nova ordem.
+> Regra de segurança: gravação no BOM-5701 foi **validada em hardware
+> real** (round-trip byte-idêntico, commit `dcc0d759`). Backup salvo em
+> `~/.chirp/backups/` antes de cada sessão de upload.
 
 ---
 
@@ -126,15 +126,18 @@ com o clone via conector de 2 pinos; cabo CH340 em `/dev/ttyUSB0`.
   `mychirp/config.py`, assets únicos em share, scripts raiz removidos,
   README/PLAN reescritos
 - [x] **M0** — Migração PySide6: dependência instalada (PySide6 6.12,
-  pytest-qt), branch `feature/pysider6-migration`
+  pytest-qt), branch `feature/pyside6-migration`
 - [x] **M1** — Adaptadores Qt: `services/radio_service.py`
   (QThreadPool + signals, mesmas assinaturas),
   `services/app_state.py` (QObject AppState), `i18n.py`
 - [x] **M2** — Interface completa: `widgets/main_window.py`,
   `tabs/`, `dialogs/`, `theme.py` (QSS light/dark)
-- [x] **M3** — Entry points: `mychirp=pyideui:run`, smoke tests
+- [x] **M3** — Entry points: `mychirp=pysideui:run`, smoke tests
   offscreen (test_pysideui_smoke.py, 3 testes)
-- [ ] **M4** — Remoção do Flet: aguardando validação visual do usuário
+- [x] **M4** — Remoção do Flet: pacote `fletui/` removido, dependência
+  desinstalada, `mychirp-flet` removido; backend e testes preservados
+  (test_move_ops -> test_memory_ops/imports atualizados). Suíte: 744
+  testes passam, 13 skipped.
 
 ## 7. Correções pós-migração Flet (ordem de entrada)
 
