@@ -15,6 +15,7 @@ setup(name='mychirp',
           'suds',
           'lark',
           'flet',
+          'PySide6',
       ],
       extras_require={},
       entry_points={

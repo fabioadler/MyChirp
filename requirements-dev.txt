@@ -19,6 +19,7 @@ yattag
 suds
 lark
 flet
+PySide6
 
 # --- test toolchain ---
 pytest>=8.2
@@ -29,6 +30,7 @@ pep8
 pyyaml
 ddt
 pytest-asyncio>=0.24
+pytest-qt
 
 # --- style checks (used by tools/cpep8.py) ---
 flake8
