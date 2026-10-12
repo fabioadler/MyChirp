@@ -10,55 +10,75 @@
 
 1. Suporte de **leitura** ao rádio **BOMVINK BOM-5701** (driver baseado no
    protocolo UV-5R) — **concluído e validado em hardware**.
-2. Interface gráfica moderna com **Flet**, 100% responsiva, temas
-   claro/escuro consistentes em todos os componentes — **concluído**.
-3. Estrutura de projeto limpa: pacote único `mychirp`, interface única
-   (`mychirp/fletui`), assets únicos em `mychirp/share`.
+2. Interface gráfica moderna em **PySide6** (migração do Flet, direção
+   CHIRP-next com design tokens compartilhados) — **em andamento**.
+3. Estrutura de projeto limpa: pacote único `mychirp`, backend neutro
+   (`mychirp/theme.py`, `mychirp/memory_ops.py`), UIs em
+   `mychirp/fletui/` (faseado para remoção) e `mychirp/pysideui/`.
 
-## 2. Arquitetura atual (2026-10-11)
+## 2. Arquitetura atual (2026-10-12, migração PySide6)
 
 ```
 mychirp/
-├── fletui/            # Interface única (Flet 1.0)
-│   ├── main.py        # entry point (mychirp=fletui:run)
-│   ├── theme/         # tokens semânticos claro/escuro (colors/spacing)
-│   ├── components/    # AppShell, MyTabs, StatusBar (todos temáticos)
-│   ├── screens/       # Welcome, Memories (DataTable), Settings (NavRail)
-│   ├── dialogs/       # Clone (download/upload), About (créditos+logos)
-│   └── services/      # AppState (WeakKeyDictionary), RadioService (threads)
+├── pysideui/          # Interface principal (PySide6/QSS)
+│   ├── main.py        # entry point (mychirp=pysideui:run)
+│   ├── theme.py       # QSS paleta/escuro gerado de mychirp/theme.py
+│   ├── i18n.py        # gettext lazy (compat com pt_BR)
+│   ├── widgets/       # MainWindow (QMenuBar + QTabWidget closable)
+│   ├── tabs/          # Welcome, Recent, Memories (QTableView),
+│   │                  # Settings (lado-esq. QFormLayout), Banks
+│   ├── dialogs/       # CloneDialog (download/upload), About
+│   └── services/      # AppState (QObject), RadioService
+│   │                  # (QThreadPool + progress/finished signals)
+├── fletui/            # Interface Flet legada (faseado para remoção)
+├── theme.py           # Tokens de cores/espaçamento compartilhados
+├── memory_ops.py      # Operações de memória (backend puro, UndoStack)
 ├── config.py          # configuração persistente (ex-wxui/config.py)
-├── drivers/           # todos os drivers do CHIRP original
-├── share/             # assets únicos: mychirp-logo.png (fundo preto),
-│                      # mychirp_logo_transparente.png, logo_empresa.png,
-│                      # model_alias_map.yaml
+├── drivers/           # todos os drivers do CHIRP original +
+│   │                  # bom5701.py (driver separado do BOM-5701)
+├── share/             # assets: mychirp-logo.png,
+│                      # mychirp_logo_transparente.png, logo_empresa.png
 └── (núcleo: chirp_common, bitwise, directory, settings, platform...)
 
-Comandos: mychirp (GUI Flet) · mychirpc (CLI) · experttune
+Comandos: mychirp (GUI PySide6) · mychirp-flet (Flet legado) ·
+mychirpc (CLI) · experttune
 ```
 
-**Removidos:** `mychirp/wxui/` (interface antiga, serviu de referência),
-scripts raiz `chirpc`/`chirpwx.py`, dependência wxPython, testes da
-interface antiga, imagens duplicadas em share.
+**Tokens de design compartilhados:** `mychirp/theme.py` exporta
+`AppColors`/`Palette`/`SPACING` idênticos para ambos os UIs, garantindo
+cores consistentes entre Flet e PySide6 durante a transição.
 
-## 3. Interface Flet — componentes e temas
+## 3. Interface PySide6 — componentes e temas
 
 - **Temas claro/escuro/sistema** persistidos em `chirp.config`
   (seção `state`, chave `theme_mode`) — mesmos tokens do design
-  (docs/ui-redesign.md) mapeados em `theme/colors.py` (Light/Dark).
-- **AppShell**: AppBar (logo + MenuBar + toggle de tema) → abas
-  (MyTabs = TabBar/TabBarView) → StatusBar temática de 3 campos.
-- **WelcomeScreen**: logo ≤400px centralizada, segue o tema (sem
-  `_theme_exempt`, sem fundo hardcoded).
-- **MemoriesScreen**: DataTable paginada (25/ página), filtro, ocultar
-  vazios, edição por canal com controles tipados; colunas derivadas de
-  `radio.get_features()`.
-- **SettingsScreen**: NavigationRail responsivo (Dropdown < 900px),
-  formulários por grupo (Switch/Dropdown/TextField por tipo de valor),
-  aplicar em lote via `radio.set_settings()`.
-- **CloneDialog**: fabricante → modelo → porta; `status_fn` alimenta
-  ProgressBar; download abre aba nova, upload escreve no rádio aberto.
+  (docs/ui-redesign.md) mapeados em `mychirp/theme.py` (Light/Dark),
+  gerados como QPalette + QSS por `pysideui/theme.py`.
+- **MainWindow**: QMenuBar (File/Edit/View/Radio/Help espelhando o
+  wxui) + QTabWidget movível/fechável por aba ( nativo no flet, aqui
+  implementado com QTabBar/QToolButton) + QStatusBar de 3 campos.
+- **WelcomeTab**: logo ≤300px centralizada, segue o tema (sem fundo
+  hardcoded).
+- **MemoriesTab**: QTableView + QAbstractTableModel paginado (50/
+  página), filtro instantâneo, "Find next", Hide empty, edição por canal
+  (MemoryEditDialog tipado), sort por coluna clicável, toolbar de ops
+  (Copy/Paste/Insert/Delete×3/Move/Goto/Undo/Redo/Export CSV).
+- **SettingsTab**: NavigationRail → QListWidget lateral +
+  QFormLayout à direita (estilo Treebook CHIRP-next), controles tipados
+  por RadioSettingValue (QCheckBox/QComboBox/QSpinBox/QDoubleSpinBox/
+  QLineEdit), warnings exibidos e Apply/Revert.
+- **BanksTab**: matriz memórias × bancos com checkboxes (QTableView +
+  QAbstractTableModel).
+- **CloneDialog**: QComboBox vendedor→modelo→porta + QProgressBar;
+  download assíncrono via RadioService (sinais → GUI thread).
 - **AboutDialog**: logo MyChirp, créditos CHIRP original (GPLv3),
   "Desenvolvido por Fábio Adler de Luna Gomes", logo da empresa.
+
+## 3b. Interface Flet (mantida durante a migração)
+
+O fletui permanece intacto até o Fase 4 (remoção segura, diretriz §7).
+Entry point `mychirp-flet` chama `fletui:run` enquanto `mychirp` já
+aponta para `pysideui:run`.
 
 ## 4. Políticas de segurança vigentes
 
@@ -105,6 +125,16 @@ com o clone via conector de 2 pinos; cabo CH340 em `/dev/ttyUSB0`.
 - [x] **F6** — Limpeza: remoção do wxui + testes legados, config →
   `mychirp/config.py`, assets únicos em share, scripts raiz removidos,
   README/PLAN reescritos
+- [x] **M0** — Migração PySide6: dependência instalada (PySide6 6.12,
+  pytest-qt), branch `feature/pysider6-migration`
+- [x] **M1** — Adaptadores Qt: `services/radio_service.py`
+  (QThreadPool + signals, mesmas assinaturas),
+  `services/app_state.py` (QObject AppState), `i18n.py`
+- [x] **M2** — Interface completa: `widgets/main_window.py`,
+  `tabs/`, `dialogs/`, `theme.py` (QSS light/dark)
+- [x] **M3** — Entry points: `mychirp=pyideui:run`, smoke tests
+  offscreen (test_pysideui_smoke.py, 3 testes)
+- [ ] **M4** — Remoção do Flet: aguardando validação visual do usuário
 
 ## 7. Correções pós-migração Flet (ordem de entrada)
 
@@ -158,8 +188,10 @@ com o clone via conector de 2 pinos; cabo CH340 em `/dev/ttyUSB0`.
 
 ## 8. Ambiente (Linux/Debian 13)
 
-Python 3.13 · Flet 1.0.4 (GTK3/Flutter) · zenity (diálogos de arquivo) ·
-pytest 8.4.2 · venv em `./venv`. App em `venv/bin/mychirp`.
+Python 3.13 · PySide6 6.12 · Flet 1.0.4 (legado, transição) · pytest 8.4.2
+· pytest-qt (GUI offscreen) · zenity (diálogos de arquivo) ·
+venv em `./venv`. App em `venv/bin/mychirp` (PySide6) e
+`venv/bin/mychirp-flet` (legado Flet).
 
 ## 9. Reversão
 

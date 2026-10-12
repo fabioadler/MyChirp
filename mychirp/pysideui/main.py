@@ -27,6 +27,10 @@ def main():
     from mychirp.pysideui.services.app_state import AppState
     state = AppState()
 
+    # Import every driver so image detection works
+    from mychirp import directory
+    directory.import_drivers()
+
     from mychirp.pysideui.theme import apply_theme
     apply_theme(app, state.is_dark())
 

@@ -20,7 +20,8 @@ setup(name='mychirp',
       extras_require={},
       entry_points={
           'console_scripts': [
-              "mychirp=mychirp.fletui:run",
+              "mychirp=mychirp.pysideui:run",
+              "mychirp-flet=mychirp.fletui:run",
               "mychirpc=mychirp.cli.main:main",
               "experttune=mychirp.cli.experttune:main",
           ],
