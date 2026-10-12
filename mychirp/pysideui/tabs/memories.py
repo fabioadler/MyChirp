@@ -295,7 +295,7 @@ class MemoryModel(QAbstractTableModel):
             return QColor("#888888")
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             if col == "loc":
-                return self._loc(mem)
+                return _loc_value(mem)
             if role == Qt.ItemDataRole.EditRole:
                 return getattr(mem, col, "")
             return _render(col, mem)
@@ -359,10 +359,9 @@ class MemoryModel(QAbstractTableModel):
         return extd if extd else str(mem.number)
 
 
-    @staticmethod
-    def _loc(mem):
-        extd = getattr(mem, "extd_number", None)
-        return extd if extd else str(mem.number)
+def _loc_value(mem):
+    extd = getattr(mem, "extd_number", None)
+    return extd if extd else str(mem.number)
 
 
 class MemoriesTab(QWidget):
@@ -696,7 +695,7 @@ class MemoriesTab(QWidget):
         count = len(mems)
         menu = QMessageBox(self)
         menu.setWindowTitle(_("Delete"))
-        label = _("Delete channel %s?") % self._loc(mems[0]) if count == 1 \
+        label = _("Delete channel %s?") % _loc_value(mems[0]) if count == 1 \
             else _("Delete %i channels?") % count
         menu.setText(label)
         simple = menu.addButton(
@@ -779,7 +778,7 @@ class MemoriesTab(QWidget):
             self.eset.modified = True
             self.load_memories()
             self.state.set_status(
-                _("Memory %s updated") % self._loc(mem))
+                _("Memory %s updated") % _loc_value(mem))
 
     # ----- keyboard helpers used by the main window shortcuts -----
     def copy_selected(self):
