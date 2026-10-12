@@ -847,6 +847,7 @@ class MemoriesTab(QWidget):
     def _persist_memory(self, mem):
         """Write an edited memory back into the radio's image (undoable)."""
         service = get_service(self.state.main_window)
+        keep_number = self._selected_number()
 
         def done(job):
             if job.error:
@@ -861,6 +862,11 @@ class MemoriesTab(QWidget):
                     result[0], result[1])
             self.eset.modified = True
             self._refresh_rows()
+            if keep_number is not None:
+                idx = self.model.index_of_number(keep_number)
+                if idx >= 0:
+                    self.table.selectRow(idx)
+                    self.table.scrollTo(self.model.index(idx, 0))
             self.state.set_status(
                 _("Memory %s updated") % _loc_value(mem))
 
