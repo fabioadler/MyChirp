@@ -132,6 +132,13 @@ venv/bin/python -m pytest tests/unit/test_fletui_memory_ops.py -q
 |---|--------|------------|------------------|
 | 1 | Verificar todos os códigos incompletos ou com bugs | **Alta** | Grande |
 | 1a | ✅ SettingsScreen: botão "Apply" não gravava (fields nunca populados), subgrupos recursivos, warnings, apply callbacks — **corrigido** (commit `0cab3ebd`) | — | — |
+| 1b | ✅ MemoriesScreen: cabeçalhos de coluna vazios (header row nunca anexado) — **corrigido** (commit `6ba8762f`) | — | — |
+| 1c | ✅ import_logic: `_()` usado sem importar gettext (NameError em import cross-model com freq fora de faixa) — **corrigido** (commit `5b2a73a5`) | — | — |
+| 2a | ✅ Ordenar por coluna (clique no cabeçalho, asc/desc com seta) — **implementado** (commit `6ba8762f`) | — | — |
+| 3a | ✅ Find Next (salta para próxima ocorrência do filtro) — **implementado** (commit `6ba8762f`) | — | — |
+| 3b | ✅ Paste cross-model dialog (escolher rádio destino ao colar sem seleção) — **implementado** (commit `5b2a73a5`) | — | — |
+| 4a | ✅ Undo/Redo fila de 50 (Ctrl+Z/Ctrl+Y) para delete/insert/move/paste — **implementado** (commit `830b8f5a`) | — | — |
+| 7a | ✅ Warnings pytest 486 → 7 (config pytest; restantes são testes intencionais de caminhos deprecados) — **feito** (commit `8ce9d58a`) | — | — |
 | 2 | Verificar paridade total de funções/recursos do CHIRP original | **Alta** | Grande |
 | 3 | Inventariar funções/recursos faltantes e adicionar ao backlog | **Alta** | Médio |
 | 4 | Auditar commits/histórico para identificar recursos perdidos/removidos | **Alta** | Médio |
