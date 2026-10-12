@@ -289,9 +289,15 @@ class MainWindow(QMainWindow):
 
         file_menu.addSeparator()
 
+        self.action_print = QAction(_("&Print..."), self)
+        self.action_print.setShortcut(QKeySequence.StandardKey.Print)
+        self.action_print.triggered.connect(self.print_current)
+        file_menu.addAction(self.action_print)
+
         self.action_import = QAction(_("&Import..."), self)
         self.action_import.triggered.connect(self.import_into_current)
         file_menu.addAction(self.action_import)
+
 
         file_menu.addSeparator()
 
@@ -756,6 +762,55 @@ class MainWindow(QMainWindow):
             _("Exported %i channels to %s")
             % (count, os.path.basename(job.result
                if isinstance(job.result, str) else "")))
+
+    def print_current(self):
+        eset = self.current_editorset
+        if not eset:
+            self.state.set_status(_("Open a radio first"))
+            return
+        try:
+            from PySide6.QtPrintSupport import QPrinter, QPrintDialog
+        except ImportError:
+            self.state.set_status(_("Printing not available"))
+            return
+        printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+        dlg = QPrintDialog(printer, self)
+        if dlg.exec() != dlg.DialogCode.Accepted:
+            return
+        from PySide6.QtGui import QTextDocument
+        html = self._build_print_html(eset)
+        doc = QTextDocument()
+        doc.setHtml(html)
+        doc.print(printer)
+        self.state.set_status(_("Print sent"))
+
+    def _build_print_html(self, eset):
+        esc = lambda s: str(s).replace("&", "&amp;").replace(
+            "<", "&lt;").replace(">", "&gt;")
+        rows = []
+        rows.append("<h2>%s</h2>" % esc(eset.radio_label))
+        rows.append(
+            "<table border='1' cellspacing='0' cellpadding='4'>"
+            "<tr><th>Loc</th><th>Name</th><th>Freq (MHz)</th>"
+            "<th>Duplex</th><th>Offset</th><th>Tone</th><th>Power</th></tr>")
+        mems = sorted(eset.memories.items(),
+                      key=lambda kv: (isinstance(kv[0], str), kv[0]))
+        for _n, mem in mems:
+            if mem.empty:
+                continue
+            rows.append(
+                "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
+                "<td>%s</td><td>%s</td><td>%s</td></tr>" % (
+                    esc(getattr(mem, "extd_number", None) or mem.number),
+                    esc(mem.name or ""),
+                    "%.5f" % (mem.freq / 1e6) if mem.freq else "",
+                    esc(mem.duplex or ""), esc(
+                        "%.5f" % (mem.offset / 1e6) if mem.offset else ""),
+                    esc(mem.rtone if mem.rtone else ""),
+                    esc(mem.power or ""),
+                ))
+        rows.append("</table>")
+        return "".join(rows)
 
     def restore_session(self):
         restored = self.state.restore_session()
