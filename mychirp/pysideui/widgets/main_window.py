@@ -575,10 +575,66 @@ class MainWindow(QMainWindow):
             self.tabs.addTab(self.welcome, _("Welcome"))
             self.tabs.setCurrentIndex(self.tabs.count() - 1)
 
+    UNSAVED_SAVE = "save"
+    UNSAVED_DISCARD = "discard"
+    UNSAVED_CANCEL = "cancel"
+
+    def _prompt_unsaved(self, eset):
+        """Ask what to do with an editorset that has unsaved changes.
+        Returns UNSAVED_SAVE / UNSAVED_DISCARD / UNSAVED_CANCEL."""
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Icon.Warning)
+        box.setWindowTitle(_("Unsaved changes"))
+        box.setText(
+            _("Save changes to %s before closing?") % eset.tab_title)
+        box.setInformativeText(
+            _("If you don't save, the changes will be lost."))
+        save_btn = box.addButton(
+            _("Save"), QMessageBox.ButtonRole.AcceptRole)
+        discard_btn = box.addButton(
+            _("Don't Save"), QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton(QMessageBox.StandardButton.Cancel)
+        box.setDefaultButton(save_btn)
+        box.exec()
+        clicked = box.clickedButton()
+        if clicked is save_btn:
+            return self.UNSAVED_SAVE
+        if clicked is discard_btn:
+            return self.UNSAVED_DISCARD
+        return self.UNSAVED_CANCEL
+
+    def _save_eset_blocking(self, eset):
+        """Save synchronously (GUI thread) for close prompts.
+        Returns True when the image was actually written."""
+        filename = eset.filename
+        if not filename or not os.path.exists(filename):
+            filename, _filter = QFileDialog.getSaveFileName(
+                self, _("Save radio image"), eset.default_filename,
+                "Radio image files (*.img *.csv);;All files (*)")
+            if not filename:
+                return False
+            eset.filename = filename
+        try:
+            eset.radio.save(filename)
+        except Exception as e:
+            self._error_dialog(_("Failed to save"), e)
+            return False
+        eset.modified = False
+        self.state.set_status(_("Saved %s") % filename)
+        return True
+
     def _tab_close_requested(self, index):
         view = self.tabs.widget(index)
         if isinstance(view, RadioTabWidget):
-            self.state.remove_editorset(view.eset)
+            eset = view.eset
+            if eset.modified:
+                action = self._prompt_unsaved(eset)
+                if action == self.UNSAVED_CANCEL:
+                    return
+                if action == self.UNSAVED_SAVE and not \
+                        self._save_eset_blocking(eset):
+                    return
+            self.state.remove_editorset(eset)
 
     def _update_statusbar_for_tab(self, index=None):
         if index is None:
@@ -977,5 +1033,17 @@ class MainWindow(QMainWindow):
         super().keyPressEvent(event)
 
     def closeEvent(self, event):
+        for i in range(self.tabs.count()):
+            view = self.tabs.widget(i)
+            if not (isinstance(view, RadioTabWidget) and view.eset.modified):
+                continue
+            action = self._prompt_unsaved(view.eset)
+            if action == self.UNSAVED_CANCEL:
+                event.ignore()
+                return
+            if action == self.UNSAVED_SAVE and not \
+                    self._save_eset_blocking(view.eset):
+                event.ignore()
+                return
         self.state.save_session()
         super().closeEvent(event)
