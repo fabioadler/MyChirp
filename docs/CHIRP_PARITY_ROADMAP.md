@@ -124,4 +124,24 @@ venv/bin/python -m pytest tests/unit/test_fletui_memory_ops.py -q
 
 ---
 
+---
+
+## 🔍 Auditoria Completa & Modernização (Novas Tarefas)
+
+| # | Tarefa | Prioridade | Esforço estimado |
+|---|--------|------------|------------------|
+| 1 | Verificar todos os códigos incompletos ou com bugs | **Alta** | Grande |
+| 2 | Verificar paridade total de funções/recursos do CHIRP original | **Alta** | Grande |
+| 3 | Inventariar funções/recursos faltantes e adicionar ao backlog | **Alta** | Médio |
+| 4 | Auditar commits/histórico para identificar recursos perdidos/removidos | **Alta** | Médio |
+| 5 | Implementar pendências + corrigir todos os bugs/defeitos | **Crítica** | Muito Grande |
+| 6 | Modernizar layout UI + terminal (design premium, paleta da logo, ui-ux-pro-max-cli) | **Alta** | Grande |
+| 7 | Varredura minuciosa: lógica, incompletos, botões sem função, warnings | **Crítica** | Grande |
+
+---
+
+> **Processo obrigatório:** Commit após cada etapa concluída → Atualizar este arquivo → `graphify update .` ao final.
+
+---
+
 **Última atualização:** 2026-10-11 (commit `ec6ea101`)
