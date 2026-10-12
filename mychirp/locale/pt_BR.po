@@ -2971,7 +2971,7 @@ msgstr "Lista de escaneamento"
 
 #: ../drivers/ksun_m6.py:418 ../drivers/uvk5.py:855
 msgid "Scrambler"
-msgstr "Modo Scrambler"
+msgstr "Scrambler"
 
 #: ../wxui/developer.py:677
 msgid "Security Risk"
@@ -3053,7 +3053,7 @@ msgstr "Mostrar local de backup da imagem"
 
 #: ../wxui/memedit.py:697
 msgid "Skip"
-msgstr "Pular"
+msgstr "Ignorar"
 
 #: ../wxui/memedit.py:2647
 msgid "Some memories are incompatible with this radio"
@@ -4476,7 +4476,7 @@ msgid "Switch to Light Theme"
 msgstr "Mudar para tema claro"
 
 msgid "ToneSql"
-msgstr "TomSq"
+msgstr "TomSql"
 
 msgid "Tune Step"
 msgstr "Passo de frequência"
@@ -4516,6 +4516,276 @@ msgstr "Nome:"
 
 msgid "Open..."
 msgstr "Abrir..."
+
+msgid "Basic Settings"
+msgstr "Configurações básicas"
+
+msgid "Carrier Squelch Level"
+msgstr "Nível de squelch (carrier)"
+
+msgid "Battery Saver"
+msgstr "Economia de bateria"
+
+msgid "Backlight Timeout"
+msgstr "Tempo de iluminação de fundo"
+
+msgid "Beep"
+msgstr "Beep de teclas"
+
+msgid "Timeout Timer"
+msgstr "Tempo limite de transmissão (TOT)"
+
+msgid "Advanced Settings"
+msgstr "Configurações avançadas"
+
+msgid "VOX Sensitivity"
+msgstr "Sensibilidade VOX"
+
+msgid "Dual Watch"
+msgstr "Escuta dupla (dual watch)"
+
+msgid "Dual Watch Channel"
+msgstr "Canal da escuta dupla"
+
+msgid "Voice Prompt"
+msgstr "Anúncio por voz"
+
+msgid "Squelch Tail Elimination"
+msgstr "Eliminação de cauda (STE)"
+
+msgid "Repeater Tone Tail"
+msgstr "Cauda de tom de repetidor"
+
+msgid "Tone Repeat Timer"
+msgstr "Temporizador de repetição de tom"
+
+msgid "Reset"
+msgstr "Reiniciar (reset)"
+
+msgid "All Menus"
+msgstr "Todos os menus"
+
+msgid "BCL"
+msgstr "BCL (Bloqueio de canal ocupado)"
+
+msgid "PTT ID"
+msgstr "ID do PTT"
+
+msgid "PTT ID Code"
+msgstr "Código do ID PTT"
+
+msgid "Alarm Code"
+msgstr "Código de alarme"
+
+msgid "Alarm Mode"
+msgstr "Modo de alarme"
+
+msgid "Alarm Sound"
+msgstr "Som de alarme"
+
+msgid "Squelch %i"
+msgstr "Squelch %i"
+
+msgid "VHF Lower Limit (MHz)"
+msgstr "Limite mínimo VHF (MHz)"
+
+msgid "VHF Upper Limit (MHz)"
+msgstr "Limite máximo VHF (MHz)"
+
+msgid "UHF Lower Limit (MHz)"
+msgstr "Limite mínimo UHF (MHz)"
+
+msgid "UHF Upper Limit (MHz)"
+msgstr "Limite máximo UHF (MHz)"
+
+msgid "VHF TX Enabled"
+msgstr "TX VHF habilitado"
+
+msgid "UHF TX Enabled"
+msgstr "TX UHF habilitado"
+
+msgid "Other Settings"
+msgstr "Outras configurações"
+
+msgid "Firmware Message 1"
+msgstr "Mensagem de firmware 1"
+
+msgid "Firmware Message 2"
+msgstr "Mensagem de firmware 2"
+
+msgid "6+Power-On Message 1"
+msgstr "Mensagem de energização 6+1"
+
+msgid "6+Power-On Message 2"
+msgstr "Mensagem de energização 6+2"
+
+msgid "Power-On Message"
+msgstr "Mensagem ao ligar"
+
+msgid "Power-On Message 1"
+msgstr "Mensagem ao ligar 1"
+
+msgid "Power-On Message 2"
+msgstr "Mensagem ao ligar 2"
+
+msgid "Work Mode Settings"
+msgstr "Configurações de modo de trabalho"
+
+msgid "Display"
+msgstr "Exibição"
+
+msgid "VFO/MR Mode"
+msgstr "Modo VFO/MR"
+
+msgid "Keypad Lock"
+msgstr "Bloqueio do teclado"
+
+msgid "MR A Channel"
+msgstr "Canal MR A"
+
+msgid "MR B Channel"
+msgstr "Canal MR B"
+
+msgid "VFO A Frequency"
+msgstr "Frequência VFO A"
+
+msgid "VFO B Frequency"
+msgstr "Frequência VFO B"
+
+msgid "VFO A Shift"
+msgstr "Shift VFO A"
+
+msgid "VFO B Shift"
+msgstr "Shift VFO B"
+
+msgid "VFO A Offset"
+msgstr "Offset VFO A"
+
+msgid "VFO B Offset"
+msgstr "Offset VFO B"
+
+msgid "VFO A Power"
+msgstr "Potência VFO A"
+
+msgid "VFO B Power"
+msgstr "Potência VFO B"
+
+msgid "VFO A Bandwidth"
+msgstr "Largura de banda VFO A"
+
+msgid "VFO B Bandwidth"
+msgstr "Largura de banda VFO B"
+
+msgid "VFO A PTT ID"
+msgstr "ID PTT VFO A"
+
+msgid "VFO B PTT ID"
+msgstr "ID PTT VFO B"
+
+msgid "VFO A Step"
+msgstr "Passo VFO A"
+
+msgid "VFO B Step"
+msgstr "Passo VFO B"
+
+msgid "DTMF Settings"
+msgstr "Configurações DTMF"
+
+msgid "ANI Code"
+msgstr "Código ANI"
+
+msgid "ANI ID"
+msgstr "ID ANI"
+
+msgid "DTMF Speed"
+msgstr "Velocidade DTMF"
+
+msgid "DTMF Side Tone"
+msgstr "Tom lateral DTMF"
+
+msgid "DTMF Separator Code"
+msgstr "Separador DTMF"
+
+msgid "DTMF Group Code"
+msgstr "Código de grupo DTMF"
+
+msgid "DTMF Decode Response"
+msgstr "Resposta decode DTMF"
+
+msgid "PTT ID Code %i"
+msgstr "Código PTT ID %i"
+
+msgid "DTMF PTT ID"
+msgstr "ID PTT DTMF"
+
+msgid "Busy Lockout"
+msgstr "Bloqueio com canal ocupado"
+
+msgid "DTCS Rx Code"
+msgstr "Código DTCS Rx"
+
+msgid "DTCS Tx Polarity"
+msgstr "Polaridade DTCS TX"
+
+msgid "DTCS Rx Polarity"
+msgstr "Polaridade DTCS RX"
+
+msgid "Priority Channel"
+msgstr "Canal prioritário"
+
+msgid "Scan Type"
+msgstr "Tipo de varredura"
+
+msgid "Scan Resume"
+msgstr "Retomada de varredura"
+
+msgid "Tone Burst"
+msgstr "Tom de burst"
+
+msgid "Signal Strength Squelch"
+msgstr "Squelch por intensidade de sinal"
+
+msgid "Squelch 1"
+msgstr "Squelch 1"
+
+msgid "Squelch 2"
+msgstr "Squelch 2"
+
+msgid "Squelch 3"
+msgstr "Squelch 3"
+
+msgid "Squelch 4"
+msgstr "Squelch 4"
+
+msgid "Squelch 5"
+msgstr "Squelch 5"
+
+msgid "Squelch 6"
+msgstr "Squelch 6"
+
+msgid "Squelch 7"
+msgstr "Squelch 7"
+
+msgid "Squelch 8"
+msgstr "Squelch 8"
+
+msgid "Squelch 9"
+msgstr "Squelch 9"
+
+msgid "FM Radio Preset"
+msgstr "Preset de rádio FM"
+
+msgid "FM Radio Enable"
+msgstr "Rádio FM habilitado"
+
+msgid "Service Settings"
+msgstr "Configurações de serviço"
+
+msgid "DTMF Attack Time"
+msgstr "Tempo de ataque DTMF"
+
+msgid "ANI Code %i"
+msgstr "Código ANI %i"
 
 #~ msgid "Adding memory {number}"
 #~ msgstr "Adicionando memï¿œria {number}"

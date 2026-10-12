@@ -153,8 +153,8 @@ class SettingsTab(QWidget):
     def _add_setting_row(self, setting, depth=0):
         value = setting.value
         mutable = value.get_mutable()
-        text = setting.get_shortname()
-        doc = setting.__doc__
+        text = _(setting.get_shortname())
+        doc = _(setting.__doc__) if setting.__doc__ else None
 
         label_layout = QVBoxLayout()
         name = QLabel(text)
@@ -237,9 +237,18 @@ class SettingsTab(QWidget):
         return edit
 
     def _collect(self):
+        """Read dialog controls back into RadioSetting values.
+
+        Disabled (read-only) controls and settings flagged immutable are
+        skipped: they can't be changed by the user, so validation would
+        fire spurious errors/warnings on apply.
+        """
         errors, warnings = [], []
         for setting, control in self._controls:
             value = setting.value
+            # Skip read-only / immutable settings entirely
+            if not control.isEnabled() or not value.get_mutable():
+                continue
             if isinstance(control, QCheckBox):
                 new_val = control.isChecked()
             elif isinstance(control, QComboBox):
