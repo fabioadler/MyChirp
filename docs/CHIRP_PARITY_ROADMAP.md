@@ -133,6 +133,7 @@ venv/bin/python -m pytest tests/unit/test_fletui_memory_ops.py -q
 | 1 | Verificar todos os códigos incompletos ou com bugs | **Alta** | Grande |
 | 1a | ✅ SettingsScreen: botão "Apply" não gravava (fields nunca populados), subgrupos recursivos, warnings, apply callbacks — **corrigido** (commit `0cab3ebd`) | — | — |
 | 1b | ✅ MemoriesScreen: cabeçalhos de coluna vazios (header row nunca anexado) — **corrigido** (commit `6ba8762f`) | — | — |
+| 1d | ✅ BOM-5701 driver separado (`mychirp/drivers/bom5701.py`), limites VHF 128-176 / UHF 384-524 clamped, settings inicializados — **validado em hardware real**: download + backup + upload + round-trip byte-idêntico (commit `dcc0d759`) | — | — |
 | 1c | ✅ import_logic: `_()` usado sem importar gettext (NameError em import cross-model com freq fora de faixa) — **corrigido** (commit `5b2a73a5`) | — | — |
 | 2a | ✅ Ordenar por coluna (clique no cabeçalho, asc/desc com seta) — **implementado** (commit `6ba8762f`) | — | — |
 | 3a | ✅ Find Next (salta para próxima ocorrência do filtro) — **implementado** (commit `6ba8762f`) | — | — |
