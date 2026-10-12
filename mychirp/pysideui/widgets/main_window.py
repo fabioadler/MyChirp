@@ -8,7 +8,7 @@ area + 3-field status bar), but styled with the shared design tokens
 import logging
 import os
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QActionGroup, QIcon, QKeySequence, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -170,6 +170,68 @@ class MainWindow(QMainWindow):
         state.editorset_added.connect(self._on_editorset_added)
         state.editorset_removed.connect(self._on_editorset_removed)
 
+        self._known_ports = set()
+        self._hotplug_label = None
+        self._hotplug_button = None
+        self._hotplug_timer = QTimer(self)
+        self._hotplug_timer.setInterval(1500)
+        self._hotplug_timer.timeout.connect(self._poll_serial_ports)
+        self._hotplug_timer.start()
+
+    # ----- hotplug programmer detection -----
+    def _poll_serial_ports(self):
+        from mychirp.pysideui.services.radio_service import list_serial_ports
+        from mychirp.pysideui.services.serial_probe import (
+            is_programmer_device)
+        try:
+            current = set(list_serial_ports())
+        except Exception:
+            return
+        new = current - self._known_ports
+        self._known_ports = current
+        if not new:
+            return
+        for port in sorted(new):
+            if is_programmer_device(port):
+                self._notify_programmer_port(port)
+                break
+
+    def _notify_programmer_port(self, port):
+        """Show a non-modal statusbar hint with a connect button."""
+        if self._clone_active():
+            return
+        self._clear_hotplug_widgets()
+        self._hotplug_label = QLabel(
+            _("Cabo programador detectado em %s — usar?") % port)
+        self._hotplug_button = QToolButton(self)
+        self._hotplug_button.setText(_("Connect"))
+        self._hotplug_button.setAutoRaise(True)
+        self._hotplug_button.clicked.connect(
+            lambda checked=False, p=port: self._on_hotplug_connect(p))
+        self.status.addPermanentWidget(self._hotplug_label)
+        self.status.addPermanentWidget(self._hotplug_button)
+        self._hotplug_label.show()
+        self._hotplug_button.show()
+
+    def _clear_hotplug_widgets(self):
+        for widget in (self._hotplug_label, self._hotplug_button):
+            if widget is not None:
+                self.status.removeWidget(widget)
+                widget.deleteLater()
+        self._hotplug_label = None
+        self._hotplug_button = None
+
+    def _clone_active(self):
+        app = QApplication.instance()
+        return app is not None and app.activeModalWidget() is not None
+
+    def _on_hotplug_connect(self, port):
+        self._clear_hotplug_widgets()
+        if port:
+            self.state.conf.set("clone_last_port", port, "state")
+            self.state.conf.save()
+        self.download_from_radio()
+
     # ----- window geometry -----
     def _apply_window_geometry(self):
         """16:9 default, large font. Never exceeds available screen."""
@@ -296,6 +358,19 @@ class MainWindow(QMainWindow):
         self.action_session.triggered.connect(self.toggle_session_restore)
         view_menu.addAction(self.action_session)
 
+        self.action_developer_mode = QAction(_("Developer mode"), self)
+        self.action_developer_mode.setCheckable(True)
+        self.action_developer_mode.setChecked(
+            self.state.conf.get_bool("developer_mode", "state",
+                                     default=False))
+        self.action_developer_mode.triggered.connect(
+            self.toggle_developer_mode)
+        view_menu.addAction(self.action_developer_mode)
+
+        self.action_devtools = QAction(_("Developer tools (raw dump)"), self)
+        self.action_devtools.triggered.connect(self.show_devtools)
+        view_menu.addAction(self.action_devtools)
+
         bandplan_menu = view_menu.addMenu(_("Band plan"))
         self._bandplan_group = QActionGroup(self)
         self._bandplan_group.setExclusive(True)
@@ -347,6 +422,9 @@ class MainWindow(QMainWindow):
 
         # Help menu
         help_menu = menubar.addMenu(_("&Help"))
+        self.action_report_bug = QAction(_("Report a bug..."), self)
+        self.action_report_bug.triggered.connect(self.report_bug)
+        help_menu.addAction(self.action_report_bug)
         self.action_about = QAction(_("About"), self)
         self.action_about.triggered.connect(self.show_about)
         help_menu.addAction(self.action_about)
@@ -463,6 +541,7 @@ class MainWindow(QMainWindow):
         welcome_index = self.tabs.indexOf(self.welcome)
         if welcome_index >= 0:
             self.tabs.removeTab(welcome_index)
+        self._apply_developer_tab(view)
         view.refresh_data()
         self._update_statusbar_for_tab(index)
 
@@ -755,6 +834,52 @@ class MainWindow(QMainWindow):
         from mychirp.pysideui.dialogs.query_source import QuerySourceDialog
         dlg = QuerySourceDialog(self, self.state, eset, source_name)
         dlg.exec()
+
+    def developer_mode_enabled(self) -> bool:
+        return self.state.conf.get_bool("developer_mode", "state",
+                                        default=False)
+
+    def toggle_developer_mode(self):
+        enabled = self.action_developer_mode.isChecked()
+        self.state.conf.set_bool("developer_mode", enabled, "state")
+        self.state.conf.save()
+        for i in range(self.tabs.count()):
+            view = self.tabs.widget(i)
+            if isinstance(view, RadioTabWidget):
+                self._apply_developer_tab(view)
+        self.state.set_status(
+            _("Developer mode enabled") if enabled
+            else _("Developer mode disabled"))
+
+    def _apply_developer_tab(self, view):
+        """Show/hide the Developer inner tab on a RadioTabWidget."""
+        has_tab = hasattr(view, "developer") and view.developer is not None
+        want_tab = self.developer_mode_enabled()
+        if want_tab and not has_tab:
+            try:
+                from mychirp.pysideui.tabs.devtools import DeveloperTab
+                view.developer = DeveloperTab(view.eset, self.state)
+                view.addTab(view.developer, _("Developer"))
+            except Exception:
+                LOG.exception("Failed to build developer tab")
+                view.developer = None
+        elif has_tab and not want_tab:
+            index = view.indexOf(view.developer)
+            if index >= 0:
+                view.removeTab(index)
+            view.developer.deleteLater()
+            view.developer = None
+
+    def show_devtools(self):
+        if not self.developer_mode_enabled():
+            self.state.set_status(
+                _("Enable View > Developer mode first"))
+        from mychirp.pysideui.dialogs.devtools import DeveloperDialog
+        DeveloperDialog(self, self.state, self.current_editorset).exec()
+
+    def report_bug(self):
+        from mychirp.pysideui.dialogs.devtools import BugReportDialog
+        BugReportDialog(self, self.state, self.current_editorset).exec()
 
     # ----- about -----
     def show_about(self):

@@ -8,7 +8,9 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QHBoxLayout,
     QLabel,
+    QMessageBox,
     QProgressBar,
     QVBoxLayout,
 )
@@ -21,6 +23,12 @@ from mychirp.pysideui.services.radio_service import (
     list_serial_ports,
     list_vendors,
     model_label_to_class,
+)
+from mychirp.pysideui.services.serial_probe import (
+    NO_RADIO_MESSAGE,
+    PortProbeError,
+    is_serial_error,
+    probe_port,
 )
 from mychirp.pysideui.theme import AppColors
 
@@ -64,8 +72,9 @@ class CloneDialog(QDialog):
             form.addRow(_("Model:"), self.model)
 
             self.port = QComboBox()
-            self.port.addItems(list_serial_ports())
-            form.addRow(_("Port:"), self.port)
+            ports = list_serial_ports()
+            self.port.addItems(ports)
+            form.addRow(_("Port:"), self._port_row(ports))
         else:
             r = eset.radio if eset else None
             vendor = getattr(r, "VENDOR", "") if r else ""
@@ -74,13 +83,14 @@ class CloneDialog(QDialog):
             form.addRow(_("Model:"), QLabel(model_str))
 
             self.port = QComboBox()
-            self.port.addItems(list_serial_ports())
+            ports = list_serial_ports()
+            self.port.addItems(ports)
             last = state.conf.get("clone_last_port", "state")
             if last:
                 idx = self.port.findText(last)
                 if idx >= 0:
                     self.port.setCurrentIndex(idx)
-            form.addRow(_("Port:"), self.port)
+            form.addRow(_("Port:"), self._port_row(ports))
 
         root.addLayout(form)
 
@@ -103,6 +113,21 @@ class CloneDialog(QDialog):
         buttons.button(QDialogButtonBox.StandardButton.Ok).setText(
             _("Download") if downloading else _("Upload"))
         root.addWidget(buttons)
+
+    def _port_row(self, ports):
+        """Combo plus an "(auto-detect)" hint when there's exactly one port."""
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.addWidget(self.port, 1)
+        if len(ports) == 1:
+            hint = QLabel(_("(auto-detect)"))
+            hint.setProperty("muted", True)
+            row.addWidget(hint)
+        return row
+
+    def _no_radio_dialog(self):
+        QMessageBox.warning(
+            self, _("Radio not detected"), NO_RADIO_MESSAGE)
 
     def _on_vendor(self, vendor):
         if not vendor:
@@ -144,6 +169,11 @@ class CloneDialog(QDialog):
                 self.progress_label.setText(_("Unknown model"))
                 self.progress_label.setVisible(True)
                 return
+            try:
+                probe_port(port, rclass, timeout=2.0)
+            except PortProbeError:
+                self._no_radio_dialog()
+                return
             self._busy = True
             self._set_busy(True)
             self.state.conf.set("clone_last_port", port, "state")
@@ -154,6 +184,11 @@ class CloneDialog(QDialog):
                 on_progress=self._on_progress)
         else:
             if not (self.eset and port):
+                return
+            try:
+                probe_port(port, type(self.eset.radio), timeout=2.0)
+            except PortProbeError:
+                self._no_radio_dialog()
                 return
             self._busy = True
             self._set_busy(True)
@@ -167,6 +202,9 @@ class CloneDialog(QDialog):
         self._set_busy(False)
         if job.error:
             self.state.set_status(_("Failed to download"))
+            if is_serial_error(job.error):
+                self._no_radio_dialog()
+                return
             self.progress_label.setText(str(job.error))
             self.progress_label.setStyleSheet("color: palette(mid);")
             self.progress_label.setVisible(True)
@@ -184,6 +222,9 @@ class CloneDialog(QDialog):
         self._set_busy(False)
         if job.error:
             self.state.set_status(_("Failed to upload"))
+            if is_serial_error(job.error):
+                self._no_radio_dialog()
+                return
             self.progress_label.setText(str(job.error))
             self.progress_label.setVisible(True)
             return
