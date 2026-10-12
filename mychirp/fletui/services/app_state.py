@@ -95,7 +95,16 @@ class AppState:
             ft.ThemeMode.DARK if dark else ft.ThemeMode.LIGHT
         )
         if self.shell:
+            # Rebuild every themed control in place; apply_theme must
+            # NOT call control.update() itself
             self.shell.apply_theme()
+        # Single coherent page-level flush: sends page.theme_mode AND
+        # the entire rebuilt tree in one diff. Calling a partial
+        # control.update() instead marks the handler as "already
+        # updated", which cancels flet's auto-update and leaves
+        # page.theme_mode stuck on the client (material widgets kept
+        # the old theme until a focus change forced a full flush).
+        self.page.update()
 
     # ----- status -----
     def set_status(self, message: str, field: int = 0):

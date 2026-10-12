@@ -356,9 +356,9 @@ class SettingsScreen(ft.Container):
                           color=p.fg_text),
             content=ft.Text(str(error), color=p.fg_muted),
             actions=[ft.TextButton(
-                _("OK"), on_click=lambda e: self._page.close(dlg))],
+                _("OK"), on_click=lambda e: self._page.pop_dialog())],
         )
-        self._page.open(dlg)
+        self._page.show_dialog(dlg)
 
     # ----- navigation -----
     def _on_rail_change(self, e):

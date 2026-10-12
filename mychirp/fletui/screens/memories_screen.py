@@ -110,7 +110,7 @@ class MemoryEditDialog(ft.AlertDialog):
         self.content = self._content
         self.actions = [
             ft.TextButton(
-                _("Cancel"), on_click=lambda e: self._page.close(self)),
+                _("Cancel"), on_click=lambda e: self._page.pop_dialog()),
             ft.FilledButton(
                 _("Save"), on_click=self._on_save),
         ]
@@ -254,7 +254,7 @@ class MemoryEditDialog(ft.AlertDialog):
                 self.state.set_status(
                     _("Memory %s updated") % self._loc_label())
                 self.on_saved()
-            self._page.close(self)
+            self._page.pop_dialog()
 
         service.set_memory(self.shell_view.eset.radio, self.mem, done)
 
@@ -460,7 +460,7 @@ class MemoriesScreen(ft.Container):
 
         dlg = MemoryEditDialog(
             self._page, self.state, self, mem, on_saved)
-        self._page.open(dlg)
+        self._page.show_dialog(dlg)
 
     # ----- actions -----
     def apply_filter(self):

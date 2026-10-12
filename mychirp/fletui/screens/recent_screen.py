@@ -162,13 +162,13 @@ class RecentFilesScreen(ft.Container):
 
         def do_clear(ev):
             self.state.clear_recent_files()
-            self._page.close(dlg)
+            self._page.pop_dialog()
             self.refresh()
             if self.state.shell:
                 self.state.shell.set_status(_("Recent files cleared"))
 
         def cancel(ev):
-            self._page.close(dlg)
+            self._page.pop_dialog()
 
         dlg = ft.AlertDialog(
             modal=True,
@@ -191,7 +191,7 @@ class RecentFilesScreen(ft.Container):
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        self._page.open(dlg)
+        self._page.show_dialog(dlg)
 
     def refresh(self):
         self._build()

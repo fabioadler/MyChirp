@@ -193,7 +193,7 @@ class CloneDialog(ft.AlertDialog):
         conf.save()
 
     def _close(self, e=None):
-        self._page.close(self)
+        self._page.pop_dialog()
 
     def _validate(self):
         if self.mode == "download":

@@ -134,6 +134,6 @@ class AboutDialog(ft.AlertDialog):
                 ]))
 
         self.actions = [
-            ft.FilledButton(_("OK"), on_click=lambda e: self._page.close(self)),
+            ft.FilledButton(_("OK"), on_click=lambda e: self._page.pop_dialog()),
         ]
         self.actions_alignment = ft.MainAxisAlignment.CENTER

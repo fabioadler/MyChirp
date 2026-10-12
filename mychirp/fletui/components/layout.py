@@ -99,7 +99,10 @@ class AppShell(ft.Container):
             handler()
 
     # ----- construction -----
-    def _build(self):
+    def _build(self, with_welcome: bool = True):
+        """(Re)build the shell. When radios are open, ``with_welcome``
+        is False so the re-theme does not resurrect the Welcome tab
+        that was removed when the first radio was opened."""
         p = self.palette()
         self.bgcolor = p.bg_window
 
@@ -108,12 +111,16 @@ class AppShell(ft.Container):
 
         self.outer_tabs = MyTabs(self._page, self.state,
                                  on_change=self._on_tab_change)
-        self.outer_tabs.add_tab(
-            _("Welcome"), ft.Icons.WAVING_HAND_OUTLINED, self.welcome,
-            select=False)
+        self._tab_map = []
+        if with_welcome:
+            self.outer_tabs.add_tab(
+                _("Welcome"), ft.Icons.WAVING_HAND_OUTLINED, self.welcome,
+                select=False)
+            self._tab_map.append(None)
         self.outer_tabs.add_tab(
             _("Recent files"), ft.Icons.HISTORY, self.recents,
             select=False)
+        self._tab_map.append(None)
 
         self.statusbar = StatusBar(self._page, self.state)
 
@@ -130,7 +137,6 @@ class AppShell(ft.Container):
             spacing=0,
             expand=True,
         )
-        self._tab_map = [None, None]
         self._update_radio_field()
 
     def palette(self):
@@ -399,7 +405,7 @@ class AppShell(ft.Container):
     def download_from_radio(self):
         from mychirp.fletui.dialogs.clone_dialog import CloneDialog
         dlg = CloneDialog(self._page, self.state, mode="download")
-        self._page.open(dlg)
+        self._page.show_dialog(dlg)
 
     def upload_to_radio(self):
         eset = self.current_editorset
@@ -408,16 +414,16 @@ class AppShell(ft.Container):
             return
         from mychirp.fletui.dialogs.clone_dialog import CloneDialog
         dlg = CloneDialog(self._page, self.state, mode="upload", eset=eset)
-        self._page.open(dlg)
+        self._page.show_dialog(dlg)
 
     # ----- about -----
     def show_about(self):
         from mychirp.fletui.dialogs.about_dialog import AboutDialog
-        self._page.open(AboutDialog(self._page, self.state))
+        self._page.show_dialog(AboutDialog(self._page, self.state))
 
     def _error_dialog(self, title, error):
         def close(e):
-            self._page.close(dlg)
+            self._page.pop_dialog()
 
         p = self.palette()
         dlg = ft.AlertDialog(
@@ -428,7 +434,7 @@ class AppShell(ft.Container):
                 ft.TextButton(_("OK"), on_click=close),
             ],
         )
-        self._page.open(dlg)
+        self._page.show_dialog(dlg)
 
     # ----- tabs management -----
     def _welcome_index(self) -> int | None:
@@ -498,13 +504,22 @@ class AppShell(ft.Container):
         self.statusbar.set_status(message, field)
 
     def apply_theme(self):
-        """Rebuild the whole shell with the new palette."""
+        """Rebuild the whole shell with the new palette.
+
+        Does NOT call update() itself: the caller (set_theme_mode)
+        flushes once with a page-level page.update() so theme_mode and
+        the rebuilt tree travel in a single coherent diff.
+        """
         selected = self.outer_tabs.selected_index
         radio_views = [
             self.outer_tabs.view_at(i)
             for i in range(self.outer_tabs.count)
         ]
-        self._build()
+        radio_views = [
+            v for v in radio_views if isinstance(v, RadioTabsView)]
+        # Welcome comes back only when no radio is open (it is removed
+        # when the first radio opens; a re-theme must not resurrect it)
+        self._build(with_welcome=not radio_views)
         for view in radio_views:
             if isinstance(view, RadioTabsView):
                 # One broken view must never abort the whole re-theme
@@ -520,7 +535,3 @@ class AppShell(ft.Container):
         self.outer_tabs.set_selected(min(
             selected, max(0, self.outer_tabs.count - 1)))
         self._update_radio_field()
-        try:
-            self.update()
-        except (AssertionError, RuntimeError):
-            pass
