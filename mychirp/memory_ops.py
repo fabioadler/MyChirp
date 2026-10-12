@@ -8,7 +8,6 @@ the official import engine (import_logic.import_mem).
 
 import logging
 
-from mychirp import chirp_common
 from mychirp import import_logic
 from mychirp import errors as chirp_errors
 
@@ -288,6 +287,27 @@ def undoable_paste(radio, src_mem, src_features, dst_number):
 
     def redo():
         radio.set_memory(mem.dupe())
+
+    return undo, redo
+
+
+def undoable_set(radio, mem):
+    """Write @mem (undoable). Used for inline/dialog edits."""
+    mem = mem.dupe()
+    snap = _snapshot(radio, {mem.number})
+    if mem.empty:
+        radio.erase_memory(mem.number)
+    else:
+        radio.set_memory(mem.dupe())
+
+    def undo():
+        restore_snapshots(radio, snap)
+
+    def redo():
+        if mem.empty:
+            radio.erase_memory(mem.number)
+        else:
+            radio.set_memory(mem.dupe())
 
     return undo, redo
 

@@ -1208,7 +1208,7 @@ class BaofengUV5R(chirp_common.CloneModeRadio):
         was_empty = False
         # same method as used in get_memory to find
         # out whether a raw memory is empty
-        if _mem.get_raw(asbytes=False)[0] == "\xff":
+        if _mem.get_raw()[:1] == b"\xff":
             was_empty = True
             LOG.debug("UV5R: this mem was empty")
         else:
@@ -1219,13 +1219,13 @@ class BaofengUV5R(chirp_common.CloneModeRadio):
             prev_scode = _mem.scode.get_value()
             prev_pttid = _mem.pttid.get_value()
 
-        _mem.set_raw("\x00" * 16)
+        _mem.set_raw(b"\x00" * 16)
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw(b"\xFF")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":
