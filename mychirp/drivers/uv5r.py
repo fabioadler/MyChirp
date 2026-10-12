@@ -921,9 +921,9 @@ class BaofengUV5R(chirp_common.CloneModeRadio):
     _idents = [UV5R_MODEL_291,
                UV5R_MODEL_ORIG
                ]
-    _vhf_range = (130000000, 176000000)
+    _vhf_range = (128000000, 176000000)
     _220_range = (220000000, 260000000)
-    _uhf_range = (400000000, 520000000)
+    _uhf_range = (384000000, 524000000)
     _aux_block = True
     _tri_power = False
     _bw_shift = False
@@ -2280,7 +2280,13 @@ class BaofengUV5R(chirp_common.CloneModeRadio):
                         obj = _settings
                         setting = element.get_name()
 
-                    if element.has_apply_callback():
+                    if not element.value.initialized:
+                        # Value was out of the declared range when read
+                        # from the radio (e.g. unused presets returning
+                        # 0xFF). Skip it instead of crashing the apply:
+                        LOG.debug("Skipping uninitialized %s",
+                                  element.get_name())
+                    elif element.has_apply_callback():
                         LOG.debug("Using apply callback")
                         element.run_apply_callback()
                     elif element.value.get_mutable():
@@ -2414,25 +2420,6 @@ class UV5RAuxFirstClone(BaofengUV5R):
         ever issued. See _download_full_window for the evidence.
         """
         return _download_full_window(self, status_fn=status_fn)
-
-
-@directory.register
-class BOMVINKBOM5701(UV5RAuxFirstClone):
-    """BOMVINK BOM-5701
-
-    Downloads validated on real hardware (two byte-identical repeated
-    reads; see issue #12332). The radio presents channels 000-126
-    (127 channels), so the memory bounds are narrowed accordingly even
-    though the image layout is the standard 128-slot UV-5R format.
-    """
-    VENDOR = "BOMVINK"
-    MODEL = "BOM-5701"
-
-    def get_features(self):
-        rf = super().get_features()
-        # The radio presents channels 000-126
-        rf.memory_bounds = (0, 126)
-        return rf
 
 
 @directory.register

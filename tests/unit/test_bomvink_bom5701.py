@@ -21,7 +21,7 @@ from unittest import mock
 
 from mychirp import directory
 from mychirp import errors
-from mychirp.drivers import uv5r
+from mychirp.drivers import uv5r, bom5701
 
 IDENT = b'\xaa\x30\x76\x04\x00\x05\x20\xdd'
 
@@ -193,7 +193,7 @@ class BOMVINKBOM5701Test(unittest.TestCase):
     def test_download_order_and_image(self):
         """The BOM-5701 download must read the aux block BEFORE the main
         block, and produce a standard 0x1948-byte UV-5R image."""
-        radio, pipe = self._download(uv5r.BOMVINKBOM5701)
+        radio, pipe = self._download(bom5701.BOMVINKBOM5701)
 
         self.assertEqual(0x1948, len(radio._mmap.get_packed()))
         self.assertEqual(IDENT, radio._mmap.get_packed()[0:8])
@@ -219,7 +219,7 @@ class BOMVINKBOM5701Test(unittest.TestCase):
         end of the aux area, aux-first."""
         pipe = FakeBOM5701Serial()
         pipe.aux = _build_aux(dropped_byte=True)
-        radio = uv5r.BOMVINKBOM5701(None)
+        radio = bom5701.BOMVINKBOM5701(None)
         radio.pipe = pipe
         with mock.patch('time.sleep'):
             radio.sync_in()
@@ -232,7 +232,7 @@ class BOMVINKBOM5701Test(unittest.TestCase):
 
     def test_memories_decode(self):
         """The downloaded image decodes the observed channels."""
-        radio, pipe = self._download(uv5r.BOMVINKBOM5701)
+        radio, pipe = self._download(bom5701.BOMVINKBOM5701)
         mem = radio.get_memory(0)
         self.assertEqual(146520000, mem.freq)
         self.assertEqual('', mem.duplex)
@@ -255,7 +255,7 @@ class BOMVINKBOM5701Test(unittest.TestCase):
         the radio gives after every accepted write, transfers the
         image faithfully, and never touches the unmapped 0x1E80
         region."""
-        radio, _pipe = self._download(uv5r.BOMVINKBOM5701)
+        radio, _pipe = self._download(bom5701.BOMVINKBOM5701)
         fresh = FakeBOM5701Serial()
         radio.pipe = fresh
         with mock.patch('time.sleep'):
@@ -304,7 +304,7 @@ class BOMVINKBOM5701Test(unittest.TestCase):
         retry-on-NACK exists (and why the stock full-range aux list,
         which starts at the image-unmapped 0x1E80, must not be used
         with these radios)."""
-        bom = uv5r.BOMVINKBOM5701(None)
+        bom = bom5701.BOMVINKBOM5701(None)
         bom.pipe = FakeBOM5701Serial()
         with mock.patch('time.sleep'):
             bom.sync_in()
@@ -332,7 +332,7 @@ class BOMVINKBOM5701Test(unittest.TestCase):
         """The full-window live read returns the complete 8 KiB the
         cable can see, reading the calibration gap and aux BEFORE the
         main block (which ends the session)."""
-        radio = uv5r.BOMVINKBOM5701(None)
+        radio = bom5701.BOMVINKBOM5701(None)
         pipe = FakeBOM5701Serial()
         radio.pipe = pipe
         seen = []
@@ -360,12 +360,12 @@ class BOMVINKBOM5701Test(unittest.TestCase):
         """All owner-verified additions are registered as proper,
         separate models with documented hardware."""
         from mychirp.drivers import h777
-        bom = uv5r.BOMVINKBOM5701(None)
+        bom = bom5701.BOMVINKBOM5701(None)
         self.assertEqual('BOMVINK', bom.VENDOR)
         self.assertEqual('BOM-5701', bom.MODEL)
         # The radio presents channels 000-126 (127 channels)
         self.assertEqual((0, 126), bom.get_features().memory_bounds)
-        for rclass in (uv5r.BOMVINKBOM5701,
+        for rclass in (bom5701.BOMVINKBOM5701,
                        h777.BaofengBF777SRadio,
                        h777.IntelbrasRC3002G2Radio):
             self.assertEqual([], rclass.ALIASES)
@@ -384,7 +384,7 @@ class BOMVINKBOM5701Test(unittest.TestCase):
     def test_download_mid_main_silence(self):
         """A radio that goes silent mid-download must raise, never
         silently succeed."""
-        radio = uv5r.BOMVINKBOM5701(None)
+        radio = bom5701.BOMVINKBOM5701(None)
         radio.pipe = FakeBOM5701Serial(silent_at=0x0800)
         with mock.patch('time.sleep'):
             with self.assertRaises(errors.RadioError):
@@ -392,7 +392,7 @@ class BOMVINKBOM5701Test(unittest.TestCase):
 
     def test_no_contact(self):
         """A radio that never answers must raise a contact error."""
-        radio = uv5r.BOMVINKBOM5701(None)
+        radio = bom5701.BOMVINKBOM5701(None)
         radio.pipe = FakeBOM5701Serial(silent_after_main=True)
         radio.pipe.session_over = True
         with mock.patch('time.sleep'):
@@ -403,17 +403,17 @@ class BOMVINKBOM5701Test(unittest.TestCase):
         """Images from a BOM-5701 (blank version string) are detected,
         genuine UV-5R images are not."""
         image = IDENT + _build_main() + _build_aux()
-        self.assertTrue(uv5r.BOMVINKBOM5701.match_model(image, None))
+        self.assertTrue(bom5701.BOMVINKBOM5701.match_model(image, None))
 
         # A genuine UV-5R with a real version string must not match
         genuine = bytearray(image)
         genuine[0x1838:0x183E] = b'BFB297'
-        self.assertFalse(uv5r.BOMVINKBOM5701.match_model(bytes(genuine), None))
+        self.assertFalse(bom5701.BOMVINKBOM5701.match_model(bytes(genuine), None))
 
         # Wrong sizes must not match
         self.assertFalse(
-            uv5r.BOMVINKBOM5701.match_model(b'\xff' * 0x1808, None))
-        self.assertFalse(uv5r.BOMVINKBOM5701.match_model(b'', None))
+            bom5701.BOMVINKBOM5701.match_model(b'\xff' * 0x1808, None))
+        self.assertFalse(bom5701.BOMVINKBOM5701.match_model(b'', None))
 
     def test_directory_detect(self):
         """A raw BOM-5701 image (no metadata) is detected by the
