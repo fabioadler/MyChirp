@@ -10,7 +10,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QListWidget,
@@ -30,7 +29,6 @@ from PySide6.QtWidgets import (
 from mychirp import settings as chirp_settings
 from mychirp.pysideui.i18n import _
 from mychirp.pysideui.services.radio_service import get_service
-from mychirp.pysideui.theme import AppColors
 
 LOG = logging.getLogger(__name__)
 

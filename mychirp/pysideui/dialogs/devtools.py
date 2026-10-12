@@ -147,6 +147,7 @@ class DeveloperDialog(QDialog):
         self.state = state
         self.eset = eset
         self.setWindowTitle(_("Developer tools"))
+        self.setMinimumSize(760, 500)
         self.resize(900, 620)
 
         root = QVBoxLayout(self)
@@ -228,6 +229,7 @@ class BugReportDialog(QDialog):
         self.state = state
         self.eset = eset
         self.setWindowTitle(_("Report a bug"))
+        self.setMinimumSize(560, 440)
         self.resize(560, 480)
 
         root = QVBoxLayout(self)

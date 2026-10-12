@@ -7,12 +7,10 @@ queued signals.
 """
 
 import logging
-import threading
 
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot, QThreadPool
 
 from mychirp import directory
-from mychirp import errors as chirp_errors
 
 LOG = logging.getLogger(__name__)
 
@@ -175,8 +173,6 @@ class RadioService(QObject):
             radio = rclass(pipe)
             job.radio = radio
             if on_progress:
-                signals = None
-                # capture signals bound in _run_async
                 def emit(status):
                     try:
                         job._signals.progress.emit(status)

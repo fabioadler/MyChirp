@@ -6,24 +6,12 @@ QPalette presets for light and dark modes.
 
 import logging
 
-from PySide6.QtGui import QColor, QFont, QPalette
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
 from mychirp.theme import AppColors
 
 LOG = logging.getLogger(__name__)
-
-# Larger base font so 1080p+ screens stay readable without zooming.
-BASE_FONT_PT = 11
-
-
-def apply_theme(app: QApplication, dark: bool):
-    """Apply palette + stylesheet globally (with a larger base font)."""
-    font = app.font()
-    font.setPointSize(BASE_FONT_PT)
-    app.setFont(font)
-    app.setPalette(build_palette(dark))
-    app.setStyleSheet(build_stylesheet(dark))
 
 
 def _qcolor(token: str) -> QColor:
@@ -102,6 +90,9 @@ def build_stylesheet(dark: bool) -> str:
             c.border_soft, c.table_row, c.table_row_alt, c.fg_text,
             c.table_selected, c.table_selected_fg, c.border_soft),
         "QTableView::item { padding: 4px; border: none; }",
+        "QTableView QLineEdit, QTableView QComboBox { border: 1px solid %s; "
+        "border-radius: 2px; padding: 1px 6px; margin: 0; min-height: 0; }" % (
+            c.accent),
         "QHeaderView::section { background-color: %s; color: %s; padding: 8px; "
         "border: none; border-bottom: 2px solid %s; border-right: 1px solid %s; "
         "font-weight: 600; }" % (c.table_header, c.fg_text, c.border,
@@ -171,7 +162,9 @@ def build_stylesheet(dark: bool) -> str:
             c.border_soft, c.fg_text),
         "QGroupBox::title { subcontrol-origin: margin; left: 12px; "
         "padding: 0 6px; font-weight: 600; }",
-        "QDialogButtonBox QPushButton { min-width: 80px; }",
+        "QDialogButtonBox QPushButton { min-width: 96px; "
+        "padding: 8px 20px; }",
+        "QMessageBox QPushButton { min-width: 96px; padding: 8px 20px; }",
         "QMessageBox { background-color: %s; }" % c.bg_panel,
         "QMessageBox QLabel { color: %s; }" % c.fg_text,
     ]
@@ -180,7 +173,6 @@ def build_stylesheet(dark: bool) -> str:
 
 def apply_theme(app: QApplication, dark: bool):
     """Apply palette + stylesheet globally."""
-    from PySide6.QtGui import QFont
     app.setPalette(build_palette(dark))
     app.setStyleSheet(build_stylesheet(dark))
     # Readable default: +1pt over the platform font

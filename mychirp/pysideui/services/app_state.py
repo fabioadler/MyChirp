@@ -9,7 +9,7 @@ import logging
 import os
 
 from PySide6.QtCore import QObject, Signal
-from PySide6.QtGui import QPalette, QGuiApplication
+from PySide6.QtGui import QGuiApplication
 
 from mychirp import config
 from mychirp.memory_ops import UndoStack

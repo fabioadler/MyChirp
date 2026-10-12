@@ -25,12 +25,13 @@ class MemoryEditDialog(QDialog):
     def __init__(self, parent, mem, eset_features):
         super().__init__(parent)
         self.mem = mem
+        self._features = eset_features
         self._fields: dict[str, any] = {}
         self._extra_controls: list = []
         self.setWindowTitle(
             _("Edit Memory %s")
             % (getattr(mem, "extd_number", None) or mem.number))
-        self.setMinimumWidth(480)
+        self.setMinimumWidth(560)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(16, 16, 16, 16)
@@ -86,7 +87,7 @@ class MemoryEditDialog(QDialog):
         if getattr(feats, "valid_skips", None):
             add_combo("skip", _("Skip"), feats.valid_skips, mem.skip)
         if getattr(feats, "valid_power_levels", None):
-            levels = [str(l) for l in feats.valid_power_levels]
+            levels = [str(lvl) for lvl in feats.valid_power_levels]
             add_combo("power", _("Power"), levels,
                       str(mem.power) if mem.power else "")
         if getattr(feats, "has_comment", False):
@@ -130,6 +131,8 @@ class MemoryEditDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         root.addWidget(buttons)
+
+        self.adjustSize()
 
     def _add_extra_row(self, setting, form):
         value = setting.value
@@ -195,7 +198,16 @@ class MemoryEditDialog(QDialog):
         for name, control in self._fields.items():
             raw = (control.currentText() if isinstance(control, QComboBox)
                    else control.text())
-            if name in ("freq", "offset"):
+            if name == "power":
+                level = None
+                levels = getattr(
+                    self._features, "valid_power_levels", None) or []
+                for cand in levels:
+                    if raw == str(cand):
+                        level = cand
+                        break
+                setattr(mem, name, level)
+            elif name in ("freq", "offset"):
                 setattr(mem, name, chirp_common.parse_freq(raw) if raw else 0)
             elif name in ("rtone", "ctone", "tuning_step"):
                 setattr(mem, name, float(raw) if raw else 88.5)

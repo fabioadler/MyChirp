@@ -84,6 +84,7 @@ class QuerySourceDialog(QDialog):
 
         _unused, _module_name, label = SOURCES[source_name]
         self.setWindowTitle(_("Query %s") % label)
+        self.setMinimumSize(720, 460)
         self.resize(860, 560)
 
         root = QVBoxLayout(self)

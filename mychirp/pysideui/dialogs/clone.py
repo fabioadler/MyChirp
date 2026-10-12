@@ -30,7 +30,6 @@ from mychirp.pysideui.services.serial_probe import (
     is_serial_error,
     probe_port,
 )
-from mychirp.pysideui.theme import AppColors
 
 LOG = logging.getLogger(__name__)
 
@@ -113,6 +112,9 @@ class CloneDialog(QDialog):
         buttons.button(QDialogButtonBox.StandardButton.Ok).setText(
             _("Download") if downloading else _("Upload"))
         root.addWidget(buttons)
+
+        self.setMinimumWidth(460)
+        self.adjustSize()
 
     def _port_row(self, ports):
         """Combo plus an "(auto-detect)" hint when there's exactly one port."""

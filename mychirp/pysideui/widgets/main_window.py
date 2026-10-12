@@ -9,7 +9,7 @@ import logging
 import os
 
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QAction, QActionGroup, QIcon, QKeySequence, QPixmap
+from PySide6.QtGui import QAction, QActionGroup, QIcon, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -23,7 +23,6 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QToolButton,
     QVBoxLayout,
-    QWidget,
 )
 
 from mychirp.pysideui.i18n import _
@@ -570,7 +569,6 @@ class MainWindow(QMainWindow):
     def _update_statusbar_for_tab(self, index=None):
         if index is None:
             index = self.tabs.currentIndex()
-        es = self.state.editorsets and self.current_editorset
         if isinstance(view := self.tabs.widget(index), RadioTabWidget):
             self.show_status(view.eset.radio_label, 1)
             self.show_status(
@@ -658,6 +656,7 @@ class MainWindow(QMainWindow):
         service = get_service(self)
 
         def _do_import():
+            from mychirp import directory
             src = directory.get_radio_by_image(filename)
             from mychirp import import_logic
             count = 0
@@ -676,8 +675,6 @@ class MainWindow(QMainWindow):
                 except Exception as e:
                     LOG.warning("import %s failed: %s", number, e)
             return count
-
-        job_done_msg = None
 
         def done(job):
             if job.error:
@@ -785,8 +782,9 @@ class MainWindow(QMainWindow):
         self.state.set_status(_("Print sent"))
 
     def _build_print_html(self, eset):
-        esc = lambda s: str(s).replace("&", "&amp;").replace(
-            "<", "&lt;").replace(">", "&gt;")
+        def esc(s):
+            return str(s).replace("&", "&amp;").replace(
+                "<", "&lt;").replace(">", "&gt;")
         rows = []
         rows.append("<h2>%s</h2>" % esc(eset.radio_label))
         rows.append(

@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
 )
 
 from mychirp.pysideui.i18n import _
-from mychirp.pysideui.theme import AppColors
 
 LOGO = os.path.normpath(os.path.join(
     os.path.dirname(__file__), "..", "..", "share",

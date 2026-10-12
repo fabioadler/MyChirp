@@ -9,18 +9,17 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
-    QHBoxLayout,
     QLabel,
     QMenu,
     QInputDialog,
     QSpinBox,
     QStyledItemDelegate,
+    QTableView,
     QToolBar,
     QVBoxLayout,
     QWidget,
 )
 
-from mychirp import chirp_common
 from mychirp import import_logic
 from mychirp.pysideui.i18n import _
 

@@ -7,9 +7,8 @@ file cross-paste.
 """
 
 import logging
-import os
 
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, Signal
+from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -29,7 +28,6 @@ from mychirp import chirp_common
 from mychirp import memory_ops
 from mychirp.pysideui.i18n import _
 from mychirp.pysideui.services.radio_service import get_service
-from mychirp.pysideui.theme import AppColors
 from mychirp.pysideui.dialogs.memory_edit import MemoryEditDialog
 
 LOG = logging.getLogger(__name__)
@@ -96,6 +94,31 @@ def _visible_columns(features):
     return out
 
 
+def _used_tone_columns(mem):
+    """Tone columns that matter for the memory's current tmode,
+    mirroring the CHIRP memedit (others render blank)."""
+    tmode = mem.tmode
+    if tmode == "Tone":
+        return {"rtone"}
+    if tmode == "TSQL":
+        return {"rtone", "ctone"}
+    if tmode == "DTCS":
+        return {"dtcs"}
+    if tmode == "Cross":
+        tx, _, rx = (mem.cross_mode or "").partition("->")
+        used = set()
+        if tx == "Tone":
+            used.add("rtone")
+        elif tx == "DTCS":
+            used.add("dtcs")
+        if rx == "Tone":
+            used.add("ctone")
+        elif rx == "DTCS":
+            used.add("dtcs")
+        return used
+    return set()
+
+
 def _render(name, mem):
     if mem is None or mem.empty:
         return ""
@@ -103,10 +126,16 @@ def _render(name, mem):
         if name == "freq":
             return chirp_common.format_freq(mem.freq)
         if name == "offset":
-            return chirp_common.format_freq(mem.offset)
+            if mem.duplex in ("+", "-", "split"):
+                return chirp_common.format_freq(mem.offset)
+            return ""
         if name == "power":
             return str(mem.power) if mem.power else ""
-        if name in ("rtone", "ctone"):
+        if name in ("rtone", "ctone", "dtcs"):
+            if name not in _used_tone_columns(mem):
+                return ""
+            if name == "dtcs":
+                return "%03i" % mem.dtcs
             return "%.1f" % getattr(mem, name)
         if name == "tuning_step":
             return "%.1f" % getattr(mem, name)
@@ -129,7 +158,7 @@ class CellDelegate:
     def make(editor_type, parent, options=None, minimum=None, maximum=None,
              single_step=1.0, text=""):
         from PySide6.QtWidgets import (
-            QComboBox, QDoubleSpinBox, QLineEdit, QSpinBox)
+            QComboBox, QDoubleSpinBox, QLineEdit)
         if editor_type == "combo":
             w = QComboBox(parent)
             w.setEditable(False)
@@ -155,7 +184,7 @@ class CellDelegate:
 
     @staticmethod
     def value(editor_type, editor):
-        from PySide6.QtWidgets import QComboBox, QDoubleSpinBox, QLineEdit
+        from PySide6.QtWidgets import QComboBox, QDoubleSpinBox
         if isinstance(editor, QComboBox):
             return editor.currentText()
         if isinstance(editor, QDoubleSpinBox):
@@ -211,20 +240,32 @@ class MemoryChunkDelegate(__import__("PySide6.QtWidgets", fromlist=[
                     None, None, None)
         if col_name == "power":
             lvls = getattr(f, "valid_power_levels", None) or []
-            return ("combo", [str(l) for l in lvls], None, None, None)
+            return ("combo", [str(lvl) for lvl in lvls], None, None, None)
         if col_name == "tuning_step":
             steps = getattr(f, "valid_tuning_steps", None) or []
             return ("combo", ["%.1f" % s for s in steps], None, None, None)
         if col_name in ("freq", "offset"):
-            return ("spin", None, 0, _FREQ_MAX_HZ, 1.0)
+            return ("spin", None, 0, _FREQ_MAX_HZ // 1000000, 0.005)
         return ("line", None, None, None, None)
 
     def createEditor(self, parent, option, index):
         col = self.columns[index.column()]
         kind, options, minimum, maximum, step = self._spec(col)
-        return CellDelegate.make(kind, parent, options=options,
-                                 minimum=minimum, maximum=maximum,
-                                 single_step=step)
+        if kind == "spin":
+            from PySide6.QtCore import QRegularExpression
+            from PySide6.QtGui import QRegularExpressionValidator
+            from PySide6.QtWidgets import QLineEdit
+            w = QLineEdit(parent)
+            w.setPlaceholderText("000.000000")
+            w.setValidator(QRegularExpressionValidator(
+                QRegularExpression(r"^\d{1,4}\.\d{1,6}$"), w))
+            w.setMinimumHeight(30)
+            return w
+        w = CellDelegate.make(kind, parent, options=options,
+                              minimum=minimum, maximum=maximum,
+                              single_step=step)
+        w.setMinimumHeight(30)
+        return w
 
     def setEditorData(self, editor, index):
         col = self.columns[index.column()]
@@ -232,17 +273,18 @@ class MemoryChunkDelegate(__import__("PySide6.QtWidgets", fromlist=[
         kind = self._spec(col)[0]
         raw = getattr(mem, col, "")
         if kind == "combo":
-            text = (mem.power and str(mem.power)) or str(raw)
-            editor.setCurrentText(str(raw))
+            editor.setCurrentText(
+                str(mem.power) if col == "power" and mem.power
+                else str(raw))
             if editor.findText(str(raw)) == -1 and str(raw):
                 editor.insertItem(0, str(raw))
                 editor.setCurrentIndex(0)
         elif kind == "spin":
             try:
-                editor.setValue(float(chirp_common.format_freq(raw)
-                                      if isinstance(raw, int) else raw))
+                editor.setText(chirp_common.format_freq(raw)
+                               if isinstance(raw, int) else str(raw or ""))
             except Exception:
-                editor.setValue(0.0)
+                editor.setText("")
         else:
             editor.setText(str(raw))
 
@@ -253,13 +295,22 @@ class MemoryChunkDelegate(__import__("PySide6.QtWidgets", fromlist=[
         new_val = CellDelegate.value(kind, editor)
         try:
             if col in ("freq", "offset"):
-                new_val = chirp_common.parse_freq(new_val)
+                # Decimal point is mandatory (CHIRP-style): 435.72500
+                if "." not in str(new_val).strip():
+                    raise ValueError(
+                        "Use '.' na frequência, ex.: 435.72500")
+                new_val = chirp_common.parse_freq(str(new_val).strip())
+            elif col == "power":
+                new_val = _power_from_text(self.features, new_val)
             elif col in ("rtone", "ctone", "tuning_step"):
                 new_val = float(new_val or "88.5")
             elif col == "dtcs":
                 new_val = int(new_val or 23)
+            was_empty = mem.empty
             setattr(mem, col, new_val)
             mem.empty = False
+            if was_empty and mem.power is None:
+                mem.power = _default_power(self.features)
             model.dataChanged.emit(index, index)
         except (ValueError, TypeError) as e:
             LOG.debug("invalid value %r for %s: %s", new_val, col, e)
@@ -364,6 +415,23 @@ def _loc_value(mem):
     return extd if extd else str(mem.number)
 
 
+def _power_from_text(features, text):
+    """Resolve a power combo string back to the radio's PowerLevel
+    object (CHIRP memedit parity). Empty -> None (radio default)."""
+    text = str(text or "").strip()
+    levels = getattr(features, "valid_power_levels", None) or []
+    for level in levels:
+        if text == str(level):
+            return level
+    return None
+
+
+def _default_power(features):
+    """First entry of valid_power_levels is the highest ("High")."""
+    levels = getattr(features, "valid_power_levels", None) or []
+    return levels[0] if levels else None
+
+
 class MemoriesTab(QWidget):
     """Memory grid with toolbar + inline cell editing."""
 
@@ -457,13 +525,18 @@ class MemoriesTab(QWidget):
         self.table.setAlternatingRowColors(True)
         self.table.setShowGrid(False)
         self.table.verticalHeader().setVisible(False)
-        self.table.verticalHeader().setDefaultSectionSize(28)
+        self.table.verticalHeader().setDefaultSectionSize(34)
+        self.table.verticalHeader().setMinimumSectionSize(34)
         self.table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSortIndicatorShown(True)
         self.table.horizontalHeader().sectionClicked.connect(
             self._sort_by_column)
-        self.table.doubleClicked.connect(self._edit_selected)
+        self.table.setEditTriggers(
+            QAbstractItemView.EditTrigger.DoubleClicked
+            | QAbstractItemView.EditTrigger.EditKeyPressed
+            | QAbstractItemView.EditTrigger.SelectedClicked)
+        self.model.dataChanged.connect(self._on_cells_edited)
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
         self._add_context_actions()
         self.table.setItemDelegate(
@@ -651,6 +724,11 @@ class MemoriesTab(QWidget):
             LOG.exception("memory op failed")
             self.state.set_status(str(job.error))
             return
+        result = job.result
+        if (isinstance(result, tuple) and len(result) == 2
+                and callable(result[0]) and callable(result[1])):
+            label = getattr(job.fn, "__name__", _("edit"))
+            self.eset.undo_stack.push(label, result[0], result[1])
         self.eset.modified = True
         self.load_memories()
 
@@ -676,7 +754,7 @@ class MemoriesTab(QWidget):
         dst_number = self._selected_number()
         for i, src_mem in enumerate(src_mems):
             self._run_op(
-                memory_ops.paste_memory, src_mem, src_features,
+                memory_ops.undoable_paste, src_mem, src_features,
                 dst_number + i)
 
     def op_insert(self):
@@ -685,7 +763,7 @@ class MemoriesTab(QWidget):
         count = len(self._selected_rows())
         if count < 1:
             count = 1
-        self._run_op(memory_ops.insert_memories,
+        self._run_op(memory_ops.undoable_insert,
                      self._selected_number(), count)
 
     def op_delete_menu(self):
@@ -713,16 +791,17 @@ class MemoriesTab(QWidget):
             return
         numbers = [m.number for m in mems]
         if clicked is simple:
-            self._run_op(memory_ops.delete_memories, numbers, None)
+            self._run_op(memory_ops.undoable_delete, numbers, None)
         elif clicked is shift_block:
-            self._run_op(memory_ops.delete_memories, numbers, "block")
+            self._run_op(memory_ops.undoable_delete, numbers, "block")
         elif clicked is shift_all:
-            self._run_op(memory_ops.delete_memories, numbers, "all")
+            self._run_op(memory_ops.undoable_delete, numbers, "all")
 
     def op_move(self, delta):
         if not self._require_selection():
             return
-        self._run_op(memory_ops.move_memory, self._selected_number(), delta)
+        self._run_op(
+            memory_ops.undoable_move, self._selected_number(), delta)
 
     def op_goto(self):
         lo, hi = self.eset.features.memory_bounds
@@ -743,42 +822,70 @@ class MemoriesTab(QWidget):
         if not self.eset.undo_stack.can_undo():
             self.state.set_status(_("Nothing to undo"))
             return
-        self._run_op(memory_ops.undoable_delete, []),
-        try:
-            self.eset.undo_stack.undo()
-        except Exception as e:
-            self.state.set_status(str(e))
-            return
-        self.load_memories()
+        self._run_op(lambda: self.eset.undo_stack.undo())
 
     def op_redo(self):
         if not self.eset.undo_stack.can_redo():
             self.state.set_status(_("Nothing to redo"))
             return
-        try:
-            self.eset.undo_stack.redo()
-        except Exception as e:
-            self.state.set_status(str(e))
-            return
-        self.load_memories()
+        self._run_op(lambda: self.eset.undo_stack.redo())
 
     def op_export(self):
         if self.state.main_window:
             self.state.main_window.export_current_csv()
 
     # ----- edit -----
+    def _persist_memory(self, mem):
+        """Write an edited memory back into the radio's image (undoable)."""
+        service = get_service(self.state.main_window)
+
+        def done(job):
+            if job.error:
+                LOG.exception("set_memory failed")
+                self.state.set_status(str(job.error))
+                return
+            result = job.result
+            if (isinstance(result, tuple) and len(result) == 2
+                    and callable(result[0]) and callable(result[1])):
+                self.eset.undo_stack.push(
+                    _("Edit channel %s") % _loc_value(mem),
+                    result[0], result[1])
+            self.eset.modified = True
+            self._refresh_rows()
+            self.state.set_status(
+                _("Memory %s updated") % _loc_value(mem))
+
+        service.run_memory_op(
+            memory_ops.undoable_set, self.eset.radio, mem.dupe(),
+            on_done=done)
+
+    def _on_cells_edited(self, first, last, _roles):
+        seen = set()
+        for row in range(first.row(), last.row() + 1):
+            mem = self.model.row_memory(row)
+            if mem is None or mem.number in seen:
+                continue
+            seen.add(mem.number)
+            if not mem.freq:
+                bands = getattr(self.eset.features, "valid_bands", None)
+                if bands:
+                    mem.freq = bands[0][0]
+            self._persist_memory(mem)
+
     def _edit_selected(self):
         mem = self._selected_mem()
         if mem is None:
             return
-        from mychirp.pysideui.dialogs.memory_edit import MemoryEditDialog
         dlg = MemoryEditDialog(self, mem, self.eset.features)
         if dlg.exec() == QDialog.DialogCode.Accepted:
+            was_empty = mem.empty
             dlg.apply()
-            self.eset.modified = True
-            self.load_memories()
-            self.state.set_status(
-                _("Memory %s updated") % _loc_value(mem))
+            if not mem.freq:
+                mem.freq = self.eset.features.valid_bands[0][0]
+            if was_empty and mem.power is None:
+                mem.power = _default_power(self.eset.features)
+            mem.empty = False
+            self._persist_memory(mem)
 
     # ----- keyboard helpers used by the main window shortcuts -----
     def copy_selected(self):
@@ -791,13 +898,13 @@ class MemoriesTab(QWidget):
         if not self._require_selection():
             return
         self.op_copy()
-        self._run_op(memory_ops.delete_memories,
+        self._run_op(memory_ops.undoable_delete,
                      [self._selected_number()], None)
 
     def delete_selected(self, shift=None):
         if not self._require_selection():
             return
-        self._run_op(memory_ops.delete_memories,
+        self._run_op(memory_ops.undoable_delete,
                      [self._selected_number()], shift)
 
     def goto_channel_dialog(self):
