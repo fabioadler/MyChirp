@@ -35,6 +35,8 @@ from mychirp.pysideui.dialogs.memory_edit import MemoryEditDialog
 LOG = logging.getLogger(__name__)
 
 
+_FREQ_MAX_HZ = 2_000_000_000
+
 # Same column logic as the flet UI
 COLUMN_LABELS = {
     "loc": _("Loc"),
@@ -189,10 +191,18 @@ class MemoryChunkDelegate(__import__("PySide6.QtWidgets", fromlist=[
     def _spec(self, col_name):
         """Return (editor_type, options, min, max, step) for @col_name."""
         f = self.features
-        if col_name in ("tmode", "duplex", "mode", "skip"):
-            return ("combo", list(getattr(f, "valid_%ss" % col_name)
-                                   or getattr(f, "valid_%s" % col_name)
-                                   or []), None, None, None)
+        if col_name == "tmode":
+            return ("combo", list(getattr(f, "valid_tmodes") or []),
+                    None, None, None)
+        if col_name == "duplex":
+            return ("combo", list(getattr(f, "valid_duplexes") or []),
+                    None, None, None)
+        if col_name == "mode":
+            return ("combo", list(getattr(f, "valid_modes") or []),
+                    None, None, None)
+        if col_name == "skip":
+            return ("combo", list(getattr(f, "valid_skips") or []),
+                    None, None, None)
         if col_name in ("rtone", "ctone"):
             return ("combo", ["%.1f" % t for t in chirp_common.TONES],
                     None, None, None)
@@ -206,7 +216,7 @@ class MemoryChunkDelegate(__import__("PySide6.QtWidgets", fromlist=[
             steps = getattr(f, "valid_tuning_steps", None) or []
             return ("combo", ["%.1f" % s for s in steps], None, None, None)
         if col_name in ("freq", "offset"):
-            return ("spin", None, 0, FREQ_MAX_HZ, 1.0)
+            return ("spin", None, 0, _FREQ_MAX_HZ, 1.0)
         return ("line", None, None, None, None)
 
     def createEditor(self, parent, option, index):
@@ -342,6 +352,12 @@ class MemoryModel(QAbstractTableModel):
             if m.number == number:
                 return i
         return -1
+
+    @staticmethod
+    def _loc(mem):
+        extd = getattr(mem, "extd_number", None)
+        return extd if extd else str(mem.number)
+
 
     @staticmethod
     def _loc(mem):
