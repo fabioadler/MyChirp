@@ -10,6 +10,7 @@ import logging
 import os
 
 from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, Signal
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QDialog,
@@ -113,14 +114,157 @@ def _render(name, mem):
         return ""
 
 
+class CellDelegate:
+    """Per-column editor factory (CHIRP memedit parity:
+
+    - dropdown for tone/duplex/mode/skip/power/step lists (pick from
+      the radio's valid_* features)
+    - spin box for frequencies (freq, offset)
+    - line edit for name/comment
+    """
+
+    @staticmethod
+    def make(editor_type, parent, options=None, minimum=None, maximum=None,
+             single_step=1.0, text=""):
+        from PySide6.QtWidgets import (
+            QComboBox, QDoubleSpinBox, QLineEdit, QSpinBox)
+        if editor_type == "combo":
+            w = QComboBox(parent)
+            w.setEditable(False)
+            w.addItems([str(o) for o in (options or [])])
+            if text and str(text) in [str(o) for o in options]:
+                w.setCurrentText(str(text))
+            elif text:
+                w.insertItem(0, str(text))
+                w.setCurrentIndex(0)
+        elif editor_type == "spin":
+            w = QDoubleSpinBox(parent)
+            w.setRange(minimum or 0, maximum or 1e9)
+            w.setSingleStep(single_step)
+            w.setDecimals(5 if text and "." in str(text) else 0)
+            try:
+                w.setValue(float(text) if text else minimum or 0)
+            except (ValueError, TypeError):
+                w.setValue(minimum or 0)
+        else:
+            w = QLineEdit(parent)
+            w.setText(str(text) if text is not None else "")
+        return w
+
+    @staticmethod
+    def value(editor_type, editor):
+        from PySide6.QtWidgets import QComboBox, QDoubleSpinBox, QLineEdit
+        if isinstance(editor, QComboBox):
+            return editor.currentText()
+        if isinstance(editor, QDoubleSpinBox):
+            return editor.value()
+        return editor.text()
+
+
+class MemoryChunkDelegate(__import__("PySide6.QtWidgets", fromlist=[
+        "QStyledItemDelegate"]).QStyledItemDelegate):
+    """Inline editor for the columns CHIRP exposes as dropdowns."""
+    # column name -> editor spec
+    COLUMNS = {
+        "tmode": "combo",
+        "rtone": "combo",
+        "ctone": "combo",
+        "dtcs": "combo",
+        "duplex": "combo",
+        "mode": "combo",
+        "skip": "combo",
+        "power": "combo",
+        "tuning_step": "combo",
+        "freq": "spin",
+        "offset": "spin",
+        "name": "line",
+        "comment": "line",
+    }
+
+    def __init__(self, columns, features, parent=None):
+        super().__init__(parent)
+        self.columns = columns
+        self.features = features
+
+    def _spec(self, col_name):
+        """Return (editor_type, options, min, max, step) for @col_name."""
+        f = self.features
+        if col_name in ("tmode", "duplex", "mode", "skip"):
+            return ("combo", list(getattr(f, "valid_%ss" % col_name)
+                                   or getattr(f, "valid_%s" % col_name)
+                                   or []), None, None, None)
+        if col_name in ("rtone", "ctone"):
+            return ("combo", ["%.1f" % t for t in chirp_common.TONES],
+                    None, None, None)
+        if col_name == "dtcs":
+            return ("combo", [str(c) for c in chirp_common.DTCS_CODES],
+                    None, None, None)
+        if col_name == "power":
+            lvls = getattr(f, "valid_power_levels", None) or []
+            return ("combo", [str(l) for l in lvls], None, None, None)
+        if col_name == "tuning_step":
+            steps = getattr(f, "valid_tuning_steps", None) or []
+            return ("combo", ["%.1f" % s for s in steps], None, None, None)
+        if col_name in ("freq", "offset"):
+            return ("spin", None, 0, FREQ_MAX_HZ, 1.0)
+        return ("line", None, None, None, None)
+
+    def createEditor(self, parent, option, index):
+        col = self.columns[index.column()]
+        kind, options, minimum, maximum, step = self._spec(col)
+        return CellDelegate.make(kind, parent, options=options,
+                                 minimum=minimum, maximum=maximum,
+                                 single_step=step)
+
+    def setEditorData(self, editor, index):
+        col = self.columns[index.column()]
+        mem = index.model().row_memory(index.row())
+        kind = self._spec(col)[0]
+        raw = getattr(mem, col, "")
+        if kind == "combo":
+            text = (mem.power and str(mem.power)) or str(raw)
+            editor.setCurrentText(str(raw))
+            if editor.findText(str(raw)) == -1 and str(raw):
+                editor.insertItem(0, str(raw))
+                editor.setCurrentIndex(0)
+        elif kind == "spin":
+            try:
+                editor.setValue(float(chirp_common.format_freq(raw)
+                                      if isinstance(raw, int) else raw))
+            except Exception:
+                editor.setValue(0.0)
+        else:
+            editor.setText(str(raw))
+
+    def setModelData(self, editor, model, index):
+        col = self.columns[index.column()]
+        mem = index.model().row_memory(index.row())
+        kind = self._spec(col)[0]
+        new_val = CellDelegate.value(kind, editor)
+        try:
+            if col in ("freq", "offset"):
+                new_val = chirp_common.parse_freq(new_val)
+            elif col in ("rtone", "ctone", "tuning_step"):
+                new_val = float(new_val or "88.5")
+            elif col == "dtcs":
+                new_val = int(new_val or 23)
+            setattr(mem, col, new_val)
+            mem.empty = False
+            model.dataChanged.emit(index, index)
+        except (ValueError, TypeError) as e:
+            LOG.debug("invalid value %r for %s: %s", new_val, col, e)
+
+
 class MemoryModel(QAbstractTableModel):
     """Table model over a dict {number: Memory}."""
 
-    def __init__(self, columns, parent=None):
+    READ_ONLY = {"loc"}
+
+    def __init__(self, columns, features, parent=None):
         super().__init__(parent)
         self.columns = columns
-        self._rows: list = []  # list of Memory in display order
-        self._editing = False
+        self.features = features
+        self._rows: list = []
 
     # ----- Qt API -----
     def rowCount(self, parent=QModelIndex()):
@@ -130,15 +274,42 @@ class MemoryModel(QAbstractTableModel):
         return 0 if parent.isValid() else len(self.columns)
 
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
-        if not index.isValid() or role != Qt.ItemDataRole.DisplayRole:
+        if not index.isValid():
             return None
         if not (0 <= index.row() < len(self._rows)):
             return None
         mem = self._rows[index.row()]
         col = self.columns[index.column()]
-        if col == "loc":
-            return self._loc(mem)
-        return _render(col, mem)
+
+        if role == Qt.ItemDataRole.ForegroundRole and mem.empty:
+            return QColor("#888888")
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
+            if col == "loc":
+                return self._loc(mem)
+            if role == Qt.ItemDataRole.EditRole:
+                return getattr(mem, col, "")
+            return _render(col, mem)
+        return None
+
+    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
+        if role != Qt.ItemDataRole.EditRole or not index.isValid():
+            return False
+        col = self.columns[index.column()]
+        mem = self._rows[index.row()]
+        try:
+            if col in ("freq", "offset"):
+                value = chirp_common.parse_freq(value) if value else 0
+            elif col in ("rtone", "ctone", "tuning_step"):
+                value = float(value) if value else 88.5
+            elif col == "dtcs":
+                value = int(value) if value else 23
+            setattr(mem, col, value)
+            mem.empty = False
+            self.dataChanged.emit(index, index, [role])
+            return True
+        except (ValueError, TypeError) as e:
+            LOG.debug("invalid value %r for %s: %s", value, col, e)
+            return False
 
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if role != Qt.ItemDataRole.DisplayRole:
@@ -151,6 +322,10 @@ class MemoryModel(QAbstractTableModel):
 
     def flags(self, index):
         f = super().flags(index)
+        if not index.isValid():
+            return f
+        if self.columns[index.column()] != "loc":
+            f |= Qt.ItemFlag.ItemIsEditable
         return f | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
 
     # ----- helpers -----
@@ -182,7 +357,7 @@ class MemoriesTab(QWidget):
         self.eset = eset
         self.state = state
         self.columns = ["loc"] + _visible_columns(eset.features)
-        self.model = MemoryModel(self.columns)
+        self.model = MemoryModel(self.columns, eset.features)
         self._rows_all: list = []
         self.hide_empty = False
         self.on_loaded = None
@@ -263,7 +438,7 @@ class MemoriesTab(QWidget):
         self.table.setSelectionBehavior(
             QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(
-            QAbstractItemView.SelectionMode.SingleSelection)
+            QAbstractItemView.SelectionMode.ExtendedSelection)
         self.table.setAlternatingRowColors(True)
         self.table.setShowGrid(False)
         self.table.verticalHeader().setVisible(False)
@@ -276,6 +451,9 @@ class MemoriesTab(QWidget):
         self.table.doubleClicked.connect(self._edit_selected)
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
         self._add_context_actions()
+        self.table.setItemDelegate(
+            MemoryChunkDelegate(self.columns, self.eset.features,
+                                parent=self.table))
         root.addWidget(self.table, 1)
 
         # State
@@ -382,18 +560,29 @@ class MemoriesTab(QWidget):
         self._page = 0
         self._refresh_rows()
 
+    def _selected_rows(self):
+        """All selected row indexes (sorted), for batch operations."""
+        rows = sorted(
+            r.row() for r in self.table.selectionModel().selectedRows())
+        return rows
+
+    def _selected_memories_list(self):
+        """All selected memories as Memory objects, in row order."""
+        rows = self._selected_rows()
+        return [self.model.row_memory(r) for r in rows]
+
     def _selected_number(self):
-        rows = self.table.selectionModel().selectedRows()
+        rows = self._selected_rows()
         if not rows:
             return None
-        mem = self.model.row_memory(rows[0].row())
+        mem = self.model.row_memory(rows[0])
         return mem.number if mem is not None else None
 
     def _selected_mem(self):
-        rows = self.table.selectionModel().selectedRows()
+        rows = self._selected_rows()
         if not rows:
             return None
-        mem = self.model.row_memory(rows[0].row())
+        mem = self.model.row_memory(rows[0])
         return mem
 
     def select_all(self):
@@ -451,39 +640,49 @@ class MemoriesTab(QWidget):
         self.load_memories()
 
     def op_copy(self):
-        mem = self._selected_mem()
-        if mem is None:
+        mems = self._selected_memories_list()
+        if not mems:
             self.state.set_status(_("Select a channel to copy first"))
             return
-        self.state.memory_clipboard = (mem.dupe(), self.eset.features)
+        # multi-row copy stores the selection as an ordered list; paste
+        # will re-apply them contiguously (CHIRP behavior)
+        self.state.memory_clipboard = (
+            [m.dupe() for m in mems], self.eset.features)
         self.state.set_status(
-            _("Copied channel %s") % self._loc(mem))
+            _("Copied %i channel(s)") % len(mems))
 
     def op_paste(self):
         if not self._require_selection():
             return
         if not self.state.memory_clipboard:
             self.state.set_status(_("Clipboard is empty"))
-
             return
-        src_mem, src_features = self.state.memory_clipboard
-        self._run_op(
-            memory_ops.paste_memory, src_mem, src_features,
-            self._selected_number())
+        src_mems, src_features = self.state.memory_clipboard
+        dst_number = self._selected_number()
+        for i, src_mem in enumerate(src_mems):
+            self._run_op(
+                memory_ops.paste_memory, src_mem, src_features,
+                dst_number + i)
 
     def op_insert(self):
         if not self._require_selection():
             return
+        count = len(self._selected_rows())
+        if count < 1:
+            count = 1
         self._run_op(memory_ops.insert_memories,
-                     self._selected_number(), 1)
+                     self._selected_number(), count)
 
     def op_delete_menu(self):
         if not self._require_selection():
             return
-        mem = self._selected_mem()
+        mems = self._selected_memories_list()
+        count = len(mems)
         menu = QMessageBox(self)
         menu.setWindowTitle(_("Delete"))
-        menu.setText(_("Delete channel %s?") % self._loc(mem))
+        label = _("Delete channel %s?") % self._loc(mems[0]) if count == 1 \
+            else _("Delete %i channels?") % count
+        menu.setText(label)
         simple = menu.addButton(
             _("Delete"), QMessageBox.ButtonRole.AcceptRole)
         shift_block = menu.addButton(
@@ -497,15 +696,13 @@ class MemoriesTab(QWidget):
         clicked = menu.clickedButton()
         if clicked is cancel:
             return
+        numbers = [m.number for m in mems]
         if clicked is simple:
-            self._run_op(memory_ops.delete_memories,
-                         [self._selected_number()], None)
+            self._run_op(memory_ops.delete_memories, numbers, None)
         elif clicked is shift_block:
-            self._run_op(memory_ops.delete_memories,
-                         [self._selected_number()], "block")
+            self._run_op(memory_ops.delete_memories, numbers, "block")
         elif clicked is shift_all:
-            self._run_op(memory_ops.delete_memories,
-                         [self._selected_number()], "all")
+            self._run_op(memory_ops.delete_memories, numbers, "all")
 
     def op_move(self, delta):
         if not self._require_selection():
