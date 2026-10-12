@@ -95,7 +95,7 @@ class MainWindow(QMainWindow):
         self.state = state
         self.setWindowTitle("MyChirp")
 
-        self._build_menus_and_toolbar()
+        self._build_menus()
         self._build_statusbar()
         self._build_central()
 
@@ -105,12 +105,7 @@ class MainWindow(QMainWindow):
         state.editorset_removed.connect(self._on_editorset_removed)
 
     # ----- construction -----
-    def _build_menus_and_toolbar(self):
-        self.toolbar = self.addToolBar(_("Main toolbar"))
-        self.toolbar.setMovable(False)
-        self.toolbar.setObjectName("mainToolbar")
-        self.toolbar.setIconSize(self.toolbar.iconSize() * 0.75)
-
+    def _build_menus(self):
         menubar = self.menuBar()
 
         # File menu
@@ -221,17 +216,10 @@ class MainWindow(QMainWindow):
         self.action_about.triggered.connect(self.show_about)
         help_menu.addAction(self.action_about)
 
-        # toolbar icons (shortcuts mirrored)
+        # window icon
         logo = os.path.join(ASSETS_DIR, "mychirp-logo.png")
         if os.path.exists(logo):
             self.setWindowIcon(QIcon(logo))
-        self.toolbar.addAction(self.action_download)
-        self.toolbar.addAction(self.action_upload)
-        self.toolbar.addSeparator()
-        self.toolbar.addAction(self.action_save)
-        self.toolbar.addAction(self.action_export)
-        self.toolbar.addSeparator()
-        self.toolbar.addAction(self.action_theme)
 
         def _mk_shortcut(action, fn):
             action.triggered.connect(fn)
