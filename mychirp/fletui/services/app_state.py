@@ -151,11 +151,20 @@ class AppState:
         self.conf.save()
 
     def clear_recent_files(self):
-        """Forget the recent files list (files on disk are untouched)."""
+        """Forget the recent files list (files on disk are untouched).
+
+        Also clears the persisted session: otherwise the radio that was
+        open in the previous session gets auto-restored on next start
+        and shows up *as a tab* again, which users perceive as the
+        recent file entry 'coming back'."""
         try:
             self.conf.remove_option("last_open", "state")
         except Exception:
             LOG.debug("No recent files to clear")
+        try:
+            self.conf.remove_option("last_session", "state")
+        except Exception:
+            LOG.debug("No session to clear")
         self.conf.save()
 
     # ----- session persistence -----
