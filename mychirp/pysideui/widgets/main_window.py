@@ -547,8 +547,22 @@ class MainWindow(QMainWindow):
         if welcome_index >= 0:
             self.tabs.removeTab(welcome_index)
         self._apply_developer_tab(view)
+        eset.modified_changed.connect(
+            lambda _mod, v=view: self._update_tab_title(v))
+        self._update_tab_title(view)
         view.refresh_data()
         self._update_statusbar_for_tab(index)
+
+    def _update_tab_title(self, view):
+        """Prefix the tab with '*' while the editorset has unsaved
+        changes (modified flag mirrors the original CHIRP)."""
+        for i in range(self.tabs.count()):
+            if self.tabs.widget(i) is view:
+                title = view.eset.tab_title
+                if view.eset.modified:
+                    title = "* %s" % title
+                self.tabs.setTabText(i, title)
+                break
 
     def _on_editorset_removed(self, eset):
         for i in range(self.tabs.count()):
