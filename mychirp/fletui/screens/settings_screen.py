@@ -199,12 +199,13 @@ class SettingsScreen(ft.Container):
         doc = setting.__doc__
         return ft.Container(
             padding=ft.Padding.symmetric(vertical=SPACING.XS),
+            alignment=ft.Alignment.CENTER_LEFT,
             content=ft.Row(
                 spacing=SPACING.MD,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
                     ft.Container(
-                        width=220,
+                        width=230,
                         alignment=ft.Alignment.CENTER_LEFT,
                         content=ft.Column(
                             spacing=0,
@@ -223,7 +224,7 @@ class SettingsScreen(ft.Container):
                         ),
                     ),
                     ft.Container(
-                        expand=True,
+                        width=320,
                         alignment=ft.Alignment.CENTER_LEFT,
                         content=control),
                 ],
