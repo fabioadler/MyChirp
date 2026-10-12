@@ -95,6 +95,10 @@ class MainWindow(QMainWindow):
         self.state = state
         self.setWindowTitle("MyChirp")
 
+        # 16:9 default with a larger base font, sized so the memory grid
+        # and settings forms fit without resizing the window on 1080p
+        # screens (falls back to 80% of smaller displays).
+        self._apply_window_geometry()
         self._build_menus()
         self._build_statusbar()
         self._build_central()
@@ -103,6 +107,19 @@ class MainWindow(QMainWindow):
         state.theme_changed.connect(self._apply_theme)
         state.editorset_added.connect(self._on_editorset_added)
         state.editorset_removed.connect(self._on_editorset_removed)
+
+    # ----- window geometry -----
+    def _apply_window_geometry(self):
+        """16:9 default, large font. Never exceeds available screen."""
+        screen = QApplication.primaryScreen().availableGeometry()
+        # comfortable 16:9 window fitting most modern displays
+        w = min(1600, screen.width() - 40)
+        h = min(950, screen.height() - 60)
+        self.resize(w, h)
+        # Center on screen
+        x = (screen.width() - w) // 2
+        y = (screen.height() - h) // 2
+        self.move(x, y)
 
     # ----- construction -----
     def _build_menus(self):

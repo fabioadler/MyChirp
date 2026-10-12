@@ -6,12 +6,24 @@ QPalette presets for light and dark modes.
 
 import logging
 
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtGui import QColor, QFont, QPalette
 from PySide6.QtWidgets import QApplication
 
 from mychirp.theme import AppColors
 
 LOG = logging.getLogger(__name__)
+
+# Larger base font so 1080p+ screens stay readable without zooming.
+BASE_FONT_PT = 11
+
+
+def apply_theme(app: QApplication, dark: bool):
+    """Apply palette + stylesheet globally (with a larger base font)."""
+    font = app.font()
+    font.setPointSize(BASE_FONT_PT)
+    app.setFont(font)
+    app.setPalette(build_palette(dark))
+    app.setStyleSheet(build_stylesheet(dark))
 
 
 def _qcolor(token: str) -> QColor:
@@ -168,5 +180,10 @@ def build_stylesheet(dark: bool) -> str:
 
 def apply_theme(app: QApplication, dark: bool):
     """Apply palette + stylesheet globally."""
+    from PySide6.QtGui import QFont
     app.setPalette(build_palette(dark))
     app.setStyleSheet(build_stylesheet(dark))
+    # Readable default: +1pt over the platform font
+    app_font = app.font()
+    app_font.setPointSize(app_font.pointSize() + 1)
+    app.setFont(app_font)
