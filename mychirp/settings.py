@@ -91,7 +91,7 @@ class RadioSettingValue:
     def get_value(self):
         """Gets the current value"""
         if not self.initialized:
-            LOG.error('Accessing setting value before init!')
+            LOG.debug('Accessing setting value before init!')
         return self._current
 
     def __trunc__(self):
@@ -494,11 +494,16 @@ class RadioSettingGroup(object):
             self._validate(element)
             if (isinstance(element, RadioSettingValue) and
                     not element.initialized):
-                # Late-initialize this value
+                # Late-initialize this value. Radios sometimes return
+                # values outside the declared range (e.g. unused
+                # squelch presets read back as 0xFF); those stay
+                # uninitialized (as upstream CHIRP does). Log at DEBUG
+                # level to avoid flooding the console with one ERROR
+                # per field on common radios.
                 try:
                     element.initialize()
                 except InvalidValueError as e:
-                    LOG.error('Failed to load %s value %i: %s',
+                    LOG.debug('Failed to load %s value %i: %s',
                               self._name, i, e)
 
             self.append(element)

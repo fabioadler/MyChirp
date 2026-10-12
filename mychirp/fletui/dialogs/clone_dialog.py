@@ -51,7 +51,9 @@ class CloneDialog(ft.AlertDialog):
             title = _("Upload to radio")
             icon = ft.Icons.BACKUP
 
+        self.title_padding = ft.Padding.all(0)
         self.title = ft.Container(
+            width=420,
             bgcolor=p.bg_panel_alt,
             border_radius=ft.BorderRadius.only(
                 top_left=BORDER_RADIUS["lg"],
@@ -140,16 +142,20 @@ class CloneDialog(ft.AlertDialog):
             "", size=12, color=p.fg_muted, visible=False,
             overflow=ft.TextOverflow.ELLIPSIS)
 
-        # Vertical column layout (form-style, one field per row)
+        # Vertical column layout (form-style, one field per row,
+        # centered in the dialog)
+        self.content_padding = ft.Padding.all(0)
         self.content = ft.Container(
             width=420,
             content=ft.Column(
                 spacing=SPACING.LG,
                 tight=True,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
                     ft.Column(
                         spacing=SPACING.MD,
                         tight=True,
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
                             *([section(_("Radio"), ft.Icons.RADIO),
                                 self.vendor_dd,
