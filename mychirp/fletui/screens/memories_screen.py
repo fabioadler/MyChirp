@@ -126,12 +126,6 @@ class MemoryEditDialog(ft.AlertDialog):
             self.mem, "immutable") else True
 
         for name in self.shell_view.columns:
-            if name not in ("rtone", "ctone") and name not in \
-                    ("tmode", "duplex", "mode", "skip", "power",
-                     "tuning_step", "dtcs"):
-                if name in ("freq", "offset", "name", "comment",
-                            "rtone", "ctone"):
-                    pass
             value = _render(name, self.mem)
             label = COLUMN_LABELS.get(name, name.title())
 
@@ -273,6 +267,8 @@ class MemoriesScreen(ft.Container):
         self.hide_empty = False
         self._rows_cache = []
         self.selected_number = None
+        self.sort_column = None
+        self.sort_reverse = False
         self.on_loaded = None  # optional callback after memories load
         self.expand = True
         self._build()
@@ -299,25 +295,37 @@ class MemoriesScreen(ft.Container):
             label_text_style=ft.TextStyle(color=p.fg_muted, size=12),
             on_change=lambda e: self.toggle_hide_empty(),
         )
+        self.find_next_btn = ft.IconButton(
+            icon=ft.Icons.NAVIGATE_NEXT, icon_size=16,
+            icon_color=p.fg_text, bgcolor=p.bg_panel_alt,
+            tooltip=_("Find next match"),
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=BORDER_RADIUS["sm"])),
+            on_click=lambda e: self.find_next(),
+        )
+        self.find_next_btn = ft.IconButton(
+            icon=ft.Icons.ARROW_DOWNWARD, icon_size=16,
+            icon_color=p.fg_muted, bgcolor=p.bg_panel_alt,
+            tooltip=_("Find next"),
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(
+                    radius=BORDER_RADIUS["sm"])),
+            on_click=lambda e: self.find_next())
         self.table = self._build_table(p)
         self.pagination_info = ft.Text("", size=12, color=p.fg_muted)
         self._apply()
 
     def _build_table(self, p):
-        headers = ft.DataRow(
-            color=p.table_header,
-            cells=[
-                ft.DataCell(
-                    ft.Text(
-                        COLUMN_LABELS.get(col, col.title()),
-                        size=12, weight=ft.FontWeight.BOLD,
-                        color=p.fg_text))
-                for col in self.columns
-            ])
         # DataTable body is filled in refresh_rows()
         return ft.DataTable(
             columns=[
-                ft.DataColumn(label=ft.Text("")) for _ in self.columns
+                ft.DataColumn(
+                    label=ft.Text(
+                        COLUMN_LABELS.get(col, col.title()),
+                        size=12, weight=ft.FontWeight.BOLD,
+                        color=p.fg_text),
+                    on_sort=lambda e, col=col: self._sort_by(col))
+                for col in self.columns
             ],
             rows=[],
             heading_row_height=40,
@@ -341,6 +349,7 @@ class MemoriesScreen(ft.Container):
                     spacing=SPACING.MD,
                     controls=[
                         ft.Container(width=220, content=self.search_field),
+                        self.find_next_btn,
                         self.hide_empty_switch,
                         ft.Container(expand=True),
                         self._page_button(p, ft.Icons.FIRST_PAGE,
@@ -496,7 +505,35 @@ class MemoriesScreen(ft.Container):
                 if self.filter_text.lower() not in haystack:
                     continue
             rows.append(mem)
+        if self.sort_column:
+            rows = self._sort_rows(rows)
         return rows
+
+    def _sort_rows(self, rows):
+        col = self.sort_column
+        if col == "loc":
+            key = lambda m: (
+                isinstance(m.extd_number, str) and m.extd_number or 0,
+                m.number or 0)
+        else:
+            def key(m):
+                v = getattr(m, col, None)
+                return (v is None, str(v).lower()
+                        if isinstance(v, str) else v)
+        try:
+            return sorted(rows, key=key, reverse=self.sort_reverse)
+        except Exception:
+            LOG.exception("sort by %s failed", col)
+            return rows
+
+    def _sort_by(self, col):
+        if self.sort_column == col:
+            self.sort_reverse = not self.sort_reverse
+        else:
+            self.sort_column = col
+            self.sort_reverse = False
+        self.page_index = 0
+        self.refresh_rows()
 
     def refresh_rows(self):
         p = AppColors.for_mode(self.state.is_dark())
@@ -512,6 +549,11 @@ class MemoriesScreen(ft.Container):
             selected = False
             data_rows.append(self._make_row(p, mem, start + i))
         self.table.rows = data_rows
+        arrow = " ▼" if self.sort_reverse else " ▲"
+        for col, dc in zip(self.columns, self.table.columns):
+            label = COLUMN_LABELS.get(col, col.title())
+            dc.label.value = label + (arrow if col == self.sort_column
+                                      else "")
         self.pagination_info.value = _("%i-%i / %i") % (
             start + 1 if total else 0,
             min(start + len(page_rows), total), total)
@@ -742,9 +784,6 @@ class MemoriesScreen(ft.Container):
 
     def _apply_table_colors(self, p):
         self.table.border = ft.Border.all(1, p.border_soft)
-        for cell in self.table.columns:
-            pass
-        # header row colors are baked into rows via DataTable heading
         self.table.heading_row_color = p.table_header
 
     def _edit_memory(self, mem):
@@ -756,6 +795,35 @@ class MemoriesScreen(ft.Container):
         self._page.show_dialog(dlg)
 
     # ----- actions -----
+    def find_next(self):
+        """Jump to the next row matching the current filter, after the
+        current selection (parity with wxui 'Find Next')."""
+        self.filter_text = self.search_field.value or ""
+        if not self.filter_text:
+            return
+        rows = self._filtered_rows()
+        if not rows:
+            self.state.set_status(_("No match"))
+            return
+        start = 0
+        if self.selected_number is not None:
+            for i, mem in enumerate(rows):
+                if mem.number == self.selected_number:
+                    start = i + 1
+                    break
+        query = self.filter_text.lower()
+        for i in range(len(rows)):
+            mem = rows[(start + i) % len(rows)]
+            haystack = " ".join(
+                _render(c, mem) for c in self.columns).lower()
+            if query in haystack:
+                self.page_index = (
+                    self._rows_cache.index(mem) // MEMORIES_PAGE_SIZE)
+                self.selected_number = mem.number
+                self.refresh_rows()
+                return
+        self.state.set_status(_("No match"))
+
     def apply_filter(self):
         self.filter_text = self.search_field.value or ""
         self.page_index = 0
