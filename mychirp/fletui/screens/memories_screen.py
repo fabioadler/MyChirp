@@ -272,6 +272,8 @@ class MemoriesScreen(ft.Container):
         self.filter_text = ""
         self.hide_empty = False
         self._rows_cache = []
+        self.selected_number = None
+        self.on_loaded = None  # optional callback after memories load
         self.expand = True
         self._build()
 
@@ -351,6 +353,7 @@ class MemoriesScreen(ft.Container):
                                               self.page_index + 1)),
                     ],
                 ),
+                self._ops_bar(p),
                 ft.Container(
                     expand=True,
                     border_radius=BORDER_RADIUS["md"],
@@ -359,6 +362,82 @@ class MemoriesScreen(ft.Container):
                         expand=True,
                         controls=[self.table]),
                 ),
+            ],
+        )
+
+    def _ops_bar(self, p):
+        """Memory operations toolbar (CHIRP parity: insert, delete,
+        copy/paste, move, goto, export)."""
+        return ft.Row(
+            spacing=SPACING.SM,
+            controls=[
+                self._tool_button(
+                    p, ft.Icons.CONTENT_COPY, _("Copy"),
+                    self._op_copy),
+                self._tool_button(
+                    p, ft.Icons.CONTENT_PASTE, _("Paste"),
+                    self._op_paste),
+                ft.VerticalDivider(
+                    width=1, thickness=1, color=p.border_soft),
+                self._tool_button(
+                    p, ft.Icons.POST_ADD, _("Insert above"),
+                    self._op_insert),
+                self._delete_menu(p),
+                self._tool_button(
+                    p, ft.Icons.ARROW_UPWARD, _("Move up"),
+                    lambda: self._op_move(-1)),
+                self._tool_button(
+                    p, ft.Icons.ARROW_DOWNWARD, _("Move down"),
+                    lambda: self._op_move(1)),
+                ft.VerticalDivider(
+                    width=1, thickness=1, color=p.border_soft),
+                self._tool_button(
+                    p, ft.Icons.GPS_FIXED, _("Go to channel"),
+                    self._op_goto_channel),
+                ft.Container(expand=True),
+                self._tool_button(
+                    p, ft.Icons.TABLE_VIEW, _("Export CSV"),
+                    self._op_export_csv),
+            ],
+        )
+
+    def _tool_button(self, p, icon, label, handler):
+        return ft.IconButton(
+            icon=icon, icon_size=16,
+            icon_color=p.fg_text,
+            bgcolor=p.bg_panel_alt,
+            tooltip=label,
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=BORDER_RADIUS["sm"]),
+                overlay_color={ft.ControlState.HOVERED: p.accent_container},
+            ),
+            on_click=lambda e: handler(),
+        )
+
+    def _delete_menu(self, p):
+        return ft.PopupMenuButton(
+            icon=ft.Icons.DELETE_OUTLINE,
+            icon_color=p.fg_text,
+            bgcolor=p.bg_panel_alt,
+            tooltip=_("Delete"),
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=BORDER_RADIUS["sm"]),
+                overlay_color={ft.ControlState.HOVERED: p.accent_container},
+            ),
+            menu_position=ft.PopupMenuPosition.UNDER,
+            items=[
+                ft.PopupMenuItem(
+                    icon=ft.Icons.DELETE_OUTLINE,
+                    content=_("Delete channel"),
+                    on_click=lambda e: self._op_delete(None)),
+                ft.PopupMenuItem(
+                    icon=ft.Icons.MOVE_UP,
+                    content=_("Delete + shift block up"),
+                    on_click=lambda e: self._op_delete("block")),
+                ft.PopupMenuItem(
+                    icon=ft.Icons.CLEAR_ALL,
+                    content=_("Delete + shift everything up"),
+                    on_click=lambda e: self._op_delete("all")),
             ],
         )
 
@@ -385,6 +464,11 @@ class MemoriesScreen(ft.Container):
             self.state.set_status(
                 _("%i channels loaded") % len(job.result))
             self.refresh_rows()
+            if self.on_loaded:
+                try:
+                    self.on_loaded()
+                except Exception:
+                    LOG.exception("on_loaded callback failed")
 
         service.load_memories(self.eset.radio, done)
 
@@ -431,7 +515,8 @@ class MemoriesScreen(ft.Container):
     def _make_row(self, p, mem, index):
         alt = index % 2 == 1
         return ft.DataRow(
-            on_select_change=lambda e, m=mem: self._edit_memory(m),
+            selected=(self.selected_number == mem.number),
+            on_select_change=lambda e, m=mem: self._row_selected(m),
             color=p.table_row_alt if alt else p.table_row,
             cells=[
                 ft.DataCell(ft.Text(
@@ -442,6 +527,174 @@ class MemoriesScreen(ft.Container):
                 for col in self.columns
             ],
         )
+
+    def _row_selected(self, mem):
+        """Single click selects the row and opens the editor (the
+        CHIRP click-to-edit behavior); clicking again deselects."""
+        if self.selected_number == mem.number:
+            self.selected_number = None
+        else:
+            self.selected_number = mem.number
+            self._edit_memory(mem)
+        self.refresh_rows()
+
+    # ----- memory operations -----
+    def _selected_mem(self):
+        number = self.selected_number
+        if number is None:
+            return None
+        return self.eset.memories.get(number)
+
+    def _require_selection(self) -> bool:
+        if self._selected_mem() is None:
+            self.state.set_status(_("Select a channel first"))
+            return False
+        if isinstance(self.selected_number, str):
+            self.state.set_status(
+                _("Special channels cannot be modified by this operation"))
+            return False
+        return True
+
+    def _run_op(self, fn, *args, status_ok=""):
+        from mychirp.fletui.services.memory_ops import MemoryOpError
+        service = get_service(self._page)
+        self.state.set_status(_("Working..."))
+
+        def done(job):
+            if job.error:
+                msg = str(job.error)
+                if isinstance(job.error, MemoryOpError):
+                    self.state.set_status(msg)
+                    self._error_dialog(msg)
+                else:
+                    LOG.exception("memory op failed")
+                    self.state.set_status(_("Operation failed"))
+                    self._error_dialog(msg)
+                self.load_memories()
+                return
+            if status_ok:
+                self.state.set_status(status_ok)
+            self.eset.modified = True
+            # re-read from the radio so the grid always mirrors reality
+            self.load_memories()
+
+        service.run_memory_op(fn, self.eset.radio, *args, on_done=done)
+
+    def _error_dialog(self, message):
+        p = AppColors.for_mode(self.state.is_dark())
+
+        def close(e):
+            self._page.pop_dialog()
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            bgcolor=p.bg_panel,
+            title=ft.Text(_("Operation failed"), color=p.fg_text),
+            content=ft.Text(message, color=p.fg_muted),
+            actions=[ft.TextButton(_("OK"), on_click=close)],
+        )
+        self._page.show_dialog(dlg)
+
+    def _op_copy(self):
+        mem = self._selected_mem()
+        if mem is None:
+            self.state.set_status(_("Select a channel to copy first"))
+            return
+        self.state.memory_clipboard = (mem.dupe(), self.eset.features)
+        self.state.set_status(
+            _("Copied channel %s") % self._loc_value(mem))
+
+    def _op_paste(self):
+        if not self._require_selection():
+            return
+        if not self.state.memory_clipboard:
+            self.state.set_status(_("Clipboard is empty"))
+            return
+        src_mem, src_features = self.state.memory_clipboard
+        from mychirp.fletui.services import memory_ops
+        self._run_op(
+            memory_ops.paste_memory, src_mem, src_features,
+            self.selected_number,
+            status_ok=_("Pasted into channel %s")
+            % self.selected_number)
+
+    def _op_insert(self):
+        if not self._require_selection():
+            return
+        from mychirp.fletui.services import memory_ops
+        self._run_op(
+            memory_ops.insert_memories, self.selected_number, 1,
+            status_ok=_("Inserted empty channel at %s")
+            % self.selected_number)
+
+    def _op_delete(self, shift):
+        if not self._require_selection():
+            return
+        from mychirp.fletui.services import memory_ops
+        status = _("Deleted channel %s") % self.selected_number
+        if shift:
+            status = _("Deleted %s and shifted up") % self.selected_number
+        self._run_op(
+            memory_ops.delete_memories, [self.selected_number], shift,
+            status_ok=status)
+
+    def _op_move(self, delta):
+        if not self._require_selection():
+            return
+        from mychirp.fletui.services import memory_ops
+        self._run_op(
+            memory_ops.move_memory, self.selected_number, delta,
+            status_ok=_("Moved channel %s") % self.selected_number)
+
+    def _op_goto_channel(self):
+        p = AppColors.for_mode(self.state.is_dark())
+        lo, hi = self.eset.features.memory_bounds
+        field = ft.TextField(
+            hint_text=_("%i-%i") % (lo, hi),
+            bgcolor=p.input, border=ft.Border.all(1, p.border),
+            border_radius=BORDER_RADIUS["sm"],
+            text_size=13, color=p.fg_text, dense=True, width=180,
+            keyboard_type=ft.KeyboardType.NUMBER, autofocus=True)
+
+        def go(e):
+            try:
+                number = int(field.value)
+            except (TypeError, ValueError):
+                return
+            self._jump_to_number(number)
+            self._page.pop_dialog()
+
+        def cancel(e):
+            self._page.pop_dialog()
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            bgcolor=p.bg_panel,
+            title=ft.Text(_("Go to channel"), color=p.fg_text),
+            content=field,
+            actions=[
+                ft.TextButton(_("Cancel"), on_click=cancel),
+                ft.FilledButton(_("Go"), on_click=go),
+            ],
+        )
+        self._page.show_dialog(dlg)
+
+    def _jump_to_number(self, number):
+        """Move the pagination to the page containing @number."""
+        ordered = [m for m in self._filtered_rows()]
+        for index, mem in enumerate(ordered):
+            if mem.number == number:
+                self.page_index = index // MEMORIES_PAGE_SIZE
+                self.selected_number = number
+                break
+        else:
+            self.state.set_status(_("Channel %s not found") % number)
+            return
+        self.refresh_rows()
+
+    def _op_export_csv(self):
+        if self.state.shell:
+            self.state.shell.export_current_csv()
 
     def _loc_value(self, mem):
         return mem.extd_number if getattr(

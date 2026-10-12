@@ -35,10 +35,22 @@ class RadioTabsView(ft.Column):
         self.memories = MemoriesScreen(page, state, eset)
         self.settings = (
             SettingsScreen(page, state, eset) if eset.has_settings() else None)
+        self.banks = None
+        if (getattr(eset.features, "has_bank", False) and
+                hasattr(eset.radio, "get_bank_model")):
+            try:
+                from mychirp.fletui.screens.banks_screen import BanksScreen
+                self.banks = BanksScreen(page, state, eset)
+            except Exception:
+                LOG.exception("Failed to build banks screen")
         self.inner_tabs = MyTabs(page, state)
         self.inner_tabs.add_tab(
             _("Memories"), ft.Icons.VIEW_LIST_OUTLINED,
             self.memories, select=False)
+        if self.banks:
+            self.inner_tabs.add_tab(
+                _("Banks"), ft.Icons.FOLDER_SPECIAL, self.banks,
+                select=False)
         if self.settings:
             self.inner_tabs.add_tab(
                 _("Settings"), ft.Icons.TUNE, self.settings, select=False)
@@ -46,10 +58,18 @@ class RadioTabsView(ft.Column):
         self.controls = [self.inner_tabs]
 
     def refresh_data(self):
+        # banks refresh is chained after memories finish loading
+        self.memories.on_loaded = self._memories_loaded
         self.memories.load_memories()
+
+    def _memories_loaded(self):
+        if self.banks:
+            self.banks.refresh()
 
     def apply_theme(self):
         self.memories.apply_theme()
+        if self.banks:
+            self.banks.apply_theme()
         if self.settings:
             self.settings.apply_theme()
 
@@ -215,6 +235,11 @@ class AppShell(ft.Container):
                     leading=ft.Icons.SAVE_AS_OUTLINED,
                     on_click=lambda e: self.save_current(as_new=True),
                 ),
+                ft.MenuItemButton(
+                    content=_("Export to CSV..."),
+                    leading=ft.Icons.TABLE_VIEW,
+                    on_click=lambda e: self.export_current_csv(),
+                ),
                 ft.Divider(height=1, color=p.border_soft),
                 ft.MenuItemButton(
                     content=_("Restore last session"),
@@ -370,6 +395,49 @@ class AppShell(ft.Container):
         eset = self.current_editorset
         if eset:
             self.state.remove_editorset(eset)
+
+    def export_current_csv(self):
+        """Export the current radio's non-empty memories to a CSV file
+        (CHIRP-next parity: File > Export to CSV)."""
+        eset = self.current_editorset
+        if not eset:
+            self.state.set_status(_("Open a radio first"))
+            return
+
+        async def _flow():
+            path = await self._picker.save_file(
+                dialog_title=_("Export to CSV"),
+                file_name="%s.csv" % eset.default_filename.rsplit(".", 1)[0],
+                allowed_extensions=["csv"],
+                file_type=ft.FilePickerFileType.CUSTOM,
+            )
+            if path:
+                self._do_export_csv(path)
+
+        self._page.run_task(_flow)
+
+    def _do_export_csv(self, path):
+        eset = self.current_editorset
+        if not eset:
+            return
+        from mychirp.fletui.services.radio_service import get_service
+        service = get_service(self._page)
+        self.state.set_status(_("Exporting to %s...") % path)
+
+        def done(job):
+            if job.error:
+                self.state.set_status(_("Export failed"))
+                self._error_dialog(_("Failed to export"), job.error)
+                return
+            count = job.result or 0
+            if not count:
+                self.state.set_status(_("Nothing to export"))
+                return
+            self.state.set_status(
+                _("Exported %i channels to %s")
+                % (count, os.path.basename(path)))
+
+        service.export_csv(eset.radio, path, done)
 
     def restore_session(self):
         """Reopen the radios from the previous session (menu action)."""

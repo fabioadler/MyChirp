@@ -212,6 +212,23 @@ class RadioService:
         job = RadioJob(_set, radio=radio)
         self._run_async(job, on_done)
 
+    # ----- memory grid operations (see services/memory_ops.py) -----
+    def run_memory_op(self, fn, radio, *args, on_done=None):
+        """Run a pure memory operation in a worker thread."""
+        def _run():
+            return fn(radio, *args)
+
+        job = RadioJob(_run, radio=radio)
+        self._run_async(job, on_done or (lambda job: None))
+
+    def export_csv(self, radio, filename, on_done):
+        def _export():
+            from mychirp.fletui.services import memory_ops
+            return memory_ops.export_csv(radio, filename)
+
+        job = RadioJob(_export, radio=radio)
+        self._run_async(job, on_done)
+
     def load_settings(self, radio, on_done):
         def _load():
             return radio.get_settings()

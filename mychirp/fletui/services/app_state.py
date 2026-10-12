@@ -70,6 +70,11 @@ class AppState:
         self.shell = None
         self._file_picker: ft.FilePicker | None = None
 
+        # Memory clipboard: (memory, source_features) — pasting uses
+        # the CHIRP cross-model import engine, so a memory copied from
+        # one radio can be pasted into another with adaptation
+        self.memory_clipboard: tuple | None = None
+
     # ----- theme -----
     def is_dark(self) -> bool:
         if self.theme_mode == MODE_DARK:
