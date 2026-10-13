@@ -18,6 +18,33 @@ def test_log_annotates_current_logging_system(caplog):
     pipe.close()
 
 
+def test_trace_off_by_default():
+    pipe = SerialPipe(port=None)
+    assert not pipe.trace_enabled
+
+
+def test_trace_enabled_by_env(monkeypatch):
+    monkeypatch.setenv("CHIRP_SERIAL_TRACE", "1")
+    pipe = SerialPipe(port=None)
+    assert pipe.trace_enabled
+
+
+def test_dump_emits_hexdump_only_when_enabled(caplog):
+    pipe = SerialPipe(port=None)
+    with caplog.at_level(logging.DEBUG, logger="mychirp.serial"):
+        pipe._dump("W", b"\x01\x02\xfe")
+    assert "01 02 fe" not in caplog.text.replace("01 02 fe", "01 02 fe")
+
+    pipe.trace_enabled = True
+    with caplog.at_level(logging.DEBUG, logger="mychirp.serial"):
+        pipe._dump("W", b"\x01\x02\xfe")
+        pipe._dump("R", b"")
+    assert "01 02 fe" in caplog.text
+    assert "W" in caplog.text
+    assert "# timeout" in caplog.text
+    pipe.close()
+
+
 def test_log_on_unopened_port_does_not_raise():
     pipe = SerialPipe(port=None)
     pipe.log("should not crash")
