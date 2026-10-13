@@ -108,6 +108,25 @@ rastreio real).
 Observações técnicas: módulo interno E220-400722D (LoRa) sem relação
 com o clone via conector de 2 pinos; cabo CH340 em `/dev/ttyUSB0`.
 
+## 5b. Diagnóstico do Baofeng UV-16 Plus (2026-10-13, validado em hardware)
+
+Modelo 2024/25 (10W no rótulo, display estilo UV-5R), sem suporte no CHIRP
+upstream — protocolo descoberto por engenharia reversa com o rádio físico:
+
+- **Protocolo**: clone clássico UV-5R a 9600 baud (cabo CH340/K1)
+- **Magic aceito**: `UV5R_MODEL_291` (`50 BB FF 20 12 07 25`) — recusado
+  com DTR/RTS baixos; aceito após reconexão do cabo (quirk do CH340)
+- **Ident/fingerprint**: `aa 30 76 04 00 05 20 dd` (termina em `\xDD`)
+- **Firmware** (aux 0x1EF0): `HN5RV01` — base do `BASETYPE_UV16PLUS`
+- **Memória**: layout idêntico ao UV-5R — ident(8) + main 0x0000-0x1800 +
+  aux 0x1EC0-0x2000 = 0x1948 bytes; 128 canais (0-127) validados contra o
+  display (ch0=144.725 VHF, ch127=435.725 UHF)
+- **Tri-power**: High/Med/Low (10/5/2W rotulados)
+- **Driver**: `mychirp/drivers/baofeng_uv16.py` herda de
+  `BaofengBFF8HPRadio` com power levels próprias re-mapeadas por label
+- **Distinção UV-16 legado** (2022, mesmo protocolo do BF-F8HP): classe
+  `BaofengUV16Radio` em `uv5r.py`; alias `UV-16 Pro`/`UV-16 Pro Mate`
+
 ## 6. Fases e status
 
 - [x] **F0** — Repositório, branch, PLAN.md, graphify
@@ -138,6 +157,12 @@ com o clone via conector de 2 pinos; cabo CH340 em `/dev/ttyUSB0`.
   desinstalada, `mychirp-flet` removido; backend e testes preservados
   (test_move_ops -> test_memory_ops/imports atualizados). Suíte: 744
   testes passam, 13 skipped.
+- [x] **V1** — Suporte ao Baofeng UV-16 legado (2022): classe
+  `BaofengUV16Radio` em `uv5r.py` (plataforma BF-F8HP) + aliases
+  UV-16 Pro/Pro Mate
+- [x] **V2** — Suporte oficial ao Baofeng UV-16 Plus: driver dedicado
+  `baofeng_uv16.py` (engenharia reversa, ver §5b) + imagem de teste
+  clonada do rádio real (35 testes do driver passando)
 
 ## 7. Correções pós-migração Flet (ordem de entrada)
 
