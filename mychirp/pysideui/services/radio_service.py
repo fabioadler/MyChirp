@@ -26,9 +26,9 @@ def open_serial(port, rclass):
     radio's BAUD_RATE, hardware flow, RTS/DTR pin configuration and a
     short timeout so the clone protocol retries work.
     """
-    import serial
+    from mychirp.serial_pipe import SerialPipe
 
-    pipe = serial.Serial(
+    pipe = SerialPipe(
         baudrate=getattr(rclass, "BAUD_RATE", 9600),
         rtscts=getattr(rclass, "HARDWARE_FLOW", False),
         timeout=0.25,

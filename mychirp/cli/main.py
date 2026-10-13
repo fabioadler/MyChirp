@@ -228,7 +228,8 @@ def main(args=None):
             s.timeout = 0.5
             s.open()
         else:
-            s = serial.Serial(port=options.serial, timeout=0.5)
+            from mychirp.serial_pipe import SerialPipe
+            s = SerialPipe(port=options.serial, timeout=0.5)
 
     radio = rclass(s)
 
