@@ -2615,6 +2615,24 @@ class TenwayUV82Pro(chirp_common.Alias):
     MODEL = 'UV-82 Pro'
 
 
+class UV16ProAlias(chirp_common.Alias):
+    VENDOR = "Baofeng"
+    MODEL = "UV-16 Pro"
+
+
+class UV16ProMateAlias(chirp_common.Alias):
+    VENDOR = "Baofeng"
+    MODEL = "UV-16 Pro Mate"
+
+
+@directory.register
+class BaofengUV16Radio(BaofengBFF8HPRadio):
+    """Baofeng UV-16 (legacy 2022 model, same platform as BF-F8HP)"""
+    VENDOR = "Baofeng"
+    MODEL = "UV-16"
+    ALIASES = [UV16ProAlias, UV16ProMateAlias]
+
+
 @directory.register
 class BaofengUV82HPRadio(BaofengUV5R):
     VENDOR = "Baofeng"

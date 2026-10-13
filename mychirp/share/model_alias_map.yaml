@@ -197,6 +197,8 @@ Baofeng/Pofung:
   variant: 'tri-band: '
 - alt: UV-82HP
   model: UV-X9
+- alt: UV-16
+  model: UV-16 Pro V2
 BTECH:
 - alt: Baofeng BF-F8HP-PRO
   model: BF-F8HP-PRO
