@@ -18,6 +18,10 @@ class SerialNone:
     def __init__(self, *a, **k):
         self.port = '/dev/ttyUSB0'
 
+    def log(self, message):
+        """SerialPipe API: drivers registram anotações de protocolo."""
+        pass
+
     def flush(self):
         pass
 

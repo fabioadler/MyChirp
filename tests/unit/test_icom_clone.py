@@ -94,9 +94,9 @@ class TestRawRadioData(unittest.TestCase):
         self.assertEqual(b'\x00\x10\xFE\x00', data)
 
 
-class TestAdapterMeta(type):
+class AdapterMeta(type):
     def __new__(cls, name, parents, dct):
-        return super(TestAdapterMeta, cls).__new__(cls, name, parents, dct)
+        return super(AdapterMeta, cls).__new__(cls, name, parents, dct)
 
 
 test_file_glob = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -116,6 +116,6 @@ for image_file in glob.glob(test_file_glob):
 
     class_name = 'Test_%s' % base
     sys.modules[__name__].__dict__[class_name] = \
-        TestAdapterMeta(class_name,
+        AdapterMeta(class_name,
                         (BaseIcomCloneTest, unittest.TestCase),
                         dict(RADIO_IDENT=base, IMAGE_FILE=image_file))

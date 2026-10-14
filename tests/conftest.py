@@ -21,6 +21,7 @@ def pytest_configure(config):
         directory.import_drivers()
         modules = {rclass.__module__.split('.')[-1]
                    for rclass in directory.DRV_TO_RADIO.values()}
+        config.addinivalue_line('markers', 'network: requires network')
         for module in sorted(modules):
             config.addinivalue_line("markers", "%s: driver module" % module)
     except Exception as e:

@@ -1,9 +1,6 @@
 import builtins
 import unittest
 
-import warnings
-warnings.simplefilter('ignore', Warning)
-
 builtins._ = lambda x: x
 
 

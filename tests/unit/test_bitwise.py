@@ -18,8 +18,6 @@ from builtins import bytes
 import unittest
 from unittest import mock
 
-import pytest
-
 
 from mychirp import bitwise
 from mychirp import memmap
@@ -308,13 +306,14 @@ class TestBitwiseCharTypes(BaseTest):
         obj.foo = [ord(c) for c in 'fffbbb']
         self.assertEqual('fffbbb', str(obj.foo))
 
-    @pytest.mark.filterwarnings(
-        "ignore:Driver is using non-byte-native")
     def test_string_get_raw(self):
         data = memmap.MemoryMapBytes(bytes(b"foobar"))
         obj = bitwise.parse("char foo[6];", data)
         self.assertEqual(b'foobar', obj.foo.get_raw())
-        self.assertEqual('foobar', obj.foo.get_raw(asbytes=False))
+        # a variante legada (asbytes=False) avisa sobre a deprecação
+        with self.assertWarns(DeprecationWarning):
+            raw = obj.foo.get_raw(asbytes=False)
+        self.assertEqual('foobar', raw)
 
 
 class TestBitwiseStructTypes(BaseTest):
@@ -341,33 +340,34 @@ class TestBitwiseStructTypes(BaseTest):
         obj.foo.baz = 0x34
         self.assertEqual(data.get_packed(), b"\x12\x34")
 
-    @pytest.mark.filterwarnings(
-        "ignore:Driver is using non-byte-native")
     def test_struct_get_raw(self):
         data = memmap.MemoryMapBytes(bytes(b".."))
         defn = "struct { u8 bar; u8 baz; } foo;"
         obj = bitwise.parse(defn, data)
         self.assertEqual(b'..', obj.get_raw())
-        self.assertEqual('..', obj.get_raw(asbytes=False))
+        # a variante legada (asbytes=False) avisa sobre a deprecação
+        with self.assertWarns(DeprecationWarning):
+            raw = obj.get_raw(asbytes=False)
+        self.assertEqual('..', raw)
 
-    @pytest.mark.filterwarnings(
-        "ignore:Driver is using non-byte-native")
     def test_struct_get_raw_small(self):
         data = memmap.MemoryMapBytes(bytes(b"."))
         defn = "struct { u8 bar; } foo;"
         obj = bitwise.parse(defn, data)
         self.assertEqual(b'.', obj.get_raw())
-        self.assertEqual('.', obj.get_raw(asbytes=False))
+        with self.assertWarns(DeprecationWarning):
+            raw = obj.get_raw(asbytes=False)
+        self.assertEqual('.', raw)
 
-    @pytest.mark.filterwarnings(
-        "ignore:Driver is using non-byte-native")
     def test_struct_set_raw(self):
         data = memmap.MemoryMapBytes(bytes(b"."))
         defn = "struct { u8 bar; } foo;"
         obj = bitwise.parse(defn, data)
         obj.set_raw(b'1')
         self.assertEqual(b'1', data.get_packed())
-        obj.set_raw('2')
+        # a variante legada (string) avisa sobre a deprecação
+        with self.assertWarns(DeprecationWarning):
+            obj.set_raw('2')
         self.assertEqual(b'2', data.get_packed())
 
     @mock.patch.object(bitwise.LOG, 'error')
@@ -538,6 +538,32 @@ class TestBitwiseSeek(BaseTest):
         obj = bitwise.parse(defn, b"AbcdZ")
         self.assertEqual(str(obj.foo), "A")
         self.assertEqual(str(obj.bar), "Z")
+
+    def test_overlayto_forward(self):
+        defn = "#overlayto 4; char foo;"
+        obj = bitwise.parse(defn, b"abcdZ")
+        self.assertEqual(str(obj.foo), "Z")
+
+    def test_overlayto_backward_no_warning(self):
+        # overlay explícito sobre área já mapeada: mesmo efeito de
+        # #seekto backward, sem DeprecationWarning
+        import warnings
+        defn = "u8 a; #overlayto 0x00; u8 b;"
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter('always')
+            obj = bitwise.parse(defn, memmap.MemoryMapBytes(b"ABCD"))
+        self.assertEqual(int(obj.b), ord('A'))
+        self.assertEqual([str(w.message) for w in caught], [])
+
+    def test_seekto_backward_warns(self):
+        # o #seekto backward acidental continua avisando
+        import warnings
+        defn = "u8 a; #seekto 0x00; u8 b;"
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter('always')
+            bitwise.parse(defn, memmap.MemoryMapBytes(b"ABCD"))
+        self.assertTrue(any('negative seek' in str(w.message)
+                            for w in caught))
 
 
 class TestBitwiseErrors(BaseTest):
