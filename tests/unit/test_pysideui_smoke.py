@@ -466,3 +466,35 @@ def test_clear_logs_menu_action(qapp, tmp_path, monkeypatch):
     # ação registrada no menu Ajuda
     assert win.action_clear_logs is not None
     assert win.action_clear_logs.text()
+
+
+def test_welcome_tab_never_has_close_button(qapp, tmp_path):
+    """Welcome/Recent nunca fecham: sem botão de fechar, inclusive ao
+    re-adicionar a Welcome (fechou último rádio) e ao mover abas."""
+    from mychirp.pysideui.widgets.main_window import MainWindow
+
+    state = _tmp_state(tmp_path)
+    win = MainWindow(state)
+    bar = win.tabs.tabBar()
+
+    def buttons(widget):
+        idx = win.tabs.indexOf(widget)
+        return tuple(bar.tabButton(idx, side) for side in (
+            bar.ButtonPosition.LeftSide, bar.ButtonPosition.RightSide))
+
+    # estado inicial: nenhum botão nas duas abas fixas
+    assert buttons(win.welcome) == (None, None)
+    assert buttons(win.recent) == (None, None)
+
+    # fluxo do bug: Welcome removida e re-adicionada ao fechar o último
+    # rádio (_on_editorset_removed sem RadioTabWidget aberto)
+    win.tabs.removeTab(win.tabs.indexOf(win.welcome))
+    win._on_editorset_removed(None)
+    idx = win.tabs.indexOf(win.welcome)
+    assert idx >= 0, "Welcome não foi re-adicionada"
+    assert buttons(win.welcome) == (None, None)
+
+    # arrastar abas (Qt recria botões): continua sem botão
+    bar.moveTab(win.tabs.indexOf(win.welcome), 0)
+    assert buttons(win.welcome) == (None, None)
+    assert buttons(win.recent) == (None, None)

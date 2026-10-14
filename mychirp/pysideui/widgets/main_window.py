@@ -466,18 +466,31 @@ class MainWindow(QMainWindow):
         self.tabs.setMovable(True)
         self.tabs.tabCloseRequested.connect(self._tab_close_requested)
         self.tabs.currentChanged.connect(self._update_statusbar_for_tab)
+        # Qt pode recriar o botão de fechar ao arrastar abas
+        self.tabs.tabBar().tabMoved.connect(self._hide_fixed_tab_buttons)
         self.setCentralWidget(self.tabs)
 
         self.welcome = WelcomeTab(self.state)
         self.recent = RecentTab(self.state)
         self.tabs.addTab(self.welcome, QIcon(), _("Welcome"))
         self.tabs.addTab(self.recent, QIcon(), _("Recent files"))
-        self.tabs.tabBar().setTabButton(
-            self.tabs.indexOf(self.welcome),
-            self.tabs.tabBar().ButtonPosition.RightSide, None)
-        self.tabs.tabBar().setTabButton(
-            self.tabs.indexOf(self.recent),
-            self.tabs.tabBar().ButtonPosition.RightSide, None)
+        self._hide_fixed_tab_buttons()
+
+    def _hide_tab_close_button(self, widget):
+        """Remove o botão de fechar da aba de @widget: Welcome e Recent
+        nunca fecham (o botão só fica nas abas de arquivos abertos)."""
+        index = self.tabs.indexOf(widget)
+        if index >= 0:
+            bar = self.tabs.tabBar()
+            for side in (bar.ButtonPosition.LeftSide,
+                         bar.ButtonPosition.RightSide):
+                bar.setTabButton(index, side, None)
+
+    def _hide_fixed_tab_buttons(self, *args):
+        """Reaplica a remoção dos botões de Welcome/Recent (após
+        re-adicionar a Welcome ou mover abas)."""
+        self._hide_tab_close_button(self.welcome)
+        self._hide_tab_close_button(self.recent)
 
     def _build_statusbar(self):
         self.status = self.statusBar()
@@ -576,6 +589,8 @@ class MainWindow(QMainWindow):
         if not any(isinstance(self.tabs.widget(i), RadioTabWidget)
                    for i in range(self.tabs.count())):
             self.tabs.addTab(self.welcome, _("Welcome"))
+            # re-adicionada: sem botão de fechar (Welcome nunca fecha)
+            self._hide_tab_close_button(self.welcome)
             self.tabs.setCurrentIndex(self.tabs.count() - 1)
 
     UNSAVED_SAVE = "save"
