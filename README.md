@@ -7,6 +7,9 @@ consistentes em todos os componentes.
 Créditos do projeto original: CHIRP Project (Dan Smith e contribuidores),
 GPLv3. Esta versão: **Feita/modificada por Fábio Adler de Luna Gomes**.
 
+> **Plataformas suportadas**: atualmente **apenas Linux** (testado em
+> Debian 13). Não há suporte oficial para Windows/macOS nesta versão.
+
 ## Esta versão
 
 Mantém **todos os modelos do CHIRP original** e substitui a interface wxUI
