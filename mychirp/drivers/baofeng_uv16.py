@@ -51,6 +51,8 @@ class BaofengUV16PlusRadio(uv5r.BaofengBFF8HPRadio):
     _idents = [uv5r.UV5R_MODEL_291]
     _vhf_range = (136000000, 174000000)
     _uhf_range = (400000000, 520000000)
+    # Herdar os aliases do BF-F8HP duplicaria os modelos no diretório
+    ALIASES = []
 
     def get_features(self):
         rf = super().get_features()

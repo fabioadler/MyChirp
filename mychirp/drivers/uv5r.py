@@ -2630,6 +2630,7 @@ class BaofengUV16Radio(BaofengBFF8HPRadio):
     """Baofeng UV-16 (legacy 2022 model, same platform as BF-F8HP)"""
     VENDOR = "Baofeng"
     MODEL = "UV-16"
+    # Herdar os aliases do BF-F8HP duplicaria os modelos no diretório
     ALIASES = [UV16ProAlias, UV16ProMateAlias]
 
 
