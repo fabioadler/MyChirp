@@ -125,6 +125,13 @@ class BOMVINKBOM5701(UV5RAuxFirstClone):
         "uhf": (384, 524),
     }
 
+    # Nomes com letras minúsculas existem em unidades reais (canais
+    # 'Coz.' e 'Artu.' verificados no hardware em 2026-10-13): o
+    # display do rádio apresenta minúsculas normalmente. O charset
+    # base do UV-5R (maiúsculas) rejeitaria esses dados legítimos.
+    _valid_chars = UV5RAuxFirstClone._valid_chars + \
+        "abcdefghijklmnopqrstuvwxyz"
+
     def get_features(self):
         rf = super().get_features()
         # The radio presents channels 000-126

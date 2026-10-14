@@ -51,6 +51,11 @@ class BaofengUV16PlusRadio(uv5r.BaofengBFF8HPRadio):
     _idents = [uv5r.UV5R_MODEL_291]
     _vhf_range = (136000000, 174000000)
     _uhf_range = (400000000, 520000000)
+    # Letras minúsculas: o display apresenta normalmente (confirmado
+    # pelo mantenedor no hardware real, mesma família de firmware
+    # HN5RV01 do BOM-5701, onde canais reais usam minúsculas).
+    _valid_chars = uv5r.BaofengBFF8HPRadio._valid_chars + \
+        "abcdefghijklmnopqrstuvwxyz"
     # Herdar os aliases do BF-F8HP duplicaria os modelos no diretório
     ALIASES = []
 
