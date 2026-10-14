@@ -2118,7 +2118,19 @@ def is_version_newer(version):
             _, stamp = v.split('-', 1)
             ver = (int(stamp),)
         elif '.' in v:
-            ver = tuple(int(p) for p in v.split('.'))
+            # Tolerante a sufixos não-numéricos ('1.2 Beta' -> (1, 2),
+            # '0.3.0dev' -> (0, 3, 0)): cada trecho lê só os dígitos
+            # iniciais; sem dígitos vira 0.
+            parts = []
+            for p in v.split('.'):
+                digits = ''
+                for ch in p.strip():
+                    if ch.isdigit():
+                        digits += ch
+                    else:
+                        break
+                parts.append(int(digits) if digits else 0)
+            ver = tuple(parts)
         else:
             ver = (0,)
         LOG.debug('Parsed version %r to %r' % (v, ver))

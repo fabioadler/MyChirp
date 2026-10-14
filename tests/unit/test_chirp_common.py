@@ -71,6 +71,17 @@ class TestUtilityFunctions(base.BaseTest):
     def test_compare_version_to_current_dev(self):
         self.assertTrue(chirp_common.is_version_newer('daily-20180101'))
 
+    @mock.patch('mychirp.CHIRP_VERSION', new='1.2 Beta')
+    def test_compare_version_to_current_beta(self):
+        # sufixo 'Beta' não quebra o parse (nem loga erro)
+        self.assertFalse(chirp_common.is_version_newer('1.2 Beta'))
+        self.assertFalse(chirp_common.is_version_newer('1.1'))
+        self.assertFalse(chirp_common.is_version_newer('0.3.0'))
+        self.assertTrue(chirp_common.is_version_newer('1.3'))
+        self.assertTrue(chirp_common.is_version_newer('1.2.1'))
+        self.assertTrue(chirp_common.is_version_newer('2.0'))
+        self.assertTrue(chirp_common.is_version_newer('daily-20260101'))
+
     def test_from_Hz(self):
         self.assertEqual(140, chirp_common.from_GHz(140000000001))
         self.assertEqual(140, chirp_common.from_MHz(140000001))

@@ -87,6 +87,9 @@ aponta para `pysideui:run`.
 2. **Dupla confirmação obrigatória para upload** (ação destrutiva).
 3. **BOM-5701**: upload permanece bloqueado até autorização explícita.
 4. **Backups automáticos** em `~/.chirp/backups/` antes de gravar.
+5. **Versão do sistema (`CHIRP_VERSION`)**: só muda por ordem explícita
+   do mantenedor (Fábio). Nenhuma alteração/commit deve tocar na versão
+   por iniciativa própria.
 
 ## 5. Diagnóstico do BOM-5701 (histórico validado em hardware)
 
