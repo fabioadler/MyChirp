@@ -29,6 +29,11 @@ from mychirp import memory_ops
 from mychirp.pysideui.i18n import _
 from mychirp.pysideui.services.radio_service import get_service
 from mychirp.pysideui.dialogs.memory_edit import MemoryEditDialog
+from mychirp.pysideui.tone_fields import (
+    TONE_FIELDS,
+    clear_unused_tones,
+    used_tone_columns as _used_tone_columns,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -92,31 +97,6 @@ def _visible_columns(features):
         if ok:
             out.append(name)
     return out
-
-
-def _used_tone_columns(mem):
-    """Tone columns that matter for the memory's current tmode,
-    mirroring the CHIRP memedit (others render blank)."""
-    tmode = mem.tmode
-    if tmode == "Tone":
-        return {"rtone"}
-    if tmode == "TSQL":
-        return {"rtone", "ctone"}
-    if tmode == "DTCS":
-        return {"dtcs"}
-    if tmode == "Cross":
-        tx, _, rx = (mem.cross_mode or "").partition("->")
-        used = set()
-        if tx == "Tone":
-            used.add("rtone")
-        elif tx == "DTCS":
-            used.add("dtcs")
-        if rx == "Tone":
-            used.add("ctone")
-        elif rx == "DTCS":
-            used.add("dtcs")
-        return used
-    return set()
 
 
 def _render(name, mem):
@@ -216,6 +196,9 @@ class MemoryChunkDelegate(__import__("PySide6.QtWidgets", fromlist=[
         super().__init__(parent)
         self.columns = columns
         self.features = features
+        # Callback opcional quando um campo de tom está bloqueado
+        # (ex.: exibir "Selecione o Tone Mode primeiro" no status)
+        self.blocked_hint = None
 
     def _spec(self, col_name):
         """Return (editor_type, options, min, max, step) for @col_name."""
@@ -250,6 +233,17 @@ class MemoryChunkDelegate(__import__("PySide6.QtWidgets", fromlist=[
 
     def createEditor(self, parent, option, index):
         col = self.columns[index.column()]
+        # Campos de tom só são editáveis quando pertencem ao tmode
+        # atual: o usuário escolhe o tipo (Tone/TSQL/DTCS) primeiro.
+        if col in TONE_FIELDS:
+            mem = index.model().row_memory(index.row())
+            if mem is None or col not in _used_tone_columns(mem):
+                if self.blocked_hint:
+                    try:
+                        self.blocked_hint()
+                    except Exception:
+                        LOG.exception("blocked_hint callback failed")
+                return None
         kind, options, minimum, maximum, step = self._spec(col)
         if kind == "spin":
             from PySide6.QtCore import QRegularExpression
@@ -315,12 +309,22 @@ class MemoryChunkDelegate(__import__("PySide6.QtWidgets", fromlist=[
                 new_val = float(new_val or default)
             elif col == "dtcs":
                 new_val = int(new_val or 23)
+            if col == "tmode":
+                # Troca de tipo: limpa os campos de tom que não
+                # pertencem ao novo tmode (bloqueados/render em branco)
+                clear_unused_tones(mem, str(new_val or ""))
             was_empty = mem.empty
             setattr(mem, col, new_val)
             mem.empty = False
             if was_empty and mem.power is None:
                 mem.power = _default_power(self.features)
-            model.dataChanged.emit(index, index)
+            if col == "tmode":
+                row = index.row()
+                model.dataChanged.emit(
+                    model.index(row, 0),
+                    model.index(row, len(self.columns) - 1))
+            else:
+                model.dataChanged.emit(index, index)
         except (ValueError, TypeError) as e:
             LOG.debug("invalid value %r for %s: %s", new_val, col, e)
 
@@ -375,7 +379,16 @@ class MemoryModel(QAbstractTableModel):
                 value = int(value) if value else 23
             setattr(mem, col, value)
             mem.empty = False
-            self.dataChanged.emit(index, index, [role])
+            if col == "tmode":
+                # Troca de tipo: limpa os campos de tom que não
+                # pertencem ao novo tmode (bloqueados/render em branco)
+                clear_unused_tones(mem, value)
+                row = index.row()
+                self.dataChanged.emit(
+                    self.index(row, 0),
+                    self.index(row, len(self.columns) - 1))
+            else:
+                self.dataChanged.emit(index, index, [role])
             return True
         except (ValueError, TypeError) as e:
             LOG.debug("invalid value %r for %s: %s", value, col, e)
@@ -548,9 +561,10 @@ class MemoriesTab(QWidget):
         self.model.dataChanged.connect(self._on_cells_edited)
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
         self._add_context_actions()
-        self.table.setItemDelegate(
-            MemoryChunkDelegate(self.columns, self.eset.features,
-                                parent=self.table))
+        item_delegate = MemoryChunkDelegate(self.columns, self.eset.features,
+                                            parent=self.table)
+        item_delegate.blocked_hint = self._tone_blocked_hint
+        self.table.setItemDelegate(item_delegate)
         root.addWidget(self.table, 1)
 
         # State
@@ -569,6 +583,11 @@ class MemoriesTab(QWidget):
         act_past = QAction(_("Paste"), self)
         act_past.triggered.connect(self.op_paste)
         self.table.addAction(act_past)
+
+    def _tone_blocked_hint(self):
+        """Aviso quando o usuário tenta editar um campo de tom sem
+        ter selecionado o Tone Mode antes."""
+        self.state.set_status(_("Selecione o Tone Mode primeiro"))
 
     # ----- data -----
     def load_memories(self):

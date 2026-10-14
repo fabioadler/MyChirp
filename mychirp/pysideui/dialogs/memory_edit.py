@@ -17,6 +17,11 @@ from PySide6.QtWidgets import (
 from mychirp import chirp_common
 from mychirp import settings as chirp_settings
 from mychirp.pysideui.i18n import _
+from mychirp.pysideui.tone_fields import (
+    TONE_DEFAULTS,
+    TONE_FIELDS,
+    used_tone_columns_for,
+)
 
 
 class MemoryEditDialog(QDialog):
@@ -76,6 +81,20 @@ class MemoryEditDialog(QDialog):
             add_combo("ctone", _("ToneSql"), tones, "%.1f" % mem.ctone)
         if getattr(feats, "valid_dtcs_codes", None):
             add_combo("dtcs", _("DTCS Code"), dtcs_list, str(mem.dtcs))
+
+        # Campos de tom: só ficam habilitados quando pertencem ao
+        # Tone Mode selecionado; ao trocar o tipo, os campos dos
+        # outros tipos são limpos/bloqueados e o atual é liberado.
+        self._tone_defaults_text = {
+            "rtone": "%.1f" % TONE_DEFAULTS["rtone"],
+            "ctone": "%.1f" % TONE_DEFAULTS["ctone"],
+            "dtcs": str(TONE_DEFAULTS["dtcs"]),
+        }
+        tmode_w = self._fields.get("tmode")
+        if isinstance(tmode_w, QComboBox):
+            tmode_w.currentTextChanged.connect(self._update_tone_fields)
+        self._update_tone_fields(mem.tmode)
+
         if getattr(feats, "valid_duplexes", None):
             add_combo("duplex", _("Duplex"), feats.valid_duplexes, mem.duplex)
         if getattr(feats, "valid_modes", None):
@@ -133,6 +152,23 @@ class MemoryEditDialog(QDialog):
         root.addWidget(buttons)
 
         self.adjustSize()
+
+    def _update_tone_fields(self, tmode):
+        """Habilita apenas os campos de tom do @tmode atual; os demais
+        ficam bloqueados e vazios (com tmode vazio, todos bloqueados)."""
+        used = used_tone_columns_for(
+            str(tmode or ""), getattr(self.mem, "cross_mode", "") or "")
+        for key in TONE_FIELDS:
+            w = self._fields.get(key)
+            if not isinstance(w, QComboBox):
+                continue
+            if key in used:
+                w.setEnabled(True)
+                if not w.currentText().strip():
+                    w.setCurrentText(self._tone_defaults_text[key])
+            else:
+                w.setEnabled(False)
+                w.setCurrentIndex(-1)
 
     def _add_extra_row(self, setting, form):
         value = setting.value

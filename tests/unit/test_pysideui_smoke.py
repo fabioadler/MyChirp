@@ -108,3 +108,193 @@ def test_image_open_offscreen(qapp, state, bom_radio):
         from PySide6.QtWidgets import QSpinBox
         assert isinstance(lower, QSpinBox)
         assert lower.value() == 128
+
+
+# ---------------------------------------------------------------------------
+# UX de tons CTCSS/DCS (tone_fields): tipo primeiro, limpeza automática
+# ---------------------------------------------------------------------------
+
+from types import SimpleNamespace  # noqa: E402
+
+from mychirp import chirp_common  # noqa: E402
+from mychirp.pysideui.tone_fields import (  # noqa: E402
+    clear_unused_tones,
+    used_tone_columns_for,
+)
+
+
+def _tone_mem(**kwargs):
+    mem = chirp_common.Memory()
+    mem.number = 1
+    mem.freq = 146520000
+    mem.empty = False
+    for k, v in kwargs.items():
+        setattr(mem, k, v)
+    return mem
+
+
+def test_tone_fields_logic():
+    """Mapeamento tmode -> campos usados (tipo primeiro)."""
+    assert used_tone_columns_for("") == set()
+    assert used_tone_columns_for("Tone") == {"rtone"}
+    assert used_tone_columns_for("TSQL") == {"rtone", "ctone"}
+    assert used_tone_columns_for("DTCS") == {"dtcs"}
+    assert used_tone_columns_for("Cross", "Tone->DTCS") == {"rtone", "dtcs"}
+    assert used_tone_columns_for("Cross", "DTCS->Tone") == {"ctone", "dtcs"}
+
+
+def test_clear_unused_tones():
+    """Trocar de tipo limpa os campos que não pertencem ao novo tmode."""
+    mem = _tone_mem(tmode="TSQL", rtone=123.0, ctone=100.0, dtcs=145)
+    # TSQL -> DTCS: mantém só dtcs
+    clear_unused_tones(mem, "DTCS")
+    assert mem.dtcs == 145
+    assert mem.rtone == 88.5
+    assert mem.ctone == 88.5
+    # qualquer tipo -> vazio: todos limpos
+    clear_unused_tones(mem, "")
+    assert mem.dtcs == 23
+    assert mem.rtone == 88.5
+    assert mem.ctone == 88.5
+
+
+def _tone_test_model(qapp):
+    from mychirp.pysideui.tabs.memories import MemoryModel
+    columns = ["loc", "freq", "tmode", "rtone", "ctone", "dtcs"]
+    feats = SimpleNamespace(
+        valid_tmodes=["", "Tone", "TSQL", "DTCS", "Cross"],
+        valid_tones=chirp_common.TONES,
+        valid_dtcs_codes=chirp_common.DTCS_CODES,
+        valid_duplexes=["", "+", "-"],
+        valid_modes=["FM", "NFM"],
+        valid_tuning_steps=[5.0, 10.0],
+        valid_skips=["", "S"],
+        valid_power_levels=[],
+        has_name=False,
+        has_comment=False,
+    )
+    mem = _tone_mem(tmode="", rtone=100.0, ctone=107.2, dtcs=111)
+    model = MemoryModel(columns, feats)
+    model.set_rows([mem])
+    return model, columns, feats, mem
+
+
+def test_grid_tone_editor_blocked(qapp):
+    """Sem tmode, campos de tom não abrem editor (tipo primeiro)."""
+    from PySide6.QtWidgets import QStyleOptionViewItem, QTableView
+    from mychirp.pysideui.tabs.memories import MemoryChunkDelegate
+
+    model, columns, feats, mem = _tone_test_model(qapp)
+    table = QTableView()
+    delegate = MemoryChunkDelegate(columns, feats, parent=table)
+    calls = []
+    delegate.blocked_hint = lambda: calls.append(1)
+    option = QStyleOptionViewItem()
+
+    rtone_idx = model.index(0, columns.index("rtone"))
+    assert delegate.createEditor(table, option, rtone_idx) is None
+    assert calls, "blocked_hint não foi chamado"
+
+    # com tmode selecionado, o editor abre
+    mem.tmode = "Tone"
+    editor = delegate.createEditor(table, option, rtone_idx)
+    assert editor is not None
+    # ctone continua bloqueada para tmode "Tone"
+    calls.clear()
+    ctone_idx = model.index(0, columns.index("ctone"))
+    assert delegate.createEditor(table, option, ctone_idx) is None
+    assert calls
+
+
+def test_grid_tmode_change_clears_tones(qapp):
+    """Trocar o tmode no grid limpa os tons dos outros tipos e o
+    render mostra em branco os campos bloqueados."""
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QComboBox, QStyleOptionViewItem, QTableView
+    from mychirp.pysideui.tabs.memories import MemoryChunkDelegate
+
+    model, columns, feats, mem = _tone_test_model(qapp)
+    mem.tmode = "Tone"
+    mem.rtone = 123.0
+    mem.ctone = 100.0
+    mem.dtcs = 145
+    table = QTableView()
+    table.setModel(model)
+    delegate = MemoryChunkDelegate(columns, feats, parent=table)
+    option = QStyleOptionViewItem()
+
+    tmode_idx = model.index(0, columns.index("tmode"))
+    editor = QComboBox()
+    editor.addItems(list(feats.valid_tmodes))
+    editor.setCurrentText("DTCS")
+    delegate.setModelData(editor, model, tmode_idx)
+
+    assert mem.tmode == "DTCS"
+    assert mem.dtcs == 145        # do tipo atual: mantido
+    assert mem.rtone == 88.5      # do outro tipo: limpo
+    assert mem.ctone == 88.5
+    # render: dtcs visível, rtone/ctone em branco
+    def disp(col):
+        idx = model.index(0, columns.index(col))
+        return model.data(idx, Qt.ItemDataRole.DisplayRole)
+    assert disp("dtcs") == "145"
+    assert disp("rtone") == ""
+    assert disp("ctone") == ""
+
+    # tmode vazio: todos os tons limpos e render em branco
+    model.setData(tmode_idx, "")
+    assert mem.rtone == 88.5 and mem.ctone == 88.5 and mem.dtcs == 23
+    assert disp("dtcs") == ""
+    assert disp("rtone") == ""
+    assert disp("ctone") == ""
+
+
+def test_tone_dialog_states(qapp):
+    """Dialog: campos de tom bloqueados/vazios sem tmode; liberados
+    apenas para o tipo selecionado."""
+    from mychirp.pysideui.dialogs.memory_edit import MemoryEditDialog
+    from PySide6.QtWidgets import QComboBox
+
+    feats = SimpleNamespace(
+        valid_tmodes=["", "Tone", "TSQL", "DTCS", "Cross"],
+        valid_tones=chirp_common.TONES,
+        valid_dtcs_codes=chirp_common.DTCS_CODES,
+    )
+    mem = _tone_mem()
+    dlg = MemoryEditDialog(None, mem, feats)
+
+    rtone = dlg._fields["rtone"]
+    ctone = dlg._fields["ctone"]
+    dtcs = dlg._fields["dtcs"]
+    # sem tmode: todos bloqueados e vazios
+    assert not rtone.isEnabled() and not ctone.isEnabled() \
+        and not dtcs.isEnabled()
+    assert rtone.currentText() == "" and ctone.currentText() == "" \
+        and dtcs.currentText() == ""
+
+    # seleciona Tone: libera rtone (com default), outros seguem bloqueados
+    dlg._fields["tmode"].setCurrentText("Tone")
+    assert rtone.isEnabled() and rtone.currentText() == "88.5"
+    assert not ctone.isEnabled() and not dtcs.isEnabled()
+    assert ctone.currentText() == "" and dtcs.currentText() == ""
+
+    # troca para DTCS: limpa/bloqueia rtone, libera dtcs com default
+    dlg._fields["tmode"].setCurrentText("DTCS")
+    assert dtcs.isEnabled() and dtcs.currentText() == "23"
+    assert not rtone.isEnabled() and rtone.currentText() == ""
+    assert not ctone.isEnabled()
+
+    # aplica: tmode DTCS gravado, rtone volta ao default limpo
+    dlg.apply()
+    assert mem.tmode == "DTCS"
+    assert mem.dtcs == 23
+    assert mem.rtone == 88.5
+    assert mem.ctone == 88.5
+
+    # volta para vazio: todos bloqueados/vazios e apply limpa tudo
+    dlg._fields["tmode"].setCurrentText("")
+    assert not rtone.isEnabled() and not ctone.isEnabled() \
+        and not dtcs.isEnabled()
+    dlg.apply()
+    assert mem.tmode == ""
+    assert mem.rtone == 88.5 and mem.ctone == 88.5 and mem.dtcs == 23
