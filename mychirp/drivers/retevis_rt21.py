@@ -107,7 +107,7 @@ struct memory {
 #seekto 0x0200;
   struct memory himems[14];
 
-#seekto 0x011D;
+#overlayto 0x011D;
 struct {
   u8 pf1;              // 011D PF1 Key
   u8 topkey;           // 011E Top Key
@@ -148,7 +148,7 @@ struct {
   u8 reserved[3];      // Reserved               D-F
 } memory[%(memcnt)d];
 
-#seekto 0x002D;
+#overlayto 0x002D;
 struct {
   u8 unknown_1:1,      //                        002D
      chnumberd:1,      // Channel Number Disable
@@ -218,7 +218,7 @@ struct {
   u8 reserved[3];      // Reserved               D-F
 } memory[30];
 
-#seekto 0x002D;
+#overlayto 0x002D;
 struct {
   u8 unknown_1:1,      //                        002D
      chnumberd:1,      // Channel Number Disable
@@ -252,7 +252,7 @@ struct {
   u8 hop;              // Hop Mode               008F
 } settings;
 
-#seekto 0x004E;
+#overlayto 0x004E;
 u8 skipflags[2];       // SCAN_ADD
 """
 
@@ -322,7 +322,7 @@ struct {
   u8 reserved[3];      // Reserved               D-F
 } memory[%d];
 
-#seekto 0x002D;
+#overlayto 0x002D;
 struct {
   u8 bootsel:1,        // Boot Select            002D
      unknown_1:2,      //
@@ -349,7 +349,7 @@ struct {
      warn:1;           // Warn Mode
 } settings;
 
-#seekto 0x%X;
+#overlayto 0x%X;
 struct {
   u8 freqhop;          // Frequency Hop
 } freqhops[%d];
@@ -369,7 +369,7 @@ struct {
   u8 reserved[3];      // Reserved               D-F
 } memory[%d];
 
-#seekto 0x002D;
+#overlayto 0x002D;
 struct {
   u8 unknown_1:1,      //                        002D
      unknown_2:1,      //
@@ -415,7 +415,7 @@ struct {
   u8 reserved[3];      // Reserved               D-F
 } memory[30];
 
-#seekto 0x002D;
+#overlayto 0x002D;
 struct {
   u8 unknown_1:1,      //                        002D
      unknown_2:1,      //
@@ -466,7 +466,7 @@ struct {
   u8 reserved[3];      // Reserved               D-F
 } memory[%(memcnt)d];
 
-#seekto 0x002D;
+#overlayto 0x002D;
 struct {
   u8 unknown_1:1,      //                        002D
      chnumberd:1,      // Channel Number Disable
@@ -521,10 +521,10 @@ struct {
   u8 menuexit;         // Menu Exit Time         00DF
 } settings;
 
-#seekto %(settings_offset)s;
+#overlayto %(settings_offset)s;
 u8 skipflags[%(bytecnt)d];  // Scan Add
 
-#seekto 0x0100;
+#overlayto 0x0100;
 struct {
   u8 freqhop;          // Frequency Hop
 } freqhops[16];
@@ -1312,16 +1312,16 @@ class RT21Radio(chirp_common.CloneModeRadio):
                                 "RT619",
                                 ]:
                 _mem.set_raw(b"\xFF" * 13 + _rsvd)
-                _freqhops.freqhop.set_raw("\x00")
+                _freqhops.freqhop.set_raw(b"\x00")
             elif self.MODEL == "AR-63":
                 _mem.set_raw(b"\xFF" * 13 + _rsvd)
             else:
-                _mem.set_raw("\xFF" * (_mem.size() // 8))
+                _mem.set_raw(b"\xFF" * (_mem.size() // 8))
 
             return
 
         if self.MODEL == "RB17A":
-            _mem.set_raw("\x00" * 14 + "\xFF\xFF")
+            _mem.set_raw(b"\x00" * 14 + b"\xFF\xFF")
         elif self._reserved:
             if self.MODEL == "RT86S":
                 _mem.set_raw(b"\x00" * 12 + _rsvdpwr + _rsvd)
@@ -1330,7 +1330,7 @@ class RT21Radio(chirp_common.CloneModeRadio):
         elif self.MODEL == "AR-63":
             _mem.set_raw(b"\x00" * 13 + _rsvd)
         else:
-            _mem.set_raw("\x00" * 13 + "\x30\x8F\xF8")
+            _mem.set_raw(b"\x00" * 13 + b"\x30\x8F\xF8")
 
         _mem.rxfreq = mem.freq / 10
 

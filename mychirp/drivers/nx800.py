@@ -333,46 +333,37 @@ struct zoneinfo {
   u8 unknown30_3f[17];
 };
 
-#seekto 0x201;
+#overlayto 0x201;
 u8 sublcd;
 
 #seekto 0x220;
 char pon_msgtext[14];
 
-#seekto 0x22E;
 u8 pon_msgtype;
 
 #seekto 0x232;
 u8 low_volume_level;
 
-#seekto 0x233;
 u8 high_volume_level;
 
-#seekto 0x234;
 u8 tone_volume_offset;
 
-#seekto 0x235;
 u8 poweron_tone;
 
-#seekto 0x236;
 u8 control_tone;
 
-#seekto 0x237;
 u8 warning_tone;
 
-#seekto 0x238;
 u8 alert_tone;
 
-#seekto 0x239;
 u8 sidetone;
 
-#seekto 0x23A;
 u8 locator_tone;
 
 #seekto 0x23C;
 u8 timed_power_off;
 
-#seekto 0x23B;
+#overlayto 0x23B;
 u8 ignition_mode;
 
 #seekto 0x26C;
@@ -395,7 +386,7 @@ struct {
      panel_test:1;
 } panel_settings;
 
-#seekto 0x269;
+#overlayto 0x269;
 struct {
   u8 unknown270_0:5,
      zone_name_display:1,
@@ -600,7 +591,7 @@ class KenwoodNXx00Radio(tk8180.ZoneMemoryMixin, tk8180.KenwoodOSTMixin,
 
         probe_format = BASE_MEM_FORMAT
         for i, addr in enumerate(zone_addresses):
-            probe_format += '#seekto 0x%x; struct zoneinfo zone%i;' % (addr, i)
+            probe_format += '#overlayto 0x%x; struct zoneinfo zone%i;' % (addr, i)
 
         probe = bitwise.parse(probe_format, self._mmap)
         zones = []

@@ -162,7 +162,7 @@ struct mem_struct home_uhf;
 #seekto 0xEB;
 u8 chan_enable[23];
 
-#seekto 0x101;
+#overlayto 0x101;
 struct {
     u8 pms_2U_enable:1,
        pms_2L_enable:1,
@@ -171,10 +171,8 @@ struct {
        unknown6:4;
 } special_enables;
 
-#seekto 0x102;
 struct mem_struct memory[180];
 
-#seekto 0xf12;
 struct mem_struct pms_1L;
 struct mem_struct pms_1U;
 struct mem_struct pms_2L;

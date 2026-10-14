@@ -103,7 +103,6 @@ struct {
   u8 scan_enabled_bitfield[32];
 } memory_status;
 
-#seekto 0x1980;
 struct {
   char line[7];           // starting display
 } starting_display;
@@ -113,7 +112,6 @@ struct {
   u8 code[16];            // DTMF Encode M1-M16
 } pttid[16];
 
-#seekto 0x1A90;
 struct {
   u8 pttIdStart[16];      // 0x1A90 ptt id starting
   u8 pttIdEnd[16];        // 0x1AA0 ptt id ending
@@ -924,7 +922,7 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
             bcl_options = ['Off', 'Repeater', 'Busy']
             bcl_option = bcl_options[_mem.busy_channel_lockout]
             rs = RadioSetting("busy_channel_lockout", "Busy Channel Lockout",
-                              RadioSettingValueList(bcl_options, bcl_option))
+                              RadioSettingValueList(bcl_options, current_index=(bcl_options).index(bcl_option)))
             mem.extra.append(rs)
 
         return mem
@@ -948,9 +946,9 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
 
         if mem.empty:
             # Set the whole memory to 0xff
-            _mem.set_raw('\xff' * (_mem.size() // 8))
+            _mem.set_raw(b'\xff' * (_mem.size() // 8))
         else:
-            _mem.set_raw('\x00' * (_mem.size() // 8))
+            _mem.set_raw(b'\x00' * (_mem.size() // 8))
 
             _mem.freq = int(mem.freq / 10)
             _mem.offset = int(mem.offset / 10)

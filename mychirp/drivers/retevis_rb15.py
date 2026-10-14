@@ -43,7 +43,7 @@ struct memory {
 #seekto 0x0170;
 struct memory channels[99];
 
-#seekto 0x0162;
+#overlayto 0x0162;
 struct {
   u8 unknown_1:1,           // 0x0162
      voice:2,               //               Voice Prompt
@@ -517,7 +517,7 @@ class RB15RadioBase(chirp_common.CloneModeRadio):
 
         # if empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw(b"\xFF" * 16)
             return
 
         _mem.isunused = False

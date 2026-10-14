@@ -122,7 +122,6 @@ struct {
   u8 checksum;
 } vfo_info[6];
 
-#seekto 0x094a;
 struct {
   u8 memory[16];
 } dtmf[10];
@@ -138,7 +137,6 @@ struct {
     u16 channel[100];
 } bank_members[24];
 
-#seekto 0x2C4A;
 struct {
   u8 nosubvfo:1,
      unknown:3,
@@ -250,12 +248,12 @@ struct {
   u8 unknown22[2];
 } aprs;
 
-#seekto 0x%04X;
+#overlayto 0x%04X;
 struct {
   char padded_string[16];
 } aprs_msg_macro[%d];
 
-#seekto 0x%04X;
+#overlayto 0x%04X;
 struct {
   u8 unknown23:5,
      selected_msg_group:3;
@@ -317,7 +315,7 @@ struct {
   u16 in_use;
 } aprs_beacon_meta[%d];
 
-#seekto 0x%04X;
+#overlayto 0x%04X;
 struct {
   u8 dst_callsign[6];
   u8 dst_callsign_ssid;
@@ -496,7 +494,7 @@ class VX8BankModel(chirp_common.BankModel):
 
 
 def _wipe_memory(mem):
-    mem.set_raw("\x00" * (mem.size() // 8))
+    mem.set_raw(b"\x00" * (mem.size() // 8))
 
 
 @directory.register

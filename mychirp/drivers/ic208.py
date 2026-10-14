@@ -243,7 +243,7 @@ class IC208Radio(icf.IcomCloneModeRadio):
             return
 
         if _flg.empty:
-            _mem.set_raw("\x00" * 16)
+            _mem.set_raw(b"\x00" * 16)
         _flg.empty = False
 
         _mem.alt_mult = chirp_common.is_fractional_step(mem.freq)

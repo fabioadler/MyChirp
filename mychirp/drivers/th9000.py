@@ -126,7 +126,7 @@ struct {
    u8 unknown0100[7];
 } ropt0100;
 
-#seekto 0x0120;
+#overlayto 0x0120;
 struct {
    bit c[8];
 } cskipflag[32];
@@ -192,7 +192,6 @@ struct {
 #     possible to set range for tx/rx
 #
 MEM_FORMAT = MEM_FORMAT + """
-#seekto 0x0200;
 struct {
     bbcd txrangelow[4];
     bbcd txrangehi[4];
@@ -214,7 +213,6 @@ struct {
 #
 
 MEM_FORMAT = MEM_FORMAT + """
-#seekto 0x0210;
 struct {
    u8 bootup_passwd[6];
    u8 unknown2010[10];
@@ -274,7 +272,6 @@ struct {
 #  7         u8 unknown[7]; // 9-F
 #
 MEM_FORMAT = MEM_FORMAT + """
-#seekto 0x0220;
 struct {
    u8 display_mode;
    u8 vfo_mr;
@@ -739,7 +736,7 @@ class Th9000Radio(chirp_common.CloneModeRadio,
         self._memobj.csetflag[cbyte].c[cbit] = 0
         self._memobj.cskipflag[cbyte].c[cbit] = 1 if (mem.skip == "S") else 0
 
-        _mem.set_raw("\x00" * 32)
+        _mem.set_raw(b"\x00" * 32)
 
         _mem.freq = mem.freq / 100         # Convert to low-level frequency
         _mem.offset = mem.offset / 100         # Convert to low-level frequency

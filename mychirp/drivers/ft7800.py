@@ -99,7 +99,6 @@ struct {
     u8  unk6;
 } settings;
 
-#seekto 0x0048;
 struct mem_struct vfos[5];
 
 #seekto 0x00C8;
@@ -107,10 +106,8 @@ struct {
     u8  memory[16];
 } dtmf[16];
 
-#seekto 0x01C8;
 struct mem_struct homes[5];
 
-#seekto 0x0218;
 u8  arts_cwid[6];
 
 #seekto 0x04C8;
@@ -130,7 +127,6 @@ struct {
    u32 bitmap[32];
 } bank_channels[20];
 
-#seekto 0x7648;
 struct {
   u8 skip0:2,
      skip1:2,

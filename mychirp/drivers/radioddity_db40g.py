@@ -82,7 +82,7 @@ struct settings {
 };
 struct channel memory[%d];
 
-#seekto 0x%04X;
+#overlayto 0x%04X;
 struct settings settings;
 """
 

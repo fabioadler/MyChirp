@@ -217,7 +217,7 @@ MEM_SETTINGS_FORMAT = """
     #seekto 0x6D4;
     struct bank_aux bank_aux2;
 
-    #seekto 0x06B6;
+    #overlayto 0x06B6;
     struct {
     u8 unknown1:3,
     volume:5;               // # VOL and Dial  Adjust the volume level
@@ -746,7 +746,7 @@ class FT70Radio(yaesu_clone.YaesuCloneModeRadio):
 
     @classmethod
     def _wipe_memory(cls, mem):
-        mem.set_raw("\x00" * (mem.size() // 8))
+        mem.set_raw(b"\x00" * (mem.size() // 8))
         mem.unknown1 = 0x05
 
     def get_bank_model(self):

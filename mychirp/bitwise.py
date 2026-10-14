@@ -1197,6 +1197,11 @@ class Processor:
                     'Invalid negative seek from 0x%04x to 0x%04x' % (
                         self._offset, target))
             self._offset = target
+        elif name == "overlayto":
+            # Overlay explícito sobre área já mapeada: mesmo efeito de
+            # #seekto, mas declara a intenção — backward permitido sem
+            # warning (usado por layouts com estruturas sobrepostas).
+            self._offset = int(value, 0)
         elif name == "seek":
             self._offset += int(value, 0)
         elif name == "printoffset":

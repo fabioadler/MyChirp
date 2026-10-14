@@ -166,7 +166,6 @@ struct memory channels[128];
 struct memory vfo1;
 struct memory vfo2;
 
-#seekto 0x2060;
 struct {
   u8 unknown2060:4,
      tot:4;
@@ -366,7 +365,7 @@ class TYTUVF8DRadio(chirp_common.CloneModeRadio):
         else:
             mem.number = number
 
-        if _mem.get_raw(asbytes=False).startswith("\xFF\xFF\xFF\xFF"):
+        if _mem.get_raw().startswith(b"\xFF\xFF\xFF\xFF"):
             mem.empty = True
             return mem
 
@@ -439,16 +438,16 @@ class TYTUVF8DRadio(chirp_common.CloneModeRadio):
         e = self._memobj.enable[(mem.number - 1) / 8]
         s = self._memobj.skip[(mem.number - 1) / 8]
         if mem.empty:
-            _mem.set_raw("\xFF" * 32)
+            _mem.set_raw(b"\xFF" * 32)
             e.flags[7 - ((mem.number - 1) % 8)] = False
             s.flags[7 - ((mem.number - 1) % 8)] = False
             return
         else:
             e.flags[7 - ((mem.number - 1) % 8)] = True
 
-        if _mem.get_raw(asbytes=False) == ("\xFF" * 32):
+        if _mem.get_raw() == (b"\xFF" * 32):
             LOG.debug("Initializing empty memory")
-            _mem.set_raw("\x00" * 32)
+            _mem.set_raw(b"\x00" * 32)
 
         _mem.rx_freq = mem.freq / 10
         if mem.duplex == "-":

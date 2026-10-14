@@ -506,11 +506,11 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
         # pttid, signal
 
         s = RadioSetting('pttid', 'PTTID',
-                         RadioSettingValueList(PTTID, int(_mem.pttid)))
+                         RadioSettingValueList(PTTID, current_index=int(_mem.pttid)))
         group.append(s)
 
         s = RadioSetting('signal', 'Signal',
-                         RadioSettingValueList(SIGNAL, int(_mem.signal)))
+                         RadioSettingValueList(SIGNAL, current_index=int(_mem.signal)))
         group.append(s)
 
         return group
@@ -522,10 +522,10 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
         _mem.signal = int(mem.extra['signal'].value)
 
     def _is_txinh(self, _mem):
-        raw_tx = ""
+        raw_tx = b""
         for i in range(0, 4):
-            raw_tx += _mem.txfreq[i].get_raw(asbytes=False)
-        return raw_tx == "\xFF\xFF\xFF\xFF"
+            raw_tx += _mem.txfreq[i].get_raw()
+        return raw_tx == b"\xFF\xFF\xFF\xFF"
 
     def _get_mem(self, num):
         return self._memobj.memories[num]
@@ -886,7 +886,7 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
                 RadioSetting(
                     "anicode.groupcode", "Group Code",
                     RadioSettingValueList(list(DTMFCHARS),
-                                          current_group)))
+                                          current_index=(list(DTMFCHARS)).index(current_group))))
 
         else:
             dtmf.append(
@@ -900,7 +900,7 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
                     'anicode.groupcode', 'Group Code',
                     RadioSettingValueList(
                         list(DTMFCHARS),
-                        DTMFCHARS[int(anicode.groupcode)])))
+                        current_index=(list(DTMFCHARS)).index(DTMFCHARS[int(anicode.groupcode)]))))
             dtmf.append(
                 RadioSetting(
                     'anicode.releasetosend', 'Release To Send',

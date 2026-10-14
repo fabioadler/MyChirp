@@ -47,7 +47,7 @@ u8 skips[25];
 #seekto 0x0EB0;
 u8 used[25];
 
-#seekto 0x0E40;
+#overlayto 0x0E40;
 struct {
   u8 bank_even:4,
      bank_odd:4;

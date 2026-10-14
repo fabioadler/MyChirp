@@ -101,7 +101,6 @@ u8 tot_warning;           // 0x0347  value << 4 (0=Off, 1-10)
 #seekto 0x035C;
 ul32 settings_035c;     // 0x035C  byte0=tx_start_beep, bytes1-3=pri_ch
 
-#seekto 0x0360;
 struct {
     u8 cfg_unk0:1,        // +00 bit 7
        highpower:1,       //     bit 6

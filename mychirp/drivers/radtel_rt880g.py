@@ -216,7 +216,6 @@ struct {
   struct dtmf_code remote_monitor;    // 033a
 } dtmf;
 
-#seekto 0x34a;
 struct {
   u8 reverse_channel;                 // 034a
   u8 ctdcs_code_show;                 // 034b
@@ -255,7 +254,7 @@ struct {
   u8 gps_mileage_type;                // 0c26
 } gps;
 
-#seekto 0xc20;
+#overlayto 0xc20;
 struct {
   u8 unknown_1[7];                    // 0c20-0c26
   u8 aprs_station_mode;               // 0c27
@@ -925,10 +924,10 @@ class RT880G(chirp_common.CloneModeRadio):
 
         # if empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * 48)
+            _mem.set_raw(b"\xFF" * 48)
             return
 
-        _mem.set_raw("\x00" * 32 + "\x20" * 16)
+        _mem.set_raw(b"\x00" * 32 + b"\x20" * 16)
 
         _mem.enabled = 0x01
 

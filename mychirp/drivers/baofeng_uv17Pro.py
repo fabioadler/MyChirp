@@ -459,7 +459,7 @@ class UV17Pro(bfc.BaofengCommonHT):
     } vfo;
 
     struct settings_obj settings;
-    #seekto 0x%(ani)X;
+    #overlayto 0x%(ani)X;
     struct ani_obj ani;
 
     #seekto 0x%(pttid)04X;

@@ -409,10 +409,8 @@ struct channel {
   u8 empty[5];
 };
 struct channel emg;             // channel 0 is Emergent CH
-#seekto 0x0010;
 struct channel channels[20];    // normal 1-20 mem channels
 
-#seekto 0x0150;     // Settings
 struct {
   lbcd vhfl[2];     // VHF low limit
   lbcd vhfh[2];     // VHF high limit
@@ -447,7 +445,6 @@ struct {
   u8 tx_pwr;        // tx pwr 0 = low (0.5W), 1 = high(1.0W)
 } settings;
 
-#seekto 0x0170;     // Relay CH
 struct channel rly;
 
 """
@@ -633,7 +630,7 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
         else:
             mem.number = number
 
-        if _mem.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.get_raw()[0] == 0xFF:
             mem.empty = True
             return mem
 
@@ -686,7 +683,7 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
         # if empty memory
         if mem.empty:
             # the channel itself
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw(b"\xFF" * 16)
             # return it
             return mem
 

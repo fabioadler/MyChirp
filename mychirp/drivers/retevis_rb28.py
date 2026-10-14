@@ -53,7 +53,7 @@ struct {
   u8 reserved[3];      // Reserved               D-F
 } memory[%d];
 
-#seekto 0x002D;
+#overlayto 0x002D;
 struct {
   u8 unknown_2d_7:1,   //                        002D
      unknown_2d_6:1,   //
@@ -99,7 +99,7 @@ struct {
   u8 pfkey_gt;         // Key Set > Long         00BB
 } settings;
 
-#seekto 0x00AD;
+#overlayto 0x00AD;
 struct {
 u8 chnl_8:1,      // Busy Channel Lockout  8     00AD
    chnl_7:1,      // Busy Channel Lockout  7
@@ -403,7 +403,7 @@ class RB28Radio(chirp_common.CloneModeRadio):
         _mem = self._memobj.memory[number - 1]
 
         if self._reserved:
-            _rsvd = _mem.reserved.get_raw(asbytes=False)
+            _rsvd = _mem.reserved.get_raw()
 
         mem.freq = int(_mem.rxfreq) * 10
 
@@ -412,7 +412,7 @@ class RB28Radio(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rxfreq.get_raw(asbytes=False) == "\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
             mem.freq = 0
             mem.empty = True
             return mem
@@ -521,26 +521,26 @@ class RB28Radio(chirp_common.CloneModeRadio):
         _mem = self._memobj.memory[mem.number - 1]
 
         if self._reserved:
-            _rsvd = _mem.reserved.get_raw(asbytes=False)
+            _rsvd = _mem.reserved.get_raw()
 
         if mem.empty:
             if self._reserved:
-                _mem.set_raw("\xFF" * 13 + _rsvd)
+                _mem.set_raw(b"\xFF" * 13 + _rsvd)
             else:
-                _mem.set_raw("\xFF" * (_mem.size() // 8))
+                _mem.set_raw(b"\xFF" * (_mem.size() // 8))
 
             return
 
         if self._reserved:
-            _mem.set_raw("\x00" * 13 + _rsvd)
+            _mem.set_raw(b"\x00" * 13 + _rsvd)
         else:
-            _mem.set_raw("\x00" * 13 + "\xFF\xFF\xFF")
+            _mem.set_raw(b"\x00" * 13 + b"\xFF\xFF\xFF")
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw(b"\xFF")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":

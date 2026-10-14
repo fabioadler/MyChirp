@@ -31,13 +31,11 @@ struct {
   lbcd txfreq[4];
 } memory[32];
 
-#seekto 0x0100;
 struct {
   lbcd rx_tone[2];
   lbcd tx_tone[2];
 } tone[32];
 
-#seekto 0x0180;
 struct {
   u8 unknown0:1,
      unknown1:1,
@@ -474,7 +472,7 @@ class Kenwood_M60_Radio(chirp_common.CloneModeRadio,
     def decode_tone(self, val):
         """Parse the tone data to decode from mem, it returns:
         Mode (''|DTCS|Tone), Value (None|###), Polarity (None,N,R)"""
-        if val.get_raw(asbytes=False) == "\xFF\xFF":
+        if val.get_raw() == b"\xFF\xFF":
             return '', None, None
 
         val = int(val)
@@ -560,18 +558,18 @@ class Kenwood_M60_Radio(chirp_common.CloneModeRadio,
         # Memory number
         mem.number = number
 
-        if (_mem.get_raw(asbytes=False)[0] == "\xFF" or
+        if (_mem.get_raw()[0] == 0xFF or
                 not self.get_active(number - 1)):
             mem.empty = True
             # but is not enough, you have to clear the memory in the mmap
             # to get it ready for the sync_out process
-            _mem.set_raw("\xFF" * 8)
+            _mem.set_raw(b"\xFF" * 8)
             return mem
 
         # Freq and offset
         mem.freq = int(_mem.rxfreq) * 10
         # tx freq can be blank
-        if _mem.get_raw(asbytes=False)[4] == "\xFF":
+        if _mem.get_raw()[4] == 0xFF:
             # TX freq not set
             mem.offset = 0
             mem.duplex = "off"
@@ -624,7 +622,7 @@ class Kenwood_M60_Radio(chirp_common.CloneModeRadio,
 
         # Empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * 8)
+            _mem.set_raw(b"\xFF" * 8)
             # empty the active bit
             self.set_active(mem.number - 1, False)
             return
@@ -639,7 +637,7 @@ class Kenwood_M60_Radio(chirp_common.CloneModeRadio,
             _mem.txfreq = (mem.freq - mem.offset) / 10
         elif mem.duplex == "off":
             for byte in _mem.txfreq:
-                byte.set_raw("\xFF")
+                byte.set_raw(b"\xFF")
         else:
             _mem.txfreq = mem.freq / 10
 
@@ -701,12 +699,12 @@ class Kenwood_M60_Radio(chirp_common.CloneModeRadio,
         basic.append(mod)
 
         tot = RadioSetting("settings.tot", "Time Out Timer (TOT)",
-                           RadioSettingValueList(TOT, sett.tot))
+                           RadioSettingValueList(TOT, current_index=(TOT).index(sett.tot)))
         basic.append(tot)
 
         minvol = RadioSetting("settings.min_vol", "Minimum volume",
                               RadioSettingValueList(VOL,
-                                                    sett.min_vol))
+                                                    current_index=(VOL).index(sett.min_vol)))
         basic.append(minvol)
 
         ptone = RadioSetting("settings.poweron_tone", "Power On tone",
@@ -726,22 +724,22 @@ class Kenwood_M60_Radio(chirp_common.CloneModeRadio,
 
         # front keys
         rs = RadioSettingValueList(KEYS.values(),
-                                   KEYS[int(sett.kMON)])
+                                   current_index=(KEYS.values()).index(KEYS[int(sett.kMON)]))
         mon = RadioSetting("settings.kMON", "MON", rs)
         fkeys.append(mon)
 
         rs = RadioSettingValueList(KEYS.values(),
-                                   KEYS[int(sett.kA)])
+                                   current_index=(KEYS.values()).index(KEYS[int(sett.kA)]))
         a = RadioSetting("settings.kA", "A", rs)
         fkeys.append(a)
 
         rs = RadioSettingValueList(KEYS.values(),
-                                   KEYS[int(sett.kSCN)])
+                                   current_index=(KEYS.values()).index(KEYS[int(sett.kSCN)]))
         scn = RadioSetting("settings.kSCN", "SCN", rs)
         fkeys.append(scn)
 
         rs = RadioSettingValueList(KEYS.values(),
-                                   KEYS[int(sett.kDA)])
+                                   current_index=(KEYS.values()).index(KEYS[int(sett.kDA)]))
         da = RadioSetting("settings.kDA", "D/A", rs)
         fkeys.append(da)
 

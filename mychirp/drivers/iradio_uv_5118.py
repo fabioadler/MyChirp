@@ -409,8 +409,8 @@ class IradioUV5118(chirp_common.CloneModeRadio):
 
         if _mem.get_raw() == (b"\xFF" * 16):
             LOG.debug("Initializing empty memory")
-            _mem.set_raw("\xFF" * 4 + "\x00\x30" + "\xFF" * 4 + "\x00\x30" +
-                         "\x00" * 4)
+            _mem.set_raw(b"\xFF" * 4 + b"\x00\x30" + b"\xFF" * 4 + b"\x00\x30" +
+                         b"\x00" * 4)
 
         # Freq and offset
         mem.freq = int(_mem.rxfreq) * 10
@@ -455,11 +455,11 @@ class IradioUV5118(chirp_common.CloneModeRadio):
 
         # if empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw(b"\xFF" * 16)
             return
 
-        _mem.set_raw("\xFF" * 4 + "\x00\x30" + "\xFF" * 4 + "\x00\x30" +
-                     "\x00" * 4)
+        _mem.set_raw(b"\xFF" * 4 + b"\x00\x30" + b"\xFF" * 4 + b"\x00\x30" +
+                     b"\x00" * 4)
 
         _mem.rxfreq = mem.freq / 10
 

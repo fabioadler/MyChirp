@@ -44,7 +44,6 @@ from mychirp.settings import RadioSetting, RadioSettingGroup, \
 # R1: 10K ohm resistor
 
 MEM_FORMAT = """
-#seekto 0x0000; // channel memories
 struct {
   ul16 frequency;
   ul16 offset;

@@ -38,7 +38,6 @@ struct {
   u8    unknown3;
 } memory[100];
 
-#seekto 0x0640;
 struct {
   bbcd  freq[2];
   u8    freq_10khz:4,

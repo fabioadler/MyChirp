@@ -1107,7 +1107,7 @@ class RT490Radio(chirp_common.CloneModeRadio):
             LOG.debug('DCP ID / FHSS overflow for channel %d' % num)
         cur = self.FHSS_LIST[dcp]
         s = RadioSetting('dcp', 'FHSS (Encryption)',
-                         RadioSettingValueList(self.FHSS_LIST, cur))
+                         RadioSettingValueList(self.FHSS_LIST, current_index=(self.FHSS_LIST).index(cur)))
         group.append(s)
 
         # Does not work, no error, why ??? TODO
@@ -1129,12 +1129,12 @@ class RT490Radio(chirp_common.CloneModeRadio):
             LOG.debug('PTTID overflow for channel %d' % num)
         cur = self.PTTID[pttid]
         s = RadioSetting('pttid', 'Send DTMF Code (PTT ID)',
-                         RadioSettingValueList(self.PTTID, cur))
+                         RadioSettingValueList(self.PTTID, current_index=(self.PTTID).index(cur)))
         group.append(s)
 
         cur = self.SIGNAL[int(_mem.signal)]
         s = RadioSetting('signal', 'PTT ID Code (S-Code)',
-                         RadioSettingValueList(self.SIGNAL, cur))
+                         RadioSettingValueList(self.SIGNAL, current_index=(self.SIGNAL).index(cur)))
         group.append(s)
 
         s = RadioSetting('learn',

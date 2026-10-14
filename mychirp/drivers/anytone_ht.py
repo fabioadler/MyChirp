@@ -92,7 +92,7 @@ struct {
 #seekto 0x0100;
 u8 used_flags[50];
 
-#seekto 0x0120;
+#overlayto 0x0120;
 u8 skip_flags[50];
 
 #seekto 0x0220;
@@ -212,7 +212,7 @@ struct {
      amsql:3;
 } settings;
 
-#seekto 0x0246;
+#overlayto 0x0246;
 struct {
   u8 unused:7,
      bank:1;
@@ -548,13 +548,13 @@ class AnyToneTERMN8RRadio(chirp_common.CloneModeRadio,
         if mem.empty:
             _usd |= bitpos
             _skp |= bitpos
-            _mem.set_raw("\xFF" * 32)
+            _mem.set_raw(b"\xFF" * 32)
             return
         _usd &= ~bitpos
 
-        if _mem.get_raw(asbytes=False) == ("\xFF" * 32):
+        if _mem.get_raw() == (b"\xFF" * 32):
             LOG.debug("Initializing empty memory")
-            _mem.set_raw("\x00" * 32)
+            _mem.set_raw(b"\x00" * 32)
             _mem.squelch = 3
 
         _mem.freq = mem.freq / 100

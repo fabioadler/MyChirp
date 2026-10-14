@@ -45,10 +45,8 @@ struct {
 #seekto 0x69C0;
 u8 used_flags[70];
 
-#seekto 0x6A06;
 u8 skip_flags[69];
 
-#seekto 0x6A4B;
 u8 pskp_flags[69];
 
 #seekto 0x6AC0;
@@ -85,7 +83,6 @@ struct {
   char tag[4];
 } mycall[6];
 
-#seekto 0x10F68;
 struct {
   char call[8];
 } urcall[200];

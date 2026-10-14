@@ -97,7 +97,6 @@ u8 backlight_time;
 u8 ste;
 u8 freq_mode_allowed;
 
-#seekto 0xe80;
 u8 ScreenChannel_A;
 u8 MrChannel_A;
 u8 FreqChannel_A;
@@ -266,7 +265,6 @@ struct {
         #seek 7;
     } txp[7];
 
-    #seekto 0x1F40;
     ul16 batLvl[6];
 
     #seekto 0x1F50;
@@ -536,7 +534,7 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
                             COMPANDER_LIST, 0)
         else:
             comp = 0
-        val = RadioSettingValueList(COMPANDER_LIST, None, comp)
+        val = RadioSettingValueList(COMPANDER_LIST, current_index=comp)
         rs = RadioSetting("compander", "Compander (Compnd)", val)
         mem.extra.append(rs)
         return mem
@@ -954,29 +952,34 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
             if action_num >= len(KEYACTIONS_LIST) or \
                KEYACTIONS_LIST[action_num] not in lst:
                 action_num = 0
-            return lst, KEYACTIONS_LIST[action_num]
+            return lst, lst.index(KEYACTIONS_LIST[action_num])
 
-        val = RadioSettingValueList(*get_action(_mem.key1_shortpress_action))
+        _opts, _idx = get_action(_mem.key1_shortpress_action)
+        val = RadioSettingValueList(_opts, current_index=_idx)
         rs = RadioSetting("key1_shortpress_action",
                           "Side key 1 short press (F1Shrt)", val)
         keya.append(rs)
 
-        val = RadioSettingValueList(*get_action(_mem.key1_longpress_action))
+        _opts, _idx = get_action(_mem.key1_longpress_action)
+        val = RadioSettingValueList(_opts, current_index=_idx)
         rs = RadioSetting("key1_longpress_action",
                           "Side key 1 long press (F1Long)", val)
         keya.append(rs)
 
-        val = RadioSettingValueList(*get_action(_mem.key2_shortpress_action))
+        _opts, _idx = get_action(_mem.key2_shortpress_action)
+        val = RadioSettingValueList(_opts, current_index=_idx)
         rs = RadioSetting("key2_shortpress_action",
                           "Side key 2 short press (F2Shrt)", val)
         keya.append(rs)
 
-        val = RadioSettingValueList(*get_action(_mem.key2_longpress_action))
+        _opts, _idx = get_action(_mem.key2_longpress_action)
+        val = RadioSettingValueList(_opts, current_index=_idx)
         rs = RadioSetting("key2_longpress_action",
                           "Side key 2 long press (F2Long)", val)
         keya.append(rs)
 
-        val = RadioSettingValueList(*get_action(_mem.keyM_longpress_action))
+        _opts, _idx = get_action(_mem.keyM_longpress_action)
+        val = RadioSettingValueList(_opts, current_index=_idx)
         rs = RadioSetting("keyM_longpress_action",
                           "Menu key long press (M Long)", val)
         keya.append(rs)
@@ -1072,7 +1075,7 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
 
         tmpval = list_def(_mem.dtmf.decode_response,
                           DTMF_DECODE_RESPONSE_LIST, 0)
-        val = RadioSettingValueList(DTMF_DECODE_RESPONSE_LIST, None, tmpval)
+        val = RadioSettingValueList(DTMF_DECODE_RESPONSE_LIST, current_index=tmpval)
         dtmf_resp_setting = RadioSetting("dtmf_decode_response",
                                          "Decode Response (D Resp)", val)
 
@@ -1157,7 +1160,7 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
         # ----------------- Scan Lists
 
         tmpscanl = list_def(_mem.slDef, SCANLIST_SELECT_LIST, 0)
-        val = RadioSettingValueList(SCANLIST_SELECT_LIST, None, tmpscanl)
+        val = RadioSettingValueList(SCANLIST_SELECT_LIST, current_index=tmpscanl)
         rs = RadioSetting("slDef", "Default scanlist (SList)", val)
         scanl.append(rs)
 
@@ -1170,12 +1173,12 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
             ch_list.append("Channel M%i" % ch)
 
         tmpch = list_def(_mem.sl1PriorCh1 + 1, ch_list, 0)
-        val = RadioSettingValueList(ch_list, None, tmpch)
+        val = RadioSettingValueList(ch_list, current_index=tmpch)
         rs = RadioSetting("sl1PriorCh1", "List 1 priority channel 1", val)
         scanl.append(rs)
 
         tmpch = list_def(_mem.sl1PriorCh2 + 1, ch_list, 0)
-        val = RadioSettingValueList(ch_list, None, tmpch)
+        val = RadioSettingValueList(ch_list, current_index=tmpch)
         rs = RadioSetting("sl1PriorCh2", "List 1 priority channel 2", val)
         scanl.append(rs)
 
@@ -1184,12 +1187,12 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
         scanl.append(rs)
 
         tmpch = list_def(_mem.sl2PriorCh1 + 1, ch_list, 0)
-        val = RadioSettingValueList(ch_list, None, tmpch)
+        val = RadioSettingValueList(ch_list, current_index=tmpch)
         rs = RadioSetting("sl2PriorCh1", "List 2 priority channel 1", val)
         scanl.append(rs)
 
         tmpch = list_def(_mem.sl2PriorCh2 + 1, ch_list, 0)
-        val = RadioSettingValueList(ch_list, None, tmpch)
+        val = RadioSettingValueList(ch_list, current_index=tmpch)
         rs = RadioSetting("sl2PriorCh2", "List 2 priority channel 2", val)
         scanl.append(rs)
 
@@ -1205,17 +1208,17 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
                 ch_list.append("NOAA N%i" % bnd)
 
         tmpfreq0 = list_def(_mem.ScreenChannel_A, ch_list, 0)
-        val = RadioSettingValueList(ch_list, None, tmpfreq0)
+        val = RadioSettingValueList(ch_list, current_index=tmpfreq0)
         freq0_setting = RadioSetting("VFO_A_chn",
                                      "VFO A current channel/band", val)
 
         tmpfreq1 = list_def(_mem.ScreenChannel_B, ch_list, 0)
-        val = RadioSettingValueList(ch_list, None, tmpfreq1)
+        val = RadioSettingValueList(ch_list, current_index=tmpfreq1)
         freq1_setting = RadioSetting("VFO_B_chn",
                                      "VFO B current channel/band", val)
 
         tmptxvfo = list_def(_mem.TX_VFO, TX_VFO_LIST, 0)
-        val = RadioSettingValueList(TX_VFO_LIST, None, tmptxvfo)
+        val = RadioSettingValueList(TX_VFO_LIST, current_index=tmptxvfo)
         tx_vfo_setting = RadioSetting("TX_VFO", "Main VFO", val)
 
         tmpsq = min_max_def(_mem.squelch, 0, 9, 1)
@@ -1227,7 +1230,7 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
             ch_list.append("Channel M%i" % ch)
 
         tmpc = list_def(_mem.call_channel, ch_list, 0)
-        val = RadioSettingValueList(ch_list, None, tmpc)
+        val = RadioSettingValueList(ch_list, current_index=tmpc)
         call_channel_setting = RadioSetting("call_channel",
                                             "One key call channel (1 Call)",
                                             val)
@@ -1241,12 +1244,12 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
                          "Auto keypad lock (KeyLck)", val)
 
         tmptot = list_def(_mem.max_talk_time,  TALK_TIME_LIST, 1)
-        val = RadioSettingValueList(TALK_TIME_LIST, None, tmptot)
+        val = RadioSettingValueList(TALK_TIME_LIST, current_index=tmptot)
         tx_t_out_setting = RadioSetting("tot",
                                         "Max talk, TX Time Out (TxTOut)", val)
 
         tmpbatsave = list_def(_mem.battery_save, BATSAVE_LIST, 4)
-        val = RadioSettingValueList(BATSAVE_LIST, None, tmpbatsave)
+        val = RadioSettingValueList(BATSAVE_LIST, current_index=tmpbatsave)
         bat_save_setting = RadioSetting("battery_save",
                                         "Battery save (BatSav)", val)
 
@@ -1255,7 +1258,7 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
                                               "NOAA Autoscan (NOAA-S)", val)
 
         tmpmicgain = list_def(_mem.mic_gain, MIC_GAIN_LIST, 2)
-        val = RadioSettingValueList(MIC_GAIN_LIST, None, tmpmicgain)
+        val = RadioSettingValueList(MIC_GAIN_LIST, current_index=tmpmicgain)
         mic_gain_setting = RadioSetting("mic_gain", "Mic Gain (Mic)", val)
 
         val = RadioSettingValueBoolean(_mem.mic_bar)
@@ -1264,12 +1267,12 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
 
         tmpchdispmode = list_def(_mem.channel_display_mode,
                                  CHANNELDISP_LIST, 0)
-        val = RadioSettingValueList(CHANNELDISP_LIST, None, tmpchdispmode)
+        val = RadioSettingValueList(CHANNELDISP_LIST, current_index=tmpchdispmode)
         ch_disp_setting = RadioSetting("channel_display_mode",
                                        "Channel display mode (ChDisp)", val)
 
         tmpdispmode = list_def(_mem.power_on_dispmode, WELCOME_LIST, 0)
-        val = RadioSettingValueList(WELCOME_LIST, None, tmpdispmode)
+        val = RadioSettingValueList(WELCOME_LIST, current_index=tmpdispmode)
         p_on_msg_setting = RadioSetting("welcome_mode",
                                         "Power ON display message (POnMsg)",
                                         val)
@@ -1289,27 +1292,27 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
                                      val)
 
         tmpbattxt = list_def(_mem.battery_text, BAT_TXT_LIST, 2)
-        val = RadioSettingValueList(BAT_TXT_LIST, None, tmpbattxt)
+        val = RadioSettingValueList(BAT_TXT_LIST, current_index=tmpbattxt)
         bat_txt_setting = RadioSetting("battery_text",
                                        "Battery Level Display (BatTXT)", val)
 
         tmpback = list_def(_mem.backlight_time, BACKLIGHT_LIST, 0)
-        val = RadioSettingValueList(BACKLIGHT_LIST, None, tmpback)
+        val = RadioSettingValueList(BACKLIGHT_LIST, current_index=tmpback)
         back_lt_setting = RadioSetting("backlight_time",
                                        "Backlight time (BackLt)", val)
 
         tmpback = list_def(_mem.backlight_min, BACKLIGHT_LVL_LIST, 0)
-        val = RadioSettingValueList(BACKLIGHT_LVL_LIST, None, tmpback)
+        val = RadioSettingValueList(BACKLIGHT_LVL_LIST, current_index=tmpback)
         bl_min_setting = RadioSetting("backlight_min",
                                       "Backlight level min (BLMin)", val)
 
         tmpback = list_def(_mem.backlight_max, BACKLIGHT_LVL_LIST, 10)
-        val = RadioSettingValueList(BACKLIGHT_LVL_LIST, None, tmpback)
+        val = RadioSettingValueList(BACKLIGHT_LVL_LIST, current_index=tmpback)
         bl_max_setting = RadioSetting("backlight_max",
                                       "Backlight level max (BLMax)", val)
 
         tmpback = list_def(_mem.backlight_on_TX_RX, BACKLIGHT_TX_RX_LIST, 0)
-        val = RadioSettingValueList(BACKLIGHT_TX_RX_LIST, None, tmpback)
+        val = RadioSettingValueList(BACKLIGHT_TX_RX_LIST, current_index=tmpback)
         blt_trx_setting = RadioSetting("backlight_on_TX_RX",
                                        "Backlight on TX/RX (BltTRX)", val)
 
@@ -1318,7 +1321,7 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
                                     "Key press beep sound (Beep)", val)
 
         tmpalarmmode = list_def(_mem.roger_beep, ROGER_LIST, 0)
-        val = RadioSettingValueList(ROGER_LIST, None, tmpalarmmode)
+        val = RadioSettingValueList(ROGER_LIST, current_index=tmpalarmmode)
         roger_setting = RadioSetting("roger_beep",
                                      "End of transmission beep (Roger)", val)
 
@@ -1327,7 +1330,7 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
                                    val)
 
         tmprte = list_def(_mem.rp_ste, RTE_LIST, 0)
-        val = RadioSettingValueList(RTE_LIST, None, tmprte)
+        val = RadioSettingValueList(RTE_LIST, current_index=tmprte)
         rp_ste_setting = \
             RadioSetting("rp_ste",
                          "Repeater squelch tail elimination (RP STE)", val)
@@ -1337,13 +1340,13 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
                                       "AM reception fix (AM Fix)", val)
 
         tmpvox = min_max_def((_mem.vox_level + 1) * _mem.vox_switch, 0, 10, 0)
-        val = RadioSettingValueList(VOX_LIST, None, tmpvox)
+        val = RadioSettingValueList(VOX_LIST, current_index=tmpvox)
         vox_setting = RadioSetting("vox", "Voice-operated switch (VOX)", val)
 
         tmprxmode = list_def((bool(_mem.crossband) << 1)
                              + bool(_mem.dual_watch),
                              RXMODE_LIST, 0)
-        val = RadioSettingValueList(RXMODE_LIST, None, tmprxmode)
+        val = RadioSettingValueList(RXMODE_LIST, current_index=tmprxmode)
         rx_mode_setting = RadioSetting("rx_mode", "RX Mode (RxMode)", val)
 
         val = RadioSettingValueBoolean(_mem.freq_mode_allowed)
@@ -1351,16 +1354,16 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
                                                  "Frequency mode allowed", val)
 
         tmpscanres = list_def(_mem.scan_resume_mode, SCANRESUME_LIST, 0)
-        val = RadioSettingValueList(SCANRESUME_LIST, None, tmpscanres)
+        val = RadioSettingValueList(SCANRESUME_LIST, current_index=tmpscanres)
         scn_rev_setting = RadioSetting("scan_resume_mode",
                                        "Scan resume mode (ScnRev)", val)
 
         tmpvoice = list_def(_mem.voice, VOICE_LIST, 0)
-        val = RadioSettingValueList(VOICE_LIST, None, tmpvoice)
+        val = RadioSettingValueList(VOICE_LIST, current_index=tmpvoice)
         voice_setting = RadioSetting("voice", "Voice", val)
 
         tmpalarmmode = list_def(_mem.alarm_mode, ALARMMODE_LIST, 0)
-        val = RadioSettingValueList(ALARMMODE_LIST, None, tmpalarmmode)
+        val = RadioSettingValueList(ALARMMODE_LIST, current_index=tmpalarmmode)
         alarm_setting = RadioSetting("alarm_mode", "Alarm mode", val)
 
         # ----------------- Extra settings
@@ -1427,7 +1430,7 @@ class UVK5RadioEgzumer(uvk5.UVK5RadioBase):
             return value
 
         tmpflock = list_def(_mem.int_flock, FLOCK_LIST, 0)
-        val = RadioSettingValueList(FLOCK_LIST, None, tmpflock)
+        val = RadioSettingValueList(FLOCK_LIST, current_index=tmpflock)
         val.set_validate_callback(validate_int_flock)
         f_lock_setting = RadioSetting("int_flock",
                                       "TX Frequency Lock (F Lock)", val)

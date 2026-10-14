@@ -234,7 +234,7 @@ class UV3RRadio(chirp_common.CloneModeRadio):
         mem = chirp_common.Memory()
         mem.number = number
 
-        if _mem.get_raw(asbytes=False)[0] == "\xff":
+        if _mem.get_raw()[0] == 0xFF:
             mem.empty = True
             return mem
 
@@ -304,7 +304,7 @@ class UV3RRadio(chirp_common.CloneModeRadio):
 
     def _set_memory(self, mem, _mem):
         if mem.empty:
-            _mem.set_raw("\xff" * 16)
+            _mem.set_raw(b"\xff" * 16)
             return
 
         _mem.rx_freq = mem.freq / 10
@@ -313,7 +313,7 @@ class UV3RRadio(chirp_common.CloneModeRadio):
             _mem.offset = abs(diff) / 10
             _mem.duplex = UV3R_DUPLEX.index(diff < 0 and "+" or "-")
             for i in range(0, 4):
-                _mem.tx_freq[i].set_raw("\xFF")
+                _mem.tx_freq[i].set_raw(b"\xFF")
         else:
             _mem.offset = mem.offset / 10
             _mem.duplex = UV3R_DUPLEX.index(mem.duplex)

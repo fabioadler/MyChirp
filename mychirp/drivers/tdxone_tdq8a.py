@@ -520,10 +520,10 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
                                     'with the radio')
 
     def _is_txinh(self, _mem):
-        raw_tx = ""
+        raw_tx = b""
         for i in range(0, 4):
-            raw_tx += _mem.txfreq[i].get_raw(asbytes=False)
-        return raw_tx == "\xFF\xFF\xFF\xFF"
+            raw_tx += _mem.txfreq[i].get_raw()
+        return raw_tx == b"\xFF\xFF\xFF\xFF"
 
     def _get_mem(self, number):
         return self._memobj.memory[number - 1]
@@ -538,7 +538,7 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
         mem = chirp_common.Memory()
         mem.number = number
 
-        if _mem.get_raw(asbytes=False)[0] == "\xff":
+        if _mem.get_raw()[0] == 0xFF:
             mem.empty = True
             return mem
 
@@ -628,17 +628,17 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
         _nam = self._get_nam(mem.number)
 
         if mem.empty:
-            _mem.set_raw("\xff" * 12 + "\xbf" + "\xff" * 3)
-            _nam.set_raw("\xff" * 16)
+            _mem.set_raw(b"\xff" * 12 + b"\xbf" + b"\xff" * 3)
+            _nam.set_raw(b"\xff" * 16)
             return
 
-        _mem.set_raw("\xff" * 12 + "\x9f" + "\xff" * 3)
+        _mem.set_raw(b"\xff" * 12 + b"\x9f" + b"\xff" * 3)
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw(b"\xFF")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":

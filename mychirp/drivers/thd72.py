@@ -560,8 +560,8 @@ class THD72Radio(chirp_common.CloneModeRadio):
         raise errors.RadioError("Unexpected response to ID command")
 
     def initialize(self, mmap):
-        mmap.set_raw("\x00\xc8\xb3\x08\x00\x01\x00\x08"
-                     "\x08\x00\xc0\x27\x09\x00\x00\x00")
+        mmap.set_raw(b"\x00\xc8\xb3\x08\x00\x01\x00\x08"
+                     b"\x08\x00\xc0\x27\x09\x00\x00\x00")
 
     def _get_settings(self):
         top = RadioSettings(self._get_display_settings(),

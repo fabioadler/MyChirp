@@ -77,7 +77,6 @@ struct {
   u8  dtmf8[7];
 } dtmf_tab;
 
-#seekto 0x0280;
 struct {
   u8  native_id_cnt;
   u8  native_id_code[7];
@@ -188,10 +187,8 @@ struct mem {
 #seekto 0x0400;
 struct mem upper_memory[128];
 
-#seekto 0x1000;
 struct mem lower_memory[128];
 
-#seekto 0x1C00;
 struct {
   char  mod_num[6];
 } mod_id;
@@ -586,7 +583,7 @@ class LT725UV(chirp_common.CloneModeRadio):
         mem = chirp_common.Memory()
         mem.number = number
 
-        if _mem.get_raw(asbytes=False)[0] == "\xff":
+        if _mem.get_raw()[0] == 0xFF:
             mem.empty = True
             return mem
 
@@ -698,11 +695,11 @@ class LT725UV(chirp_common.CloneModeRadio):
         _mem = self._memory_obj()[mem.number - 1]
 
         if mem.empty:
-            _mem.set_raw("\xff" * 24)
+            _mem.set_raw(b"\xff" * 24)
             _mem.namelen = 0
             return
 
-        _mem.set_raw("\xFF" * 15 + "\x00\x00" + "\xFF" * 7)
+        _mem.set_raw(b"\xFF" * 15 + b"\x00\x00" + b"\xFF" * 7)
 
         _mem.rxfreq = mem.freq / 10
         if mem.duplex == "off":
@@ -989,19 +986,19 @@ class LT725UV(chirp_common.CloneModeRadio):
 
         tmp = str(int(_sets.tot) * 30)     # 30 sec step counter
         rs = RadioSetting("settings.tot", "Transmit Timeout (Secs)",
-                          RadioSettingValueList(LIST_TIMEOUT, tmp))
+                          RadioSettingValueList(LIST_TIMEOUT, current_index=(LIST_TIMEOUT).index(tmp)))
         rs.set_apply_callback(my_val_list, _sets, "tot")
         basic.append(rs)
 
         tmp = str(int(_sets.sig_freq))
         rs = RadioSetting("settings.sig_freq", "Single Signaling Tone (Hz)",
-                          RadioSettingValueList(LIST_SSF, tmp))
+                          RadioSettingValueList(LIST_SSF, current_index=(LIST_SSF).index(tmp)))
         rs.set_apply_callback(my_val_list, _sets, "sig_freq")
         basic.append(rs)
 
         tmp = str(int(_sets.dtmf_txms))
         rs = RadioSetting("settings.dtmf_txms", "DTMF Tx Duration (mSecs)",
-                          RadioSettingValueList(LIST_DTMFTX, tmp))
+                          RadioSettingValueList(LIST_DTMFTX, current_index=(LIST_DTMFTX).index(tmp)))
         rs.set_apply_callback(my_val_list, _sets, "dtmf_txms")
         basic.append(rs)
 
@@ -1035,7 +1032,7 @@ class LT725UV(chirp_common.CloneModeRadio):
 
         tmp = my_tone_strn(_vfoa, "is_rxdigtone", "rxdtcs_pol", "rx_tone")
         rs = RadioSetting("rx_tone", "Default Recv CTCSS (Hz)",
-                          RadioSettingValueList(LIST_CTCSS, tmp))
+                          RadioSettingValueList(LIST_CTCSS, current_index=(LIST_CTCSS).index(tmp)))
         rs.set_apply_callback(my_set_tone, _vfoa, "is_rxdigtone",
                               "rxdtcs_pol", "rx_tone")
         a_band.append(rs)
@@ -1047,7 +1044,7 @@ class LT725UV(chirp_common.CloneModeRadio):
 
         tmp = my_tone_strn(_vfoa, "is_txdigtone", "txdtcs_pol", "tx_tone")
         rs = RadioSetting("tx_tone", "Default Xmit CTCSS (Hz)",
-                          RadioSettingValueList(LIST_CTCSS, tmp))
+                          RadioSettingValueList(LIST_CTCSS, current_index=(LIST_CTCSS).index(tmp)))
         rs.set_apply_callback(my_set_tone, _vfoa, "is_txdigtone",
                               "txdtcs_pol", "tx_tone")
         a_band.append(rs)
@@ -1087,7 +1084,7 @@ class LT725UV(chirp_common.CloneModeRadio):
 
         tmp = str(_vfoa.step / 100.0)
         rs = RadioSetting("step", "Freq step (kHz)",
-                          RadioSettingValueList(LIST_STEPS, tmp))
+                          RadioSettingValueList(LIST_STEPS, current_index=(LIST_STEPS).index(tmp)))
         rs.set_apply_callback(my_word2raw, _vfoa, "step", 100)
         a_band.append(rs)
 
@@ -1147,7 +1144,7 @@ class LT725UV(chirp_common.CloneModeRadio):
 
         tmp = my_tone_strn(_vfob, "is_rxdigtone", "rxdtcs_pol", "rx_tone")
         rs = RadioSetting("rx_tone", "Default Recv CTCSS (Hz)",
-                          RadioSettingValueList(LIST_CTCSS, tmp))
+                          RadioSettingValueList(LIST_CTCSS, current_index=(LIST_CTCSS).index(tmp)))
         rs.set_apply_callback(my_set_tone, _vfob, "is_rxdigtone",
                               "rxdtcs_pol", "rx_tone")
         b_band.append(rs)
@@ -1158,7 +1155,7 @@ class LT725UV(chirp_common.CloneModeRadio):
 
         tmp = my_tone_strn(_vfob, "is_txdigtone", "txdtcs_pol", "tx_tone")
         rs = RadioSetting("tx_tone", "Default Xmit CTCSS (Hz)",
-                          RadioSettingValueList(LIST_CTCSS, tmp))
+                          RadioSettingValueList(LIST_CTCSS, current_index=(LIST_CTCSS).index(tmp)))
         rs.set_apply_callback(my_set_tone, _vfob, "is_txdigtone",
                               "txdtcs_pol", "tx_tone")
         b_band.append(rs)
@@ -1195,7 +1192,7 @@ class LT725UV(chirp_common.CloneModeRadio):
 
         tmp = str(_vfob.step / 100.0)
         rs = RadioSetting("step", "Freq step (kHz)",
-                          RadioSettingValueList(LIST_STEPS, tmp))
+                          RadioSettingValueList(LIST_STEPS, current_index=(LIST_STEPS).index(tmp)))
         rs.set_apply_callback(my_word2raw, _vfob, "step", 100)
         b_band.append(rs)
 

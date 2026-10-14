@@ -33,9 +33,7 @@ LOG = logging.getLogger(__name__)
 MEM_FORMAT = """
 #seekto 0x0E;
 struct radioinfo radioinfo;
-#seekto 0x52;
 struct dataver dataver;
-#seekto 0x5C;
 struct {
   u8 readpwd[8];
   u8 writepwd[8];
@@ -122,7 +120,6 @@ struct {
   u8 rev_19[6];
 } settings;
 
-#seekto 0xf4;
 struct zoneinfo zoneinfo;
 
 struct channel {
@@ -163,30 +160,24 @@ struct channel {
     ul32 difffreq;
 };
 
-#seekto 0x0a16;
 struct {
     ul16 chnum;
     ul16 chindex[1024];
     struct channel channels[1024];
 } channeldata;
 
-#seekto 0xb218;
 struct {
     ul16 chnum;
     ul16 chindex[3];
     struct channel vfochannels[3];
 } vfochanneldata;
 
-#seekto 0xb298;
 struct scaninfo scans;
 
-#seekto 0xc0ba;
 struct vfoscaninfo vfoscans;
 
-#seekto 0xc0fe;
 struct alarminfo alarms;
 
-#seekto 0xc200;
 struct {
     ul16 fmnum;
     ul16 fmindex[64];
@@ -198,7 +189,6 @@ struct {
     } fms[64];
 } fmdata;
 
-#seekto 0xc802;
 struct dtmfinfo dtmfinfos;
 
 struct callsign {
@@ -282,7 +272,6 @@ struct {
    u8 rev_3[10];
 } gnssinfo;
 
-#seekto 0x1185e;
 struct {
     ul16 aliasnum;
     ul16 aliasindex[30];

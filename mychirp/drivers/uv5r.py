@@ -259,7 +259,7 @@ struct {
   struct limit uhf;
 } limits_new;
 
-#seekto 0x1910;
+#overlayto 0x1910;
 struct {
   u8 unknown1[2];
   struct limit vhf;

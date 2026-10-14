@@ -34,7 +34,6 @@ mem_format = """
 u8 zoneflag[16];
 
 // (identical?) bitmask for index spot in use
-#seekto 0x0030;
 u8 flag1[16];
 #seekto 0x0050;
 u8 flag2[16];
@@ -49,7 +48,6 @@ struct {
     u8 slot;  // Index into the memory array
 } index[128];
 
-#seekto 0x02E0;
 struct {
     u8 used:1,
        unknown1:4, // Always 0x71?
@@ -58,7 +56,6 @@ struct {
     u8 count; // Number of memories in the zone
 } zoneinfo[128];
 
-#seekto 0x03E0;
 struct {
     u8 number;
     u8 zone;
@@ -693,7 +690,7 @@ class TKx160Radio(chirp_common.CloneModeRadio):
         group = settings.RadioSettingGroup('keys', 'Keys')
         for name, element in keynames.items():
             current = keyvals[int(getattr(keysobj, element))]
-            val = settings.RadioSettingValueList(keyvals.values(), current)
+            val = settings.RadioSettingValueList(keyvals.values(), current_index=(keyvals.values()).index(current))
             keysetting = settings.RadioSetting(element, name, val)
             keysetting.set_apply_callback(applycb)
             group.append(keysetting)
@@ -773,7 +770,7 @@ class TK8160RadioM(TKx160Radio):
 
 mem_format_7162 = mem_format + """
 
-#seekto 0x17e5;
+#overlayto 0x17e5;
 struct {
     u8 tot;
     u8 tot_pre;

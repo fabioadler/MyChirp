@@ -42,14 +42,11 @@ struct {
   char name[8];
 } memory[522];
 
-#seekto 0x61E0;
 u8 used_flags[66];
 
-#seekto 0x6222;
 u8 skip_flags[65];
 u8 pskip_flags[65];
 
-#seekto 0x62A4;
 struct {
   u8 bank;
   u8 index;
@@ -66,7 +63,6 @@ struct {
   u8 unknown[4];
 } mycall[6];
 
-#seekto 0x69B8;
 struct {
   char call[8];
 } urcall[60];

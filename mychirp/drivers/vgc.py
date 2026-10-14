@@ -64,13 +64,10 @@ struct nam right_names[500];
 #seekto 0x6000;
 u8 left_usedflags[64];
 
-#seekto 0x6040;
 u8 left_scanflags[64];
 
-#seekto 0x6080;
 u8 right_usedflags[64];
 
-#seekto 0x60C0;
 u8 right_scanflags[64];
 
 #seekto 0x6160;
@@ -78,7 +75,6 @@ struct {
   char line32[32];
 } embedded_msg;
 
-#seekto 0x6180;
 struct {
   u8  sbmute:2,        // sub band mute
       unknown1:1,
@@ -676,7 +672,7 @@ class VGCStyleRadio(chirp_common.CloneModeRadio,
     def decode_tone(self, val):
         """Parse the tone data to decode from mem, it returns:
         Mode (''|DTCS|Tone), Value (None|###), Polarity (None,N,R)"""
-        if val.get_raw(asbytes=False) == "\xFF\xFF":
+        if val.get_raw() == b"\xFF\xFF":
             return '', None, None
 
         val = int(val)
@@ -742,7 +738,7 @@ class VGCStyleRadio(chirp_common.CloneModeRadio,
         # Freq and offset
         mem.freq = int(_mem.rxfreq) * 10
         # tx freq can be blank
-        if _mem.get_raw(asbytes=False)[4] == "\xFF":
+        if _mem.get_raw()[4] == 0xFF:
             # TX freq not set
             mem.offset = 0
             mem.duplex = "off"
@@ -812,7 +808,7 @@ class VGCStyleRadio(chirp_common.CloneModeRadio,
         if mem.empty:
             _usd &= ~bitpos
             _scn &= ~bitpos
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw(b"\xFF" * 16)
             _names.name = ("\xFF" * 6)
             return
         else:
@@ -828,7 +824,7 @@ class VGCStyleRadio(chirp_common.CloneModeRadio,
             _mem.txfreq = (mem.freq - mem.offset) / 10
         elif mem.duplex == "off":
             for i in _mem.txfreq:
-                i.set_raw("\xFF")
+                i.set_raw(b"\xFF")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         else:

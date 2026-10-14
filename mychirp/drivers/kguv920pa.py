@@ -125,7 +125,7 @@ _MEM_FORMAT = """
         u16    vhf_tx_stop;     // 0x007E
     } limits;
 
-    #seekto 0x0068;
+    #overlayto 0x0068;
     struct {
         u8     unknown1[8];     // 0x0068
         u8     x0070[368];
@@ -160,7 +160,6 @@ _MEM_FORMAT = """
                 scrambler:4;
     } vfoa;
 
-    #seekto 0x0260;
     struct {
         u32     rxfreq;
         u32     txoffset;
@@ -181,7 +180,6 @@ _MEM_FORMAT = """
                 scrambler:4;
     } vfob;
 
-    #seekto 0x0270;
     struct {
         u8      rc_power;       // 0x0270
         u8      voice;          // 0x0271
@@ -705,7 +703,7 @@ class KGUV920PARadio(chirp_common.CloneModeRadio,
         _nam = self._memobj.names[number-1]
 
         if mem.empty:
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
+            _mem.set_raw(b"\xFF" * (_mem.size() // 8))
             _nam.set_raw(_str_encode(""))
             _mem.rxfreq = 0xFFFFFFFF
             return

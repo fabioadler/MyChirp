@@ -68,7 +68,7 @@ struct flag_struct flag[100];
 #seekto 0x079C;
 struct flag_struct flag_repeat[100];
 
-#seekto 0x00AA;
+#overlayto 0x00AA;
 struct mem_struct memory[100];
 struct mem_struct special[11];
 
@@ -141,7 +141,7 @@ struct {
      mon:1;         // MON: 0=mon, 1=tcal
 } settings;
 
-#seekto 0x080E;
+#overlayto 0x080E;
 struct mem_struct vfo_mem[10];
 
 

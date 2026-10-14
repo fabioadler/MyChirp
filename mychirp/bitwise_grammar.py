@@ -62,6 +62,11 @@ def seekto():
     return keyword("seekto"), count
 
 
+def overlayto():
+    # Overlay intencional sobre área já mapeada (backward sem warning)
+    return keyword("overlayto"), count
+
+
 def seek():
     return keyword("seek"), count
 
@@ -71,7 +76,7 @@ def printoffset():
 
 
 def directive():
-    return "#", [seekto, seek, printoffset], ";"
+    return "#", [seekto, overlayto, seek, printoffset], ";"
 
 
 def _block_inner():

@@ -129,13 +129,13 @@ u8 clock_shift;
 #seekto 0x0214;
 u16 banksoff1;
 
-#seekto 0x0248;
+#overlayto 0x0248;
 u8 lastsetting1;
 
 #seekto 0x0294;
 u16 banksoff2;
 
-#seekto 0x0248;
+#overlayto 0x0248;
 u8 lastsetting2;
 
 #seekto 0x02CA;
@@ -159,7 +159,6 @@ struct {
   u16 channels[100];
 } banks[24];
 
-#seekto 0x1ECA;
 struct {
   u8 even_pskip:1,
      even_skip:1,

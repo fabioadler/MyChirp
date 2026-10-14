@@ -184,7 +184,6 @@ struct {
   u8 code[16];          // MSK CallList
 } dtmfenc[10];
 
-#seekto 0x0E50;
 struct {
   u8 stunid[4];         // Stun/Wake-Up ID Code
 } stun;
@@ -436,10 +435,10 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         _toneval[1].set_raw((toneval >> 8) & 0xFF)
 
     def _is_txinh(self, _mem):
-        raw_tx = ""
+        raw_tx = b""
         for i in range(0, 4):
-            raw_tx += _mem.tx_freq[i].get_raw(asbytes=False)
-        return raw_tx == "\xFF\xFF\xFF\xFF"
+            raw_tx += _mem.tx_freq[i].get_raw()
+        return raw_tx == b"\xFF\xFF\xFF\xFF"
 
     def _bbcd2num(self, bcdarr, strlen=8):
         # doing bbcd
@@ -468,7 +467,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         else:
             mem.number = number
 
-        if _mem.get_raw(asbytes=False).startswith("\xFF\xFF\xFF\xFF"):
+        if _mem.get_raw().startswith(b"\xFF\xFF\xFF\xFF"):
             mem.empty = True
             return mem
 
@@ -535,16 +534,16 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
     def set_memory(self, mem):
         _mem, _name = self._get_memobjs(mem.number)
         if mem.empty:
-            _mem.set_raw('\xFF' * 16)
-            _name.set_raw('\xFF' * 10)
+            _mem.set_raw(b'\xFF' * 16)
+            _name.set_raw(b'\xFF' * 10)
             return
-        _mem.set_raw('\x00' * 16)
+        _mem.set_raw(b'\x00' * 16)
 
         _mem.rx_freq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.tx_freq[i].set_raw("\xFF")
+                _mem.tx_freq[i].set_raw(b"\xFF")
         elif mem.duplex == "split":
             _mem.tx_freq = mem.offset / 10
         elif mem.duplex == "+":

@@ -36,7 +36,7 @@ lbit skips[208];
 lbit used[208];
 
 struct {
-  #seekto 0x010;
+  #overlayto 0x010;
   char comment[16];
 
   #seekto 0x0FD;

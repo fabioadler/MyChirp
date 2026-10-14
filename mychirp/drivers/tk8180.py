@@ -216,7 +216,7 @@ lbit skipflags[512];
 
 
 SYSTEM_MEM_FORMAT = """
-#seekto 0x%(addr)x;
+#overlayto 0x%(addr)x;
 struct {
   struct zoneinfo zoneinfo;
   struct memory memories[%(count)i];
@@ -1257,8 +1257,8 @@ class KenwoodTKx180Radio(ZoneMemoryMixin, KenwoodOSTMixin,
             settings_key, name,
             RadioSettingValueList(
                 ui_choices,
-                get_choice(self._memobj.settings, settings_key,
-                           choices, default)))
+                current_index=(ui_choices).index(get_choice(self._memobj.settings, settings_key,
+                           choices, default))))
         s.set_apply_callback(set_choice, self._memobj.settings,
                              settings_key, choices, default)
         return s
@@ -1390,7 +1390,9 @@ class KenwoodTKx180Radio(ZoneMemoryMixin, KenwoodOSTMixin,
             volume = RadioSetting('settings.%s' % value, name,
                                   RadioSettingValueList(
                                       VOLUMES.keys(),
-                                      VOLUMES_REV.get(int(setting), 0)))
+                                      current_index=int(
+                                          VOLUMES_REV.get(
+                                              int(setting), '0'))))
             volume.set_apply_callback(apply_volume, value)
             common2.append(volume)
 
@@ -1437,7 +1439,7 @@ class KenwoodTKx180Radio(ZoneMemoryMixin, KenwoodOSTMixin,
         volpreset = RadioSetting(
             'mvp', 'Minimum Volume Type',
             RadioSettingValueList(MIN_VOL_PRESET.keys(),
-                                  MIN_VOL_PRESET_REV[_volpreset]))
+                                  current_index=(MIN_VOL_PRESET.keys()).index(MIN_VOL_PRESET_REV[_volpreset])))
         volpreset.set_apply_callback(apply_mvp)
         if not self.is_portable and 'mvp' in ONLY_MOBILE_SETTINGS:
             common2.append(volpreset)

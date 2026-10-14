@@ -197,19 +197,16 @@ struct
   u8        current_band;
 #seekto 0xa1;
   u8        apo;
-#seekto 0xa2;
   u8        ars_vhf;
 #seekto 0xe2;
   u8        ars_uhf;
-#seekto 0xa3;
+#overlayto 0xa3;
   u8        arts_vhf;
-#seekto 0xa3;
+#overlayto 0xa3;
   u8        arts_uhf;
-#seekto 0xa4;
   u8        beep;
-#seekto 0xa5;
   u8        cwid;
-#seekto 0x80;
+#overlayto 0x80;
   char        cwidw[6];
 #seekto 0xa7;
   u8        dim;
@@ -217,46 +214,39 @@ struct
   u8        dcsnr_vhf;
 #seekto 0xea;
   u8        dcsnr_uhf;
-#seekto 0xab;
+#overlayto 0xab;
   u8        disp;
-#seekto 0xac;
   u8        dtmfd;
-#seekto 0xad;
   u8        dtmfs;
-#seekto 0xae;
   u8        dtmfw;
 #seekto 0xb0;
   u8        lockt;
-#seekto 0xb1;
   u8        mic;
-#seekto 0xb2;
   u8        mute;
 #seekto 0xb4;
   u8        button[4];
-#seekto 0xb8;
   u8        rf_sql_vhf;
 #seekto 0xf8;
   u8        rf_sql_uhf;
-#seekto 0xb9;
+#overlayto 0xb9;
   u8        scan_vhf;
 #seekto 0xf9;
   u8        scan_uhf;
-#seekto 0xbc;
+#overlayto 0xbc;
   u8        speaker_cnt;
 #seekto 0xff;
   u8        tot;
-#seekto 0xc0;
+#overlayto 0xc0;
   u8        txnar_vhf;
 #seekto 0x100;
   u8        txnar_uhf;
-#seekto 0xc1;
+#overlayto 0xc1;
   u8        vfotr;
-#seekto 0xc2;
   u8        am;
 } overlay;
 
 // All known memories
-#seekto 0x20;
+#overlayto 0x20;
   u8        nb_mem_used_vhf;
 #seekto 0x22;
   u8        nb_mem_used_vhf_and_limits;
@@ -268,7 +258,6 @@ struct
 #seekto 0x41;
   u8        current_band;
 
-#seekto 0x42;
   u8        current_nb_mem_used_vhf_maybe_not;
 
 #seekto 0x4c;
@@ -285,7 +274,7 @@ struct
 #seekto 0xe1;
   u8        opt_01_apo_4_4;
 
-#seekto 0x88;
+#overlayto 0x88;
   u8        opt_02_ars_vhf_1_2;
 #seekto 0xa2;
   u8        opt_02_ars_vhf_2_2;
@@ -294,21 +283,21 @@ struct
 #seekto 0xe2;
   u8        opt_02_ars_uhf_2_2;
 
-#seekto 0x89;
+#overlayto 0x89;
   u8        opt_03_arts_mode_vhf_1_2;
-#seekto 0xa3;
+#overlayto 0xa3;
   u8        opt_03_arts_mode_vhf_2_2;
 #seekto 0xc7;
   u8        opt_03_arts_mode_uhf_1_2;
-#seekto 0xa3;
+#overlayto 0xa3;
   u8        opt_03_arts_mode_uhf_2_2;
 
-#seekto 0x8a;
+#overlayto 0x8a;
   u8        opt_04_beep_1_2;
 #seekto 0xa4;
   u8        opt_04_beep_2_2;
 
-#seekto 0x8b;
+#overlayto 0x8b;
   u8        opt_05_cwid_on_1_4;
 #seekto 0xa5;
   u8        opt_05_cwid_on_2_4;
@@ -317,7 +306,7 @@ struct
 #seekto 0xe5;
   u8        opt_05_cwid_on_4_4;
 
-#seekto 0x80;
+#overlayto 0x80;
   char        opt_06_cwidw[6];
 
 #seekto 0x8d;
@@ -329,7 +318,7 @@ struct
 #seekto 0xe7;
   u8        opt_07_dim_4_4;
 
-#seekto 0x90;
+#overlayto 0x90;
   u8        opt_10_dcsnr_vhf_1_2;
 #seekto 0xaa;
   u8        opt_10_dcsnr_vhf_2_2;
@@ -338,7 +327,7 @@ struct
 #seekto 0xea;
   u8        opt_10_dcsnr_uhf_2_2;
 
-#seekto 0x91;
+#overlayto 0x91;
   u8        opt_11_disp_1_4;
 #seekto 0xab;
   u8        opt_11_disp_2_4;
@@ -347,7 +336,7 @@ struct
 #seekto 0xeb;
   u8        opt_11_disp_4_4;
 
-#seekto 0x92;
+#overlayto 0x92;
   u8        opt_12_dtmf_delay_1_4;
 #seekto 0xac;
   u8        opt_12_dtmf_delay_2_4;
@@ -356,7 +345,7 @@ struct
 #seekto 0xec;
   u8        opt_12_dtmf_delay_4_4;
 
-#seekto 0x93;
+#overlayto 0x93;
   u8        opt_13_dtmf_speed_1_4;
 #seekto 0xad;
   u8        opt_13_dtmf_speed_2_4;
@@ -365,7 +354,7 @@ struct
 #seekto 0xed;
   u8        opt_13_dtmf_speed_4_4;
 
-#seekto 0x94;
+#overlayto 0x94;
   u8        opt_14_dtmfw_index_1_4;
 #seekto 0xae;
   u8        opt_14_dtmfw_index_2_4;
@@ -374,7 +363,7 @@ struct
 #seekto 0xee;
   u8        opt_14_dtmfw_index_4_4;
 
-#seekto 0x96;
+#overlayto 0x96;
   u8        opt_16_lockt_1_4;
 #seekto 0xb0;
   u8        opt_16_lockt_2_4;
@@ -383,7 +372,7 @@ struct
 #seekto 0xf0;
   u8        opt_16_lockt_4_4;
 
-#seekto 0x97;
+#overlayto 0x97;
   u8        opt_17_mic_MH48_1_4;
 #seekto 0xb1;
   u8        opt_17_mic_MH48_2_4;
@@ -392,7 +381,7 @@ struct
 #seekto 0xf1;
   u8        opt_17_mic_MH48_4_4;
 
-#seekto 0x98;
+#overlayto 0x98;
   u8        opt_18_mute_1_4;
 #seekto 0xb2;
   u8        opt_18_mute_2_4;
@@ -401,7 +390,7 @@ struct
 #seekto 0xf2;
   u8        opt_18_mute_4_4;
 
-#seekto 0x9a;
+#overlayto 0x9a;
   u8        opt_20_pg_p_1_4[4];
 #seekto 0xb4;
   u8        opt_20_pg_p_2_4[4];
@@ -410,7 +399,7 @@ struct
 #seekto 0xf4;
   u8        opt_20_pg_p_4_4[4];
 
-#seekto 0x9e;
+#overlayto 0x9e;
   u8        opt_24_rf_sql_vhf_1_2;
 #seekto 0xb8;
   u8        opt_24_rf_sql_vhf_2_2;
@@ -419,7 +408,7 @@ struct
 #seekto 0xf8;
   u8        opt_24_rf_sql_uhf_2_2;
 
-#seekto 0x9f;
+#overlayto 0x9f;
   u8        opt_25_scan_resume_vhf_1_2;
 #seekto 0xb9;
   u8        opt_25_scan_resume_vhf_2_2;
@@ -428,25 +417,24 @@ struct
 #seekto 0xf9;
   u8        opt_25_scan_resume_uhf_2_2;
 
-#seekto 0xbc;
+#overlayto 0xbc;
   u8        opt_28_speaker_cnt_1_2;
 #seekto 0xfc;
   u8        opt_28_speaker_cnt_2_2;
 
-#seekto 0xbf;
+#overlayto 0xbf;
   u8        opt_31_tot_1_2;
 #seekto 0xff;
   u8        opt_31_tot_2_2;
 
-#seekto 0xc0;
+#overlayto 0xc0;
   u8        opt_32_tx_nar_vhf;
 #seekto 0x100;
   u8        opt_32_tx_nar_uhf;
 
-#seekto 0xc1;
+#overlayto 0xc1;
   u8        opt_33_vfo_tr;
 
-#seekto 0xc2;
   u8        opt_34_am_1_2;
 #seekto 0x102;
   u8        opt_34_am_2_2;
@@ -775,7 +763,7 @@ class FT7100Radio(YaesuCloneModeRadio):
                 setattr(_mem, setting.get_name(), setting.value)
 
         LOG.debug("encoded mem\n%s\n",
-                  (util.hexprint(_mem.get_raw(asbytes=False)[0:25])))
+                  (util.hexprint(_mem.get_raw()[0:25])))
         LOG.debug(repr(_mem))
 
     def get_settings(self):
@@ -843,8 +831,8 @@ class FT7100Radio(YaesuCloneModeRadio):
                 RadioSettingValueList(opts, current_index=_overlay.cwid)))
 
         # 6  Callsign during ARTS operation.
-        cwidw = _overlay.cwidw.get_raw(asbytes=False)
-        cwidw = cwidw.rstrip('\x00')
+        cwidw = _overlay.cwidw.get_raw()
+        cwidw = cwidw.rstrip(b'\x00').decode('latin-1')
         val = RadioSettingValueString(0, 6, cwidw)
         val.set_charset(CHARSET)
         rs = RadioSetting("cwidw", "CW Identifier Callsign", val)

@@ -472,7 +472,7 @@ class RT22Radio(chirp_common.CloneModeRadio):
         _skp = self._memobj.skipflags[bytepos]
 
         if mem.empty:
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
+            _mem.set_raw(b"\xFF" * (_mem.size() // 8))
             return
 
         # Initialize the memory to a known-good state

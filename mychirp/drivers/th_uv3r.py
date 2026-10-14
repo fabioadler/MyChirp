@@ -237,7 +237,7 @@ class TYTUV3RRadio(chirp_common.CloneModeRadio):
 
         if mem.empty:
             self._memobj.emptyflags[byte] |= bit
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw(b"\xFF" * 16)
             return
 
         self._memobj.emptyflags[byte] &= ~bit

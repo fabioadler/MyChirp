@@ -66,11 +66,8 @@ struct dvcall {
 
 #seekto 0x15E0;
 struct dvcall mycall[6];
-#seekto 0x1640;
 struct dvcall urcall[6];
-#seekto 0x16A0;
 struct dvcall rptcall[6];
-#seekto 0x1700;
 
 #seekto 0x1930;
 u8 isuhf;

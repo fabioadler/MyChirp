@@ -75,7 +75,6 @@ u8 fixed_bits:2,  // Always 0xC0 (bits 7-6)
    wide_tx:1,     // bit 3
    country:3;     // bits 2-0
 
-#seekto 0x0002;
 u8 band;
 
 #seekto 0x0007;
@@ -88,11 +87,9 @@ u8 unknown2a:1, cwid:1, grp:1, unknown2b:5;
 #seekto 0x000e;
 u8 dtmfm:4, unknown3:4;
 
-#seekto 0x000f;
 u8 volume;
 u8 squelch;
 
-#seekto 0x0011;
 struct {
   lbcd rx_freq[3];
   lbcd offset[3];
@@ -161,7 +158,6 @@ struct {
   u8 name[6];
 } vfos[8];
 
-#seekto 0x03a1;
 u8 priority_channel;
 
 #seekto 0x03d1;
@@ -199,7 +195,6 @@ struct {
   u8 name[6];
 } cg1_memory[80];
 
-#seekto 0x10d1;
 lbit band_mask[2048];  // Interleaved CG2 and CG1 band masks
                       // (little-endian bits)
 
@@ -214,7 +209,6 @@ struct {
   u8 dtmf[16];
 } autodialer[8];
 
-#seekto 0x12d1;
 u8 checksum2;
 """
 

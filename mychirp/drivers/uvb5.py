@@ -462,11 +462,11 @@ class BaofengUVB5(chirp_common.CloneModeRadio,
         if mem.empty:
             if _nam is None:
                 raise errors.InvalidValueError("VFO channels can not be empty")
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw(b"\xFF" * 16)
             return
 
-        if _mem.get_raw(asbytes=False) == ("\xFF" * 16):
-            _mem.set_raw("\x00" * 13 + "\xFF" * 3)
+        if _mem.get_raw() == (b"\xFF" * 16):
+            _mem.set_raw(b"\x00" * 13 + b"\xFF" * 3)
 
         _mem.freq = mem.freq / 10
 

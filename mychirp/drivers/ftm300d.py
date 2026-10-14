@@ -274,7 +274,7 @@ u8 vfo_tone_b:4,
 #seekto 0x009C;
 u16 rpt_shift_freq_b;
 
-#seekto 0x009A;
+#overlayto 0x009A;
 u8 clock_type_b:1,
    unknown_9a:7;
 
@@ -315,7 +315,6 @@ u8 unknown_e4_hi:5,
    rpt_ars_a:1,
    unknown_e4_lo:2;
 
-#seekto 0x00E5;
 u8 unknown_e5_hi:2,
    band_scope:1,
    unknown_e5_lo:5;
@@ -336,13 +335,11 @@ u8 unknown_ea_hi:2,
    recording_mic:1,
    unknown_ea_lo:3;
 
-#seekto 0x00EB;
 u8 location_service:1,
    unknown_eb_6:3,
    beep_on:1,
    unknown_eb_lo:3;
 
-#seekto 0x00EC;
 u8 gps_device:1,
    unknown_ec:7;
 
@@ -368,7 +365,6 @@ u8 unknown_f9_hi:2,
    unknown_f9_3:1,
    date_fmt:3;
 
-#seekto 0x00FA;
 u8 unknown_fa_hi:3,
    beep_high:1,
    unknown_fa_lo:4;
@@ -385,7 +381,7 @@ u8 digital_popup;
 #seekto 0x02DD;
 u8 mic_gain;
 
-#seekto 0x02C8;
+#overlayto 0x02C8;
 u8 callsign[10];
 
 #seekto 0x0508;

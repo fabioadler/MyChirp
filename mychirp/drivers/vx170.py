@@ -41,7 +41,7 @@ struct {
   u16 channels[100];
 } banks[24];
 
-#seekto 0x0168;
+#overlayto 0x0168;
 struct {
   u8 used:1,
      unknown1:1,

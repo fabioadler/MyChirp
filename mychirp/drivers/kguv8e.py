@@ -90,7 +90,6 @@ _MEM_FORMAT = """
         u32    tx_stop;
     } uhf_limits;
 
-    #seekto 0x0054;
     struct {
         u32    rx_start;
         u32    rx_stop;
@@ -266,7 +265,6 @@ _MEM_FORMAT = """
         u16     padding;
     } memory[1000];
 
-    #seekto 0x4780;
     struct {
         u8    name[8];
                 u8    unknown[4];
@@ -588,9 +586,9 @@ class KGUV8ERadio(chirp_common.CloneModeRadio,
         _nam = self._memobj.names[number]
 
         if mem.empty:
-            _mem.set_raw("\x00" * (_mem.size() // 8))
+            _mem.set_raw(b"\x00" * (_mem.size() // 8))
             self._memobj.valid[number] = 0
-            self._memobj.names[number].set_raw("\x00" * (_nam.size() // 8))
+            self._memobj.names[number].set_raw(b"\x00" * (_nam.size() // 8))
             return
 
         _mem.rxfreq = int(mem.freq / 10)
@@ -600,7 +598,7 @@ class KGUV8ERadio(chirp_common.CloneModeRadio,
             _mem.txfreq = int(mem.offset / 10)
         elif mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw(b"\xFF")
         elif mem.duplex == "+":
             _mem.txfreq = int(mem.freq / 10) + int(mem.offset / 10)
         elif mem.duplex == "-":

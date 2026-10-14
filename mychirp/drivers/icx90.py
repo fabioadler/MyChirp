@@ -705,7 +705,7 @@ class ICx90Radio(icf.IcomCloneModeRadio):
         (mem_item, special, unique_idx) = self.get_mem_item(
             memory.extd_number or memory.number)
         if memory.empty:
-            mem_item.set_raw("\x00" * MEM_ITEM_SIZE)
+            mem_item.set_raw(b"\x00" * MEM_ITEM_SIZE)
             self.clear_bank(memory.number)
             self.memobj.banks[memory.number].invisible_channel = 1
         else:
@@ -824,7 +824,7 @@ class ICx90Radio_tv(ICx90Radio):
         mem_item = self.memobj.tv_memory[memory.number]
         if memory.empty:
             self.memobj.tv_channel_skip[memory.number] = 1
-            mem_item.set_raw("\x00" * TV_MEM_ITEM_SIZE)
+            mem_item.set_raw(b"\x00" * TV_MEM_ITEM_SIZE)
         else:
             mem_item.freq = self.freq_chirp2icom(memory.freq)
             for x in range(TV_NAME_LENGTH):

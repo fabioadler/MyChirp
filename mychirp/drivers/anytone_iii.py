@@ -1022,9 +1022,9 @@ class AnyTone5888UVIIIRadio(chirp_common.CloneModeRadio,
         rs = RadioSetting("OPTSIGSQL", "Squelch w/Opt Signaling",
                           RadioSettingValueList(
                               OPT_SIG_SQL,
-                              SQL_MODES[_mem.sql_mode]
+                              current_index=(OPT_SIG_SQL).index(SQL_MODES[_mem.sql_mode]
                               if SQL_MODES[_mem.sql_mode] in OPT_SIG_SQL
-                              else "Off"))
+                              else "Off")))
         mem.extra.append(rs)
 
         rs = RadioSetting(
@@ -1086,7 +1086,7 @@ class AnyTone5888UVIIIRadio(chirp_common.CloneModeRadio,
             if is_hyper_chan:
                 raise errors.InvalidValueError("Hyper memories may not be "
                                                "empty.")
-            _mem.set_raw("\x00" * 32)
+            _mem.set_raw(b"\x00" * 32)
             _flg.unused = 1
             _flg.group = BANK_CHOICES.index('Off')
             return
@@ -1096,7 +1096,7 @@ class AnyTone5888UVIIIRadio(chirp_common.CloneModeRadio,
             raise errors.InvalidValueError("AM modulation only allowed in 2m "
                                            "band.")
 
-        _mem.set_raw("\x00" * 32)
+        _mem.set_raw(b"\x00" * 32)
         if _flg:
             # Only non-special memories track this
             _flg.unused = 0
@@ -1647,9 +1647,9 @@ class AnyTone5888UVIIIRadio(chirp_common.CloneModeRadio,
                 "DTMF ID",
                 RadioSettingValueList(
                     DTMF_SLOTS,
-                    DTMF_SLOTS[_emergency.id]
+                    current_index=(DTMF_SLOTS).index(DTMF_SLOTS[_emergency.id]
                     if EMER_ENI_TYPES[_emergency.eni_type] == 'DTMF'
-                    else DTMF_SLOTS[0])))
+                    else DTMF_SLOTS[0]))))
         emer.append(
             RadioSetting(
                 "5ToneId",
@@ -1739,16 +1739,16 @@ class AnyTone5888UVIIIRadio(chirp_common.CloneModeRadio,
                 "Interval Character",
                 RadioSettingValueList(
                     list(DTMF_INTCHARS),
-                    DTMF_CHARS[_settings.dtmf_interval_char])))
+                    current_index=(list(DTMF_INTCHARS)).index(DTMF_CHARS[_settings.dtmf_interval_char]))))
         dtmfGroup.append(
             RadioSetting(
                 "dtmf_group_code",
                 "Group Code",
                 RadioSettingValueList(
                     DTMF_GROUPS,
-                    DTMF_GROUPS[_settings.dtmf_group_code-0x0a]
+                    current_index=(DTMF_GROUPS).index(DTMF_GROUPS[_settings.dtmf_group_code-0x0a]
                     if _settings.dtmf_group_code < 0xff
-                    else DTMF_GROUPS[6])))
+                    else DTMF_GROUPS[6]))))
         dtmfGroup.append(
             RadioSetting(
                 "dtmf_dec_resp",
@@ -1807,9 +1807,9 @@ class AnyTone5888UVIIIRadio(chirp_common.CloneModeRadio,
                 "PTT ID Delay",
                 RadioSettingValueList(
                     DTMF_PTTDELAYS,
-                    DTMF_PTTDELAYS[_settings.dtmf_pttid_delay-4]
+                    current_index=(DTMF_PTTDELAYS).index(DTMF_PTTDELAYS[_settings.dtmf_pttid_delay-4]
                     if _settings.dtmf_pttid_delay >= 5
-                    else DTMF_PTTDELAYS[0])))
+                    else DTMF_PTTDELAYS[0]))))
         dtmfGroup.append(
             RadioSetting(
                 "dtmf_kill",

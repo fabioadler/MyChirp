@@ -238,11 +238,9 @@ struct area_conf {
 
 struct area_conf a_conf;
 
-#seekto 0x870;
 
 struct area_conf b_conf;
 
-#seekto 0x880;
 
 struct {
     u8 menu_avail;
@@ -311,25 +309,21 @@ struct {
 } settings;
 
 
-#seekto 0x8c0;
 struct {
     u8 code[6];
     char x8c6[10];
 } my_callid;
 
-#seekto 0x8d0;
 struct {
     u8 scc[6];
     char x8d6[10];
 } stun;
 
-#seekto 0x8e0;
 struct {
     u16 wake;
     u16 sleep;
 } save[4];
 
-#seekto 0x8f0;
 struct {
     char banner[16];
 } display;
@@ -501,11 +495,9 @@ struct area_conf {
 
 struct area_conf a_conf;
 
-#seekto 0x870;
 
 struct area_conf b_conf;
 
-#seekto 0x880;
 
 struct {
     u8 menu_avail;
@@ -575,25 +567,21 @@ struct {
 } settings;
 
 
-#seekto 0x8c0;
 struct {
     u8 code[6];
     char x8c6[10];
 } my_callid;
 
-#seekto 0x8d0;
 struct {
     u8 scc[6];
     char x8d6[10];
 } stun;
 
-#seekto 0x8e0;
 struct {
     u16 wake;
     u16 sleep;
 } save[4];
 
-#seekto 0x8f0;
 struct {
     char banner[16];
 } display;
@@ -651,7 +639,7 @@ struct {
     char pad[2];
 } cid_names[20];
 
-#seekto 0x7000;
+#overlayto 0x7000;
 struct {
     u8 ch_valid;
 } chan_valid[999];
@@ -1494,7 +1482,7 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             if self._memobj.b_conf.w_chan == number:
                 self._memobj.b_conf.w_chan = 1
 
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
+            _mem.set_raw(b"\xFF" * (_mem.size() // 8))
             _nam.name = str2name("", 8, '\0', '\0')
             _mem.state = MEM_INVALID
             _val.ch_valid = CHAN_INVALID
@@ -1995,14 +1983,14 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         rs = RadioSetting(prefix + ".encqt",
                           "Encode QT (Menu 17,19)",
                           RadioSettingValueList(TONE_LIST,
-                                                short2tone(c.encqt)))
+                                                current_index=(TONE_LIST).index(short2tone(c.encqt))))
         rs.set_apply_callback(apply_enc, c)
         bf.append(rs)
 
         rs = RadioSetting(prefix + ".decqt",
                           "Decode QT (Menu 16,18)",
                           RadioSettingValueList(TONE_LIST,
-                                                short2tone(c.decqt)))
+                                                current_index=(TONE_LIST).index(short2tone(c.decqt))))
         rs.set_apply_callback(apply_dec, c)
         bf.append(rs)
 
@@ -2643,14 +2631,14 @@ class KGUV9PXRadio(KGUV9DPlusRadio):
         rs = RadioSetting(prefix + ".encqt",
                           "Encode QT (Menu 17,19)",
                           RadioSettingValueList(TONE_LIST,
-                                                short2tone(c.encqt)))
+                                                current_index=(TONE_LIST).index(short2tone(c.encqt))))
         rs.set_apply_callback(apply_enc, c)
         bf.append(rs)
 
         rs = RadioSetting(prefix + ".decqt",
                           "Decode QT (Menu 16,18)",
                           RadioSettingValueList(TONE_LIST,
-                                                short2tone(c.decqt)))
+                                                current_index=(TONE_LIST).index(short2tone(c.decqt))))
         rs.set_apply_callback(apply_dec, c)
         bf.append(rs)
 

@@ -617,7 +617,7 @@ class Kenwood_P60_Radio(chirp_common.CloneModeRadio, chirp_common.ExperimentalRa
 
         # Empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw(b"\xFF" * 16)
             self.set_active(mem.number - 1, False)
             return
 
@@ -637,7 +637,7 @@ class Kenwood_P60_Radio(chirp_common.CloneModeRadio, chirp_common.ExperimentalRa
         elif mem.duplex == "off":
             # set tx freq on the memap to xff
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw(b"\xFF")
             # erase the txen flag
             _mem.txen = 255
         else:

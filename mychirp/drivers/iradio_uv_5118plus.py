@@ -518,11 +518,11 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
 
         # if empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * 22 + "\x20" * 10)
+            _mem.set_raw(b"\xFF" * 22 + b"\x20" * 10)
             return
 
-        _mem.set_raw("\xFF" * 4 + "\x00\x30" + "\xFF" * 4 + "\x00\x30" +
-                     "\x00" * 10 + "\x20" * 10)
+        _mem.set_raw(b"\xFF" * 4 + b"\x00\x30" + b"\xFF" * 4 + b"\x00\x30" +
+                     b"\x00" * 10 + b"\x20" * 10)
 
         _mem.rxfreq = mem.freq / 10
 

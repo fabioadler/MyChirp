@@ -36,7 +36,7 @@ struct {
       tune_step:4;
 } memory[200];
 
-#seekto 0x0690;
+#overlayto 0x0690;
 struct {
   u8 tmode:2,
      duplex:2,
@@ -45,7 +45,7 @@ struct {
      mode:2;
 } flags[200];
 
-#seekto 0x0690;
+#overlayto 0x0690;
 u8 flags_whole[200];
 
 #seekto 0x0767;
@@ -190,7 +190,7 @@ class ICQ7Radio(icf.IcomCloneModeRadio):
             self._memobj.flags_whole[mem.number] = 0xFF
             return
 
-        _mem.set_raw("\x00" * 8)
+        _mem.set_raw(b"\x00" * 8)
 
         if mem.freq > to_GHz(1):
             _mem.freq = (mem.freq // 1000) - to_GHz(1)

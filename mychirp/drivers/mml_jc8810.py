@@ -651,10 +651,10 @@ class JC8810base(chirp_common.CloneModeRadio):
         _mem = self._memobj.memory[mem.number - 1]
 
         if mem.empty:
-            _mem.set_raw("\xff" * 32)
+            _mem.set_raw(b"\xff" * 32)
             return
 
-        _mem.set_raw("\x00" * 16 + "\xFF" * 16)
+        _mem.set_raw(b"\x00" * 16 + b"\xFF" * 16)
 
         _mem.rxfreq = mem.freq / 10
 

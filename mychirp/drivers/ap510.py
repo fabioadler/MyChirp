@@ -460,16 +460,16 @@ class AP510Radio(chirp_common.CloneModeRadio):
                     0, 15, ord(self._mmap.callsign[6]) - 0x30)))
         pttdelay = PTT_DELAY[int(self._mmap.pttdelay) - 1]
         aprs.append(RadioSetting("pttdelay", "PTT Delay",
-                    RadioSettingValueList(PTT_DELAY, pttdelay)))
+                    RadioSettingValueList(PTT_DELAY, current_index=(PTT_DELAY).index(pttdelay))))
         output = OUTPUT[int(self._mmap.output) - 1]
         aprs.append(RadioSetting("output", "Output",
-                    RadioSettingValueList(OUTPUT, output)))
+                    RadioSettingValueList(OUTPUT, current_index=(OUTPUT).index(output))))
         aprs.append(RadioSetting("mice", "Mic-E",
                     RadioSettingValueBoolean(strbool(self._mmap.mice))))
         try:
             mice_msg = MICE_MESSAGE[int(self._mmap.multiple['mice_message'])]
             aprs.append(RadioSetting("mice_message", "Mic-E Message",
-                        RadioSettingValueList(MICE_MESSAGE, mice_msg)))
+                        RadioSettingValueList(MICE_MESSAGE, current_index=(MICE_MESSAGE).index(mice_msg))))
         except NotImplementedError:
             pass
         try:
@@ -500,9 +500,9 @@ class AP510Radio(chirp_common.CloneModeRadio):
                             PATH,
                             current_index=int(self._mmap.path))))
         aprs.append(RadioSetting("table", "Table or Overlay",
-                    RadioSettingValueList(TABLE, self._mmap.symbol[1])))
+                    RadioSettingValueList(TABLE, current_index=(TABLE).index(self._mmap.symbol[1]))))
         aprs.append(RadioSetting("symbol", "Symbol",
-                    RadioSettingValueList(SYMBOL, self._mmap.symbol[0])))
+                    RadioSettingValueList(SYMBOL, current_index=(SYMBOL).index(self._mmap.symbol[0]))))
         aprs.append(RadioSetting("beacon", "Beacon Mode",
                     RadioSettingValueList(
                         BEACON,
@@ -562,7 +562,7 @@ class AP510Radio(chirp_common.CloneModeRadio):
                 RadioSettingValueBoolean(strbool(self._mmap.digipeat[0]))),
             ("alias", "Digipeat Alias",
                 RadioSettingValueList(
-                    ALIAS, alias)),
+                    ALIAS, current_index=(ALIAS).index(alias))),
             ("virtualgps", "Static Position",
                 RadioSettingValueBoolean(strbool(self._mmap.virtualgps[0]))),
             ("btext", "Static Position BTEXT", RadioSettingValueString(
@@ -604,14 +604,17 @@ class AP510Radio(chirp_common.CloneModeRadio):
         try:
             system.append(RadioSetting("tx_volume", "Transmit volume",
                           RadioSettingValueList(
-                              map(str, range(1, 7)), self._mmap.tx_volume)))
+                              map(str, range(1, 7)),
+                              current_index=self._mmap.tx_volume)))
             system.append(RadioSetting("rx_volume", "Receive volume",
                           RadioSettingValueList(
-                              map(str, range(1, 10)), self._mmap.rx_volume)))
+                              map(str, range(1, 10)),
+                              current_index=self._mmap.rx_volume)))
             system.append(RadioSetting("squelch", "Squelch",
                           RadioSettingValueList(
                               map(str, range(0, 9)),
-                              str(self._mmap.multiple['squelch']))))
+                              current_index=int(
+                                  self._mmap.multiple['squelch']))))
             system.append(RadioSetting("tx_serial_ui_out", "Tx serial UI out",
                           RadioSettingValueBoolean(
                               strbool(self._mmap.tx_serial_ui_out))))

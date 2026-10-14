@@ -28,12 +28,12 @@ MEM_FORMAT = """
 #seekto 0x7F52;
 u8 checksum;
 
-#seekto 0x005A;
+#overlayto 0x005A;
 u8  banksoff1;
 #seekto 0x00DA;
 u8  banksoff2;
 
-#seekto 0x0068;
+#overlayto 0x0068;
 u16 prioritychan1;
 
 #seekto 0x00E8;
@@ -102,7 +102,7 @@ struct {
     u8  digits[16];
 }   dtmf[9];
 
-#seekto 0x016A;
+#overlayto 0x016A;
 struct {
     u16 in_use;
 } bank_used[20];
@@ -117,7 +117,6 @@ struct {
   u16 channels[100];
 } banks[20];
 
-#seekto 0x1562;
 struct {
   u8 even_pskip:1,
      even_skip:1,
@@ -158,7 +157,7 @@ struct {
 } pms[50];
 
 
-#seekto 0x03D2;
+#overlayto 0x03D2;
 struct mem_struct home[12];
 
 #seekto 0x04E2;
@@ -265,7 +264,7 @@ class VX2BankModel(chirp_common.BankModel):
 
 
 def _wipe_memory(mem):
-    mem.set_raw("\x00" * (mem.size() // 8))
+    mem.set_raw(b"\x00" * (mem.size() // 8))
 
 
 @directory.register

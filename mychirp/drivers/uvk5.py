@@ -89,7 +89,6 @@ struct {
   u8 scrambler;
 } channel[214];
 
-#seekto 0xd60;
 struct {
 u8 is_scanlist1:1,
 is_scanlist2:1,
@@ -130,7 +129,6 @@ u8 auto_keypad_lock;
 u8 power_on_dispmode;
 u8 password[8];
 
-#seekto 0xea0;
 u8 keypad_tone;
 u8 language;
 
@@ -143,7 +141,6 @@ u8 repeater_tail_elimination;
 char logo_line1[16];
 char logo_line2[16];
 
-#seekto 0xed0;
 struct {
 u8 side_tone;
 char separate_code;
@@ -170,7 +167,6 @@ char dtmf_up_code[16];
 char dtmf_down_code[16];
 } dtmf_settings_numbers;
 
-#seekto 0xf18;
 u8 scanlist_default;
 u8 scanlist1_priority_scan;
 u8 scanlist1_priority_ch1;
@@ -224,7 +220,6 @@ struct {
 u8 unused_00[7];
 } perbandpowersettings[7];
 
-#seekto 0x1f40;
 ul16 battery_level[6];
 """
 # bits that we will save from the channel structure (mostly unknown)
@@ -856,7 +851,7 @@ class UVK5RadioBase(chirp_common.CloneModeRadio):
         mem.extra.append(rs)
 
         rs = RadioSetting("scanlists", _("Scanlists"), RadioSettingValueList(
-            SCANLIST_LIST, tmpscn))
+            SCANLIST_LIST, current_index=(SCANLIST_LIST).index(tmpscn)))
         mem.extra.append(rs)
 
     def _get_mem_mode(self, _mem):
@@ -1892,7 +1887,7 @@ class UVK5RadioBase(chirp_common.CloneModeRadio):
             return mem
 
         # clean the channel memory, restore some bits if it was used before
-        if _mem.get_raw(asbytes=False)[0] == "\xff":
+        if _mem.get_raw()[0] == 0xFF:
             # this was an empty memory
             _mem.set_raw(b"\x00" * 16)
         else:

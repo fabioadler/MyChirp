@@ -38,7 +38,6 @@ struct {
   u8 unknown3[3];
 } memory[99];
 
-#seekto 0x0640;
 struct {
   lbcd vrx_freq[4];
   lbcd vtx_freq[4];
@@ -380,7 +379,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
 
     def _decode_tone(self, val):
         """Parse the tone data to decode from mem, it returns"""
-        if val.get_raw(asbytes=False) == "\xFF\xFF":
+        if val.get_raw() == b"\xFF\xFF":
             return '', None, None
 
         val = int(val)
@@ -419,7 +418,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
         mem.number = number
 
         # empty
-        if _mem.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.get_raw()[0] == 0xFF:
             mem.empty = True
             return mem
 
@@ -428,7 +427,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
 
         # checking if tx freq is empty, this is "possible" on the
         # original soft after a warning, and radio is happy with it
-        if _mem.tx_freq.get_raw(asbytes=False) == "\xFF\xFF\xFF\xFF":
+        if _mem.tx_freq.get_raw() == b"\xFF\xFF\xFF\xFF":
             mem.duplex = "off"
             mem.offset = 0
         else:
@@ -469,7 +468,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
 
         # Empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw(b"\xFF" * 16)
             return
 
         # freq rx
@@ -482,7 +481,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
             _mem.tx_freq = (mem.freq - mem.offset) / 10
         elif mem.duplex == "off":
             for i in range(0, 4):
-                _mem.tx_freq[i].set_raw("\xFF")
+                _mem.tx_freq[i].set_raw(b"\xFF")
         else:
             _mem.tx_freq = mem.freq / 10
 
@@ -562,7 +561,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
         work.append(active_ch)
 
         # vfo rx validation
-        if _mem.vfo.vrx_freq.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.vfo.vrx_freq.get_raw()[0] == 0xFF:
             # if the vfo is not set, the UI cares about the
             # length of the field, so set a default
             LOG.debug("Setting VFO to default %s" % self._VFO_DEFAULT)
@@ -596,7 +595,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
         work.append(shift)
 
         # vfo shift validation if none set it to ZERO
-        if _mem.settings.vfo_shift.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.settings.vfo_shift.get_raw()[0] == 0xFF:
             # if the shift is not set, the UI cares about the
             # length of the field, so set to zero
             LOG.debug("VFO shift not set, setting it to zero")

@@ -61,7 +61,7 @@ struct {
   u8 ssid;
 } aprs_my_callsign;
 
-#seekto 0x0480;
+#overlayto 0x0480;
 struct mem left_memory_zero;
 #seekto 0x04A0;
 struct lab left_label_zero;

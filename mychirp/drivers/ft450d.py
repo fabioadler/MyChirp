@@ -833,12 +833,12 @@ class FT450DRadio(yaesu_clone.YaesuCloneModeRadio):
             if wasvalid and not wasused:
                 self._memobj.filled[(mem.number - 1) // 8] &= \
                     ~(1 << (mem.number - 1) % 8)
-                _mem.set_raw("\xFF" * (_mem.size() // 8))    # clean up
+                _mem.set_raw(b"\xFF" * (_mem.size() // 8))    # clean up
             self._memobj.visible[(mem.number - 1) // 8] &= \
                 ~(1 << (mem.number - 1) % 8)
             return
         if not wasvalid:
-            _mem.set_raw("\x00" * (_mem.size() // 8))    # clean up
+            _mem.set_raw(b"\x00" * (_mem.size() // 8))    # clean up
 
         self._memobj.visible[(mem.number - 1) // 8] |= 1 << (mem.number - 1) \
             % 8
@@ -1003,7 +1003,7 @@ class FT450DRadio(yaesu_clone.YaesuCloneModeRadio):
         stx, options = filters_for_mode(mem.mode)
         vx = getattr(_mem, stx)
         rs = RadioSetting("bpfilter", "IF Bandpass Filter Width",
-                          RadioSettingValueList(all_filters(), options[vx]))
+                          RadioSettingValueList(all_filters(), current_index=(all_filters()).index(options[vx])))
         rs.set_doc("DSP IF bandpass Notch width (Hz)")
         mem.extra.append(rs)
 

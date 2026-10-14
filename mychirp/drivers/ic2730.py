@@ -67,7 +67,6 @@ struct {
 char com[16];
 } comment;
 
-#seekto 0x4c50;
 struct {
 char name[6];
 } bank_names[10];
@@ -77,7 +76,7 @@ struct{
 u8 codes[24];
 } dtmfcode[16];
 
-#seekto 0x4c8c;
+#overlayto 0x4c8c;
 struct {
 char nam[6];
 } pslnam[10];
@@ -217,7 +216,7 @@ struct {
 u8  msk[4];
 } pslgrps[25];
 
-#seekto 0x5280;
+#overlayto 0x5280;
 u16  mem_writes_count;
 """
 

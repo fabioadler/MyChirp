@@ -1537,7 +1537,7 @@ class RT900BT(chirp_common.CloneModeRadio):
             _mem.fill_raw(b"\xff")
             return
 
-        _mem.set_raw("\x00" * 16 + "\xff" * 16)
+        _mem.set_raw(b"\x00" * 16 + b"\xff" * 16)
 
         _mem.rxfreq = mem.freq / 10
 
@@ -1898,7 +1898,7 @@ class RT920(RT900BT):
     ]
 
     _rt920_specific_fmt = """
-    #seekto 0xb000;
+    #overlayto 0xb000;
     // 2 byte fm vfo freq
     struct {
         ul16 freq;
@@ -1913,7 +1913,6 @@ class RT920(RT900BT):
         u8 workmode; // VFO/Ch
     } ssb_settings;
 
-    #seekto 0xb022;
     // 2 byte am vfo freq
     struct {
         ul16 freq;
@@ -1929,7 +1928,6 @@ class RT920(RT900BT):
         u8 am_rxgain; // AM RX gain
     } ssb;
 
-    #seekto 0xb045;
     // 5 byte hf vfo chan
     struct {
         ul16 freq;

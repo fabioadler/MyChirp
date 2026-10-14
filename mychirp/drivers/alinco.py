@@ -58,7 +58,7 @@ struct {
   u8 unknownA[6];
 } memory[100];
 
-#seekto 0x0130;
+#overlayto 0x0130;
 u8 skips[25];
 """
 
@@ -349,7 +349,7 @@ class DRx35Radio(AlincoStyleRadio):
 
         if self._get_used(mem.number) and not mem.empty:
             # Initialize the memory
-            _mem.set_raw("\x00" * 32)
+            _mem.set_raw(b"\x00" * 32)
 
         self._set_used(mem.number, not mem.empty)
         if mem.empty:
@@ -786,14 +786,15 @@ class AlincoDJG7(AlincoStyleRadio):
             if _mem.skip:
                 mem.skip = "S"
             # FIXME find out what every other byte is used for. Japanese?
-            mem.name = str(_mem.name.get_raw(asbytes=False)[::2]).rstrip('\0')
+            mem.name = _mem.name.get_raw()[::2].rstrip(
+                b'\x00').decode('latin-1')
         return mem
 
     def set_memory(self, mem):
         # Get a low-level memory object mapped to the image
         _mem = self._memobj.memory[mem.number]
         if mem.empty:
-            _mem.set_raw("\xff" * (_mem.size() // 8))
+            _mem.set_raw(b"\xff" * (_mem.size() // 8))
             _mem.empty = 0x00
         else:
             _mem.empty = self._get_empty_flag(mem.freq, mem.mode)

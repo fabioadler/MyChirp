@@ -306,7 +306,7 @@ class UV17(baofeng_uv17Pro.UV17Pro):
       u8 unknown4;
     };
 
-    #seekto 0x0010;
+    #overlayto 0x0010;
     struct {
       struct vfo a;
       struct vfo b;

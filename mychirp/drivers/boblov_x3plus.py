@@ -257,13 +257,13 @@ class BoblovX3Plus(chirp_common.CloneModeRadio,
 
         # A blank (0 MHz) or 0xFFFFFFFF frequency is considered empty
         if mem.freq == 0 or (
-                rmem.rxfreq.get_raw(asbytes=False) == '\xFF\xFF\xFF\xFF'):
+                rmem.rxfreq.get_raw() == b'\xFF\xFF\xFF\xFF'):
             LOG.debug('empty channel %d', number)
             mem.freq = 0
             mem.empty = True
             return mem
 
-        if rmem.txfreq.get_raw(asbytes=False) == '\xFF\xFF\xFF\xFF':
+        if rmem.txfreq.get_raw() == b'\xFF\xFF\xFF\xFF':
             mem.duplex = 'off'
             mem.offset = 0
         elif int(rmem.rxfreq) == int(rmem.txfreq):
@@ -299,7 +299,7 @@ class BoblovX3Plus(chirp_common.CloneModeRadio,
         rmem = self._memobj.memory[memory.number - 1]
 
         if memory.empty:
-            rmem.set_raw('\xFF' * (rmem.size() // 8))
+            rmem.set_raw(b'\xFF' * (rmem.size() // 8))
             return
 
         rmem.rxfreq = memory.freq / 10
@@ -307,7 +307,7 @@ class BoblovX3Plus(chirp_common.CloneModeRadio,
         set_txtone = True
         if memory.duplex == 'off':
             for i in range(0, 4):
-                rmem.txfreq[i].set_raw('\xFF')
+                rmem.txfreq[i].set_raw(b'\xFF')
                 # If receive only then txtone value should be none
                 self._encode_tone(rmem.txtone, mode='', value=None, pol=None)
                 set_txtone = False
@@ -348,22 +348,22 @@ class BoblovX3Plus(chirp_common.CloneModeRadio,
         rs = RadioSetting('timeouttimer', 'Timeout timer',
                           RadioSettingValueList(
                             options=self.TIMEOUTTIMER_LIST,
-                            current=self.TIMEOUTTIMER_LIST[cur.timeouttimer]))
+                             current_index=cur.timeouttimer))
         basic.append(rs)
         rs = RadioSetting('voiceprompt', 'Voice prompt',
                           RadioSettingValueList(
                               options=self.VOICE_LIST,
-                              current=self.VOICE_LIST[cur.voiceprompt]))
+                               current_index=cur.voiceprompt))
         basic.append(rs)
         rs = RadioSetting('voxlevel', 'Vox level',
                           RadioSettingValueList(
                               options=self.VOXLEVEL_LIST,
-                              current=self.VOXLEVEL_LIST[cur.voxlevel]))
+                               current_index=cur.voxlevel))
         basic.append(rs)
         rs = RadioSetting('voxdelay', 'VOX delay',
                           RadioSettingValueList(
                               options=self.VOXDELAY_LIST,
-                              current=self.VOXDELAY_LIST[cur.voxdelay]))
+                               current_index=cur.voxdelay))
         basic.append(rs)
         basic.append(RadioSetting('batterysaver', 'Battery saver',
                                   RadioSettingValueBoolean(

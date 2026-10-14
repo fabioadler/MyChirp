@@ -454,7 +454,7 @@ class BFT8Radio(chirp_common.CloneModeRadio):
 
         if _mem.get_raw() == (b"\xFF" * 16):
             LOG.debug("Initializing empty memory")
-            _mem.set_raw("\x00" * 13 + "\xFF" * 3)
+            _mem.set_raw(b"\x00" * 13 + b"\xFF" * 3)
 
         if self._is_txinh(_mem):
             mem.duplex = "off"
@@ -608,22 +608,22 @@ class BFT8Radio(chirp_common.CloneModeRadio):
 
         # if empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
+            _mem.set_raw(b"\xFF" * (_mem.size() // 8))
 
             if self.HAS_NAMES:
                 for i in range(0, self.NAME_LENGTH):
-                    _nam.name[i].set_raw("\xFF")
+                    _nam.name[i].set_raw(b"\xFF")
 
             return mem
 
-        _mem.set_raw("\x00" * 13 + "\xFF" * 3)
+        _mem.set_raw(b"\x00" * 13 + b"\xFF" * 3)
 
         # frequency
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw(b"\xFF")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":

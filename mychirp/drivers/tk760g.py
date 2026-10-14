@@ -244,14 +244,12 @@ struct {
   u8 count;
 } bot[128];
 
-#seekto 0x6800;
 struct {
   u8 code[8];
   u8 unknown61[7];
   u8 count;
 } eot[128];
 
-#seekto 0x7000;
 struct {
   lbcd dt2_id[5];       // DTMF lbcd ID (000-9999999999)
                         // 2-Tone = "11 f1 ff ff ff" ???
@@ -898,7 +896,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
     def _encode_tone(self, memval, mode, value, pol):
         """Parse the tone data to encode from UI to mem"""
         if mode == '':
-            memval.set_raw("\xff\xff")
+            memval.set_raw(b"\xff\xff")
         elif mode == 'Tone':
             memval.set_value(int(value * 10))
         elif mode == 'DTCS':
@@ -945,14 +943,14 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
         mem.number = number
 
         # A "blank" rxfreq is the indication of an empty memory
-        if _mem.rxfreq[0].get_raw(asbytes=False) == '\xFF':
+        if _mem.rxfreq[0].get_raw() == b'\xFF':
             mem.empty = True
             return mem
 
         # Freq and offset
         mem.freq = int(_mem.rxfreq) * 10
         # tx freq can be blank
-        if _mem.get_raw(asbytes=False)[16] == "\xFF":
+        if _mem.get_raw()[16] == 0xFF:
             # TX freq not set
             mem.offset = 0
             mem.duplex = "off"
@@ -1033,7 +1031,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
 
         # if empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * 48)
+            _mem.set_raw(b"\xFF" * 48)
             return
 
         # frequency
@@ -1052,7 +1050,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
             _mem.txfreq = (mem.freq - mem.offset) / 10
         elif mem.duplex == "off":
             for byte in _mem.txfreq:
-                byte.set_raw("\xFF")
+                byte.set_raw(b"\xFF")
         else:
             _mem.txfreq = mem.freq / 10
 

@@ -40,10 +40,8 @@ struct {
 #seekto 0x12E0;
 u8 used[38];
 
-#seekto 0x1306;
 u8 skips[38];
 
-#seekto 0x132C;
 u8 pskips[38];
 
 #seekto 0x1360;
@@ -190,7 +188,7 @@ class ICT70Radio(icf.IcomCloneModeRadio):
         _skp = self._memobj.skips[byte]
         _psk = self._memobj.pskips[byte]
 
-        _mem.set_raw("\x00" * (_mem.size() // 8))
+        _mem.set_raw(b"\x00" * (_mem.size() // 8))
 
         if mem.empty:
             _usd |= bit

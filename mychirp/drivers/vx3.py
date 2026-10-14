@@ -34,7 +34,7 @@ MEM_FORMAT = """
 #seekto 0x7F4A;
 u8 checksum;
 
-#seekto 0x024A;
+#overlayto 0x024A;
 struct {
     u8  unk01_1:3,
         att_broadcast:1,
@@ -165,7 +165,7 @@ struct {
   u16 channels[100];
 } banks[24];
 
-#seekto 0x02EE;
+#overlayto 0x02EE;
 struct {
     u16 in_use;
 } bank_used[24];
@@ -188,7 +188,7 @@ struct {
      odd_masked:1;
 } flags[999];
 
-#seekto 0x244A;
+#overlayto 0x244A;
 struct {
   u8   unknown1a:2,
        txnarrow:1,
@@ -342,7 +342,7 @@ class VX3BankModel(chirp_common.BankModel):
 
 
 def _wipe_memory(mem):
-    mem.set_raw("\x00" * (mem.size() // 8))
+    mem.set_raw(b"\x00" * (mem.size() // 8))
     # the following settings are set to match the defaults
     # on the radio, some of these fields are unknown
     mem.name = [0xFF for _i in range(0, 6)]

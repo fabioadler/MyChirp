@@ -859,7 +859,7 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
         def get_prog(i, val_list, valndx, sname, longname, f_apply):
             k = str(i + 1)
             val = val_list[valndx]
-            valuelist = RadioSettingValueList(val_list, val)
+            valuelist = RadioSettingValueList(val_list, current_index=(val_list).index(val))
             rs = RadioSetting(sname + k, longname + k, valuelist)
             rs.set_apply_callback(f_apply, i, self._memobj)
             group.append(rs)
@@ -959,7 +959,7 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
                         # setting is a single value from the list
                         objval = getattr(_settings, param)
                         value = opts[objval]
-                        valuelist = RadioSettingValueList(opts, value)
+                        valuelist = RadioSettingValueList(opts, current_index=(opts).index(value))
                         group.append(RadioSetting(param, title, valuelist))
                     else:
                         # setting  needs special handling. opts[0] is a
@@ -1008,7 +1008,7 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
         mem.extra = RadioSettingGroup("Extra", "extra")
         extra_modes = ["(None)", "PAGER"]
         value = extra_modes[chan.sql_type == 6]
-        valuelist = RadioSettingValueList(extra_modes, value)
+        valuelist = RadioSettingValueList(extra_modes, current_index=(extra_modes).index(value))
         rs = RadioSetting("sql_override", "Squelch override", valuelist)
         mem.extra.append(rs)
         if chan.sql_type == 6:

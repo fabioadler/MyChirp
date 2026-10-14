@@ -192,7 +192,7 @@ class RT620(baofeng_uv17.UV17):
     } mem4;
     #seekto 0x7000;
     struct settings settings;
-    #seekto 0x0010;
+    #overlayto 0x0010;
     struct {
       struct channel a;
       struct channel b;
@@ -205,7 +205,7 @@ class RT620(baofeng_uv17.UV17):
     struct channelname names3[255];
     #seekto 0x7100;
     struct gps gps;
-    #seekto 0x7069;
+    #overlayto 0x7069;
     struct proglocks locks;
     #seekto 0x8000;
     struct pttid pttid[15];

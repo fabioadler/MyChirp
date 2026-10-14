@@ -175,11 +175,9 @@ class FT818Radio(ft817.FT817Radio):
         u8 visible[25];
         u8 pmsvisible;
 
-        #seekto 0x44B;
         u8 filled[25];
         u8 pmsfilled;
 
-        #seekto 0x465;
         struct mem_struct memory[200];
         struct mem_struct pms[2];
 

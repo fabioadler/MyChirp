@@ -742,7 +742,7 @@ class BTechMobileCommon(chirp_common.CloneModeRadio,
     def _encode_tone(self, memval, mode, val, pol):
         """Parse the tone data to encode from UI to mem"""
         if mode == '' or mode is None:
-            memval.set_raw("\x00\x00")
+            memval.set_raw(b"\x00\x00")
         elif mode == 'Tone':
             memval.set_value(val * 10)
         elif mode == 'DTCS':
@@ -978,23 +978,23 @@ class BTechMobileCommon(chirp_common.CloneModeRadio,
         mem_was_empty = False
         # same method as used in get_memory for determining if mem is empty
         # doing this BEFORE overwriting it with new values ...
-        if _mem.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.get_raw()[0] == 0xFF:
             LOG.debug("This mem was empty before")
             mem_was_empty = True
 
         # if empty memory
         if mem.empty:
             # the channel itself
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw(b"\xFF" * 16)
             # the name tag
-            _names.set_raw("\xFF" * 16)
+            _names.set_raw(b"\xFF" * 16)
             return
 
         if mem_was_empty:
             # Zero the whole memory if we're making it unempty for
             # the first time
             LOG.debug('Zeroing new memory')
-            _mem.set_raw('\x00' * 16)
+            _mem.set_raw(b'\x00' * 16)
 
         # frequency
         _mem.rxfreq = mem.freq / 10
@@ -1006,7 +1006,7 @@ class BTechMobileCommon(chirp_common.CloneModeRadio,
             _mem.txfreq = (mem.freq - mem.offset) / 10
         elif mem.duplex == "off":
             for i in _mem.txfreq:
-                i.set_raw("\xFF")
+                i.set_raw(b"\xFF")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         else:

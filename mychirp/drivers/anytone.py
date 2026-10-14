@@ -102,7 +102,7 @@ struct memory {
   ul16 custtone;
 };
 
-#seekto 0x0030;
+#overlayto 0x0030;
 struct {
   char serial[16];
 } serial_no;
@@ -148,7 +148,6 @@ struct memory memory[758];  // FIXME It's actually only 750
 
 // TODO VFO scan limits are here (after the 750th memory; seekto 0x7DC0)
 
-#seekto 0x7ec0;
 struct memory memblk2[10];
 """
 
@@ -200,7 +199,7 @@ class FlagObj(object):
 
 
 def _is_loc_used(memobj, loc):
-    return memobj.flags[loc / 2].get_raw(asbytes=False) != "\xFF"
+    return memobj.flags[loc / 2].get_raw() != b"\xFF"
 
 
 def _addr_to_loc(addr):
@@ -548,9 +547,9 @@ class AnyTone5888UVRadio(chirp_common.CloneModeRadio,
 
         rs = RadioSetting("OPTSIGSQL", "Squelch w/Opt Signaling",
                           RadioSettingValueList(
-                              OPT_SIG_SQL, SQL_MODES[_mem.sqlMode]
+                              OPT_SIG_SQL, current_index=(OPT_SIG_SQL).index(SQL_MODES[_mem.sqlMode]
                               if SQL_MODES[_mem.sqlMode] in OPT_SIG_SQL
-                              else "Off"))
+                              else "Off")))
         mem.extra.append(rs)
 
         rs = RadioSetting(
@@ -599,7 +598,7 @@ class AnyTone5888UVRadio(chirp_common.CloneModeRadio,
             _flg.set()
             return
         _flg.clear()
-        _mem.set_raw("\x00" * MEMORY_LOCATION_SIZE)
+        _mem.set_raw(b"\x00" * MEMORY_LOCATION_SIZE)
 
         _mem.freq = mem.freq / 100
         _mem.offset = mem.offset / 100

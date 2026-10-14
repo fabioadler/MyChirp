@@ -46,10 +46,8 @@ struct {
 #seekto 0x6A40;
 u8 used_flags[70];
 
-#seekto 0x6A86;
 u8 skip_flags[69];
 
-#seekto 0x6ACB;
 u8 pskp_flags[69];
 
 #seekto 0x6B40;
@@ -76,7 +74,7 @@ struct {
   u8 unknown3[10];
 } repeaters[750];
 
-#seekto 0x1384E;
+#overlayto 0x1384E;
 struct {
   u8 call[7];
 } rptcall[750];
@@ -86,18 +84,15 @@ struct {
  char name[16];
 } rptgroup_names[30];
 
-#seekto 0x1519E;
 struct {
   char call[8];
   char tag[4];
 } mycall[6];
 
-#seekto 0x151E6;
 struct {
   char call[8];
 } urcall[200];
 
-#seekto 0x15826;
 struct {
   char name[16];
 } urcallname[200];

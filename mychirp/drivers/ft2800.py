@@ -286,7 +286,7 @@ class FT2800Radio(YaesuCloneModeRadio):
 
         mem.number = number
 
-        if _mem.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.get_raw()[0] == 0xFF:
             mem.empty = True
             return mem
 
@@ -308,12 +308,12 @@ class FT2800Radio(YaesuCloneModeRadio):
         _nam = self._memobj.names[mem.number]
 
         if mem.empty:
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
+            _mem.set_raw(b"\xFF" * (_mem.size() // 8))
             return
 
-        if _mem.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.get_raw()[0] == 0xFF:
             # Empty -> Non-empty, so initialize
-            _mem.set_raw("\x00" * (_mem.size() // 8))
+            _mem.set_raw(b"\x00" * (_mem.size() // 8))
 
         # initializing unknowns
         _mem.unknown1 = (0xFF, 0xFF, 0xFF, 0xFF)

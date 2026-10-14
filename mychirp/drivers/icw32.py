@@ -21,7 +21,7 @@ from mychirp import chirp_common, util, directory, bitwise
 LOG = logging.getLogger(__name__)
 
 MEM_FORMAT = """
-#seekto 0x%x;
+#overlayto 0x%x;
 struct {
   bbcd freq[3];
   bbcd offset[3];
@@ -30,7 +30,7 @@ struct {
   char name[8];
 } memory[111];
 
-#seekto 0x%x;
+#overlayto 0x%x;
 struct {
   u8 empty:1,
      skip:1,
@@ -40,7 +40,7 @@ struct {
      am:1;
 } flag[111];
 
-#seekto 0x0E9C;
+#overlayto 0x0E9C;
 struct {
   u8 unknown1:7,
      right_scan_direction:1;

@@ -249,7 +249,6 @@ struct mem {
 #seekto 0x0248;
 struct mem memory[1000];
 
-#seekto 0x40c8;
 struct mem pms[100];
 
 #seekto 0x6EC8;
@@ -263,7 +262,7 @@ struct {
      skip0:2;
 } flags[250];
 
-#seekto 0x4708;
+#overlayto 0x4708;
 struct {
   u8 name[6];
   u8 use_name:1,
@@ -854,7 +853,7 @@ class FT60Radio(yaesu_clone.YaesuCloneModeRadio):
             return
 
         if not _mem.used:
-            _mem.set_raw("\x00" * 16)
+            _mem.set_raw(b"\x00" * 16)
             _mem.used = 1
 
         _mem.freq, flags = _encode_freq(mem.freq)

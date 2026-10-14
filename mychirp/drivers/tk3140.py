@@ -653,7 +653,7 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
             'battsave', 'Battery Save',
             settings.RadioSettingValueList(
                 BATTSAVE.values(),
-                BATTSAVE[int(self._memobj.battsave)]))
+                current_index=(BATTSAVE.values()).index(BATTSAVE[int(self._memobj.battsave)])))
         battsave.set_apply_callback(apply_battsave)
         general.append(battsave)
 

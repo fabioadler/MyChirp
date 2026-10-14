@@ -45,7 +45,6 @@ struct {
 #seekto 0xAA80;
 u8 used_flags[132];
 
-#seekto 0xAB04;
 u8 skip_flags[132];
 u8 pskip_flags[132];
 
@@ -75,7 +74,7 @@ struct {
   char extension[4];
 } rptcall[99];
 
-#seekto 0x0FB8;
+#overlayto 0x0FB8;
 u8 name_flags[132];
 
 """

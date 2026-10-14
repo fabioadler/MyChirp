@@ -112,7 +112,6 @@ class FT857Radio(ft817.FT817Radio):
         u8   name[8];
         };
 
-        #seekto 0x00;
         struct {
             u16 radioconfig;
             u8  mem_vfo:2,
@@ -290,11 +289,9 @@ class FT857Radio(ft817.FT817Radio):
         u8 visible[25];
         ul16 pmsvisible;
 
-        #seekto 0x4c4;
         u8 filled[25];
         ul16 pmsfilled;
 
-        #seekto 0x4df;
         struct mem_struct memory[200];
         struct mem_struct pms[10];
 

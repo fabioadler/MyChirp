@@ -144,7 +144,6 @@ struct {
   u8 unused[10];
 } pttid[15];
 
-#seekto 0x1BF0;
 struct {
   u8 code[6];         // ANI Code
   u8 unknown111;
@@ -409,10 +408,10 @@ class RT76PRadio(chirp_common.CloneModeRadio):
                                     'with the radio')
 
     def _is_txinh(self, _mem):
-        raw_tx = ""
+        raw_tx = b""
         for i in range(0, 4):
-            raw_tx += _mem.txfreq[i].get_raw(asbytes=False)
-        return raw_tx == "\xFF\xFF\xFF\xFF"
+            raw_tx += _mem.txfreq[i].get_raw()
+        return raw_tx == b"\xFF\xFF\xFF\xFF"
 
     def get_memory(self, number):
         _mem = self._memobj.memory[number - 1]
@@ -421,7 +420,7 @@ class RT76PRadio(chirp_common.CloneModeRadio):
         mem = chirp_common.Memory()
         mem.number = number
 
-        if _mem.get_raw(asbytes=False)[0] == "\xff":
+        if _mem.get_raw()[0] == 0xFF:
             mem.empty = True
             return mem
 
@@ -535,11 +534,11 @@ class RT76PRadio(chirp_common.CloneModeRadio):
         _nam = self._memobj.names[mem.number - 1]
 
         if mem.empty:
-            _mem.set_raw("\xff" * 16)
-            _nam.set_raw("\xff" * 16)
+            _mem.set_raw(b"\xff" * 16)
+            _nam.set_raw(b"\xff" * 16)
             return
 
-        _mem.set_raw("\x00" * 16)
+        _mem.set_raw(b"\x00" * 16)
 
         duplex = mem.duplex
         offset = mem.offset
@@ -568,7 +567,7 @@ class RT76PRadio(chirp_common.CloneModeRadio):
 
         if duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw(b"\xFF")
         elif duplex == "split":
             _mem.txfreq = offset / 10
         elif duplex == "+":

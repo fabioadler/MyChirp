@@ -1,4 +1,4 @@
-﻿# Copyright 2012 Dan Smith <dsmith@danplanet.com>
+# Copyright 2012 Dan Smith <dsmith@danplanet.com>
 # Copyright 2025 Thibaut Berg <thibaut.berg@hotmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -208,7 +208,6 @@ struct {
     u8 info[32];
 } noaa_decode_addresses[16];
 
-#seekto 0x22280;
 struct {
     u8 value;
 } noaa_same_events_control[128];

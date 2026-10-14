@@ -49,13 +49,11 @@ struct {
   u8 index;
 } banks[1050];
 
-#seekto 0x689e;
+#overlayto 0x689e;
 u8 used[132];
 
-#seekto 0x6922;
 u8 skips[132];
 
-#seekto 0x69a6;
 u8 pskips[132];
 
 #seekto 0x7352;

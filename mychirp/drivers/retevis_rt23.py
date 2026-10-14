@@ -50,11 +50,9 @@ struct memory {
 #seekto 0x0010;
 struct memory channels[128];
 
-#seekto 0x0810;
 struct memory vfo_a;
 struct memory vfo_b;
 
-#seekto 0x0830;
 struct {
   u8 unknown_0830_1:4,
      color:2,               // Background Color
@@ -418,7 +416,7 @@ class RT23Radio(chirp_common.CloneModeRadio):
     def decode_tone(self, val):
         """Parse the tone data to decode from mem, it returns:
         Mode (''|DTCS|Tone), Value (None|###), Polarity (None,N,R)"""
-        if val.get_raw(asbytes=False) == "\xFF\xFF":
+        if val.get_raw() == b"\xFF\xFF":
             return '', None, None
 
         val = int(val)
@@ -469,18 +467,18 @@ class RT23Radio(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rxfreq.get_raw(asbytes=False) == "\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
             mem.empty = True
             return mem
 
-        if _mem.get_raw(asbytes=False) == ("\xFF" * 16):
+        if _mem.get_raw() == (b"\xFF" * 16):
             LOG.debug("Initializing empty memory")
-            _mem.set_raw("\x00" * 16)
+            _mem.set_raw(b"\x00" * 16)
 
         # Freq and offset
         mem.freq = int(_mem.rxfreq) * 10
         # tx freq can be blank
-        if _mem.get_raw(asbytes=False)[4] == "\xFF":
+        if _mem.get_raw()[4] == 0xFF:
             # TX freq not set
             mem.offset = 0
             mem.duplex = "off"
@@ -547,7 +545,7 @@ class RT23Radio(chirp_common.CloneModeRadio):
         _usd = self._memobj.usedflags[bytepos]
 
         if mem.empty:
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw(b"\xFF" * 16)
             _nam.name = ("\xFF" * 7)
             _usd &= ~bitpos
             _scn &= ~bitpos
@@ -555,16 +553,16 @@ class RT23Radio(chirp_common.CloneModeRadio):
         else:
             _usd |= bitpos
 
-        if _mem.get_raw(asbytes=False) == ("\xFF" * 16):
+        if _mem.get_raw() == (b"\xFF" * 16):
             LOG.debug("Initializing empty memory")
-            _mem.set_raw("\x00" * 16)
+            _mem.set_raw(b"\x00" * 16)
             _scn |= bitpos
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw(b"\xFF")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":

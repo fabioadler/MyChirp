@@ -200,11 +200,9 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
         u8 visible[25];
         u8 pmsvisible;
 
-        #seekto 0x417;
         u8 filled[25];
         u8 pmsfilled;
 
-        #seekto 0x431;
         struct mem_struct memory[200];
         struct mem_struct pms[2];
 
@@ -630,12 +628,12 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
             if wasvalid and not wasused:
                 self._memobj.filled[(mem.number - 1) // 8] &= \
                     ~(1 << (mem.number - 1) % 8)
-                _mem.set_raw("\xFF" * (_mem.size() // 8))    # clean up
+                _mem.set_raw(b"\xFF" * (_mem.size() // 8))    # clean up
             self._memobj.visible[(mem.number - 1) // 8] &= \
                 ~(1 << (mem.number - 1) % 8)
             return
         if not wasvalid:
-            _mem.set_raw("\x00" * (_mem.size() // 8))    # clean up
+            _mem.set_raw(b"\x00" * (_mem.size() // 8))    # clean up
 
         self._memobj.visible[(mem.number - 1) // 8] |= (
             1 << (mem.number - 1) % 8)

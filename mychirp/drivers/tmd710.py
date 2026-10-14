@@ -1443,7 +1443,6 @@ class KenwoodTMD710Radio(KenwoodTMx710Radio):
     u8   unk03a0[96];       // to 0x03ff
     };                        // end of struct pm
 
-    #seekto 0x0000;         // block1: x000 - x023f
     struct {
     u8   unk000[16];
     u8   unk010;
@@ -1473,7 +1472,6 @@ class KenwoodTMD710Radio(KenwoodTMx710Radio):
     char pswd[6];             // 0x023a - 23f
     } block1;
 
-    #seekto 0x0030;
     struct {
     char code[16];            // @ 0x0030
     } dtmc[10];
@@ -1496,7 +1494,6 @@ class KenwoodTMD710Radio(KenwoodTMx710Radio):
 
     struct pm_grp pmg[6];       // 0x0200 - 0x0dff
 
-    #seekto 0x0e00;
     struct {
     u8   band;
     u8   skip;
@@ -1505,7 +1502,6 @@ class KenwoodTMD710Radio(KenwoodTMx710Radio):
     #seekto 0x01700;            // 0x01700 - 0x0575f
     struct chns ch_mem[1030];   // 0-999 MR and 1000 -1029 Specials
 
-    #seekto 0x05760;
     struct chns call[2];
 
     #seekto 0x05800;
@@ -1513,7 +1509,6 @@ class KenwoodTMD710Radio(KenwoodTMx710Radio):
     char name[8];
     } ch_nam[1020];         // ends @ 0x07e0
 
-    #seekto 0x077e0;        // 0x077e0 - 0x07830
     struct {
     char name[8];
     } wxnam[10];
@@ -1523,7 +1518,6 @@ class KenwoodTMD710Radio(KenwoodTMx710Radio):
     char pmname[16];
     } pm_name[5];
 
-    #seekto 0x07df0;
     struct {
     char comnt[32];
     } mcpcom;
@@ -1856,7 +1850,6 @@ class KenwoodTMD710GRadio(KenwoodTMx710Radio):
     u8   unk03a0[96];       // to 0x03ff
     };                        // end of struct pm
 
-    #seekto 0x0000;         // block1: x000 - x023f
     struct {
     u8   unk000[16];
     u8   unk010;
@@ -1886,7 +1879,6 @@ class KenwoodTMD710GRadio(KenwoodTMx710Radio):
     char pswd[6];             // 0x023a - 23f
     } block1;
 
-    #seekto 0x0030;
     struct {
     char code[16];            // @ 0x0030
     } dtmc[10];
@@ -1909,7 +1901,6 @@ class KenwoodTMD710GRadio(KenwoodTMx710Radio):
 
     struct pm_grp pmg[6];       // 0x0200 - 0x0dff
 
-    #seekto 0x0e00;
     struct {
     u8   band;
     u8   skip;
@@ -1926,7 +1917,6 @@ class KenwoodTMD710GRadio(KenwoodTMx710Radio):
     char name[8];
     } ch_nam[1020];         // ends @ 0x07840
 
-    #seekto 0x078e0;        // 0x078e0 - 0x0792f
     struct {
     char name[8];
     } wxnam[10];
@@ -1936,7 +1926,6 @@ class KenwoodTMD710GRadio(KenwoodTMx710Radio):
     char pmname[16];
     } pm_name[5];
 
-    #seekto 0x07df0;
     struct {
     char comnt[32];
     } mcpcom;

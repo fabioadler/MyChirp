@@ -490,7 +490,7 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
     def set_memory(self, mem):
         _mem = self._memobj.memory[mem.number - 1]
 
-        _mem.set_raw("\x00" * 8)
+        _mem.set_raw(b"\x00" * 8)
 
         if mem.empty:
             return

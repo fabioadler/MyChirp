@@ -100,7 +100,7 @@ class KGUVD1PRadio(chirp_common.CloneModeRadio,
              _0_unknown_2:4;
         } memory[199];
 
-        #seekto 0x0842;
+        #overlayto 0x0842;
         u16 fm_presets_0[9];
 
         #seekto 0x0882;
@@ -1188,7 +1188,7 @@ class KGUV6DRadio(KGUVD1PRadio):
         transmit_time_out = options[self._memobj.settings.transmit_time_out]
         rs = RadioSetting("transmit_time_out", "TX Time-out Timer",
                           RadioSettingValueList(
-                              options, transmit_time_out))
+                              options, current_index=(options).index(transmit_time_out)))
         cfg_s.append(rs)
         rs = RadioSetting("tx_time_out_alert", "TX Time-out Alert",
                           RadioSettingValueInteger(

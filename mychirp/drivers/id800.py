@@ -52,7 +52,7 @@ struct {
      unknown8:4;
 } memory[512];
 
-#seekto 0x2BF4;
+#overlayto 0x2BF4;
 struct {
   u8 unknown1:1,
      empty:1,
@@ -66,7 +66,7 @@ struct {
   char call[8];
 } mycalls[8];
 
-#seekto 0x3250;
+#overlayto 0x3250;
 struct {
   char call[8];
 } urcalls[99];

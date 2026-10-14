@@ -174,10 +174,8 @@ MEM_FORMAT = """
 #seekto 0x0E;
 struct radioinfo radioinfo;
 
-#seekto 0x52;
 struct dataver dataver;
 
-#seekto 0x5C;
 struct {
   u8 readpwd[8];
   u8 writepwd[8];
@@ -255,7 +253,6 @@ struct {
   u8 rev_6[6];
 } settings;
 
-#seekto 0xc0;
 struct zoneinfo zoneinfo;
 
 #seekto 0x0D42;
@@ -264,7 +261,6 @@ struct  {
     ul16 chindex[1027];
 } channeldata;
 
-#seekto 0x154a;
 struct  {
   char alias[14];
   u8 chmode:4,
@@ -304,10 +300,8 @@ struct  {
   u8 reserve[3];
 } channels[1027];
 
-#seekto 0xb5c2;
 struct scaninfo scans;
 
-#seekto 0xc3e4;
 struct vfoscaninfo vfoscans;
 
 #seekto 0xc444;

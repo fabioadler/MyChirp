@@ -52,7 +52,6 @@ struct {
 u8 usedflags[125];
 #seekto 0xC0BE;
 u8 skipflags[125];
-#seekto 0xC13B;
 u8 pskipflags[125];
 
 #seekto 0xC1C0;

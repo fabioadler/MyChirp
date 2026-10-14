@@ -550,17 +550,17 @@ class GMRSV2base(bfc.BaofengCommonHT):
         _nam = self._memobj.names[mem.number]
 
         if mem.empty:
-            _mem.set_raw("\xff" * 16)
-            _nam.set_raw("\xff" * 16)
+            _mem.set_raw(b"\xff" * 16)
+            _nam.set_raw(b"\xff" * 16)
             return
 
-        _mem.set_raw("\x00" * 16)
+        _mem.set_raw(b"\x00" * 16)
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw(b"\xFF")
         elif mem.duplex == "+":
             offset = 5000000
             _mem.txfreq = (mem.freq + offset) / 10

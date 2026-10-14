@@ -1014,10 +1014,10 @@ class Rt98BaseRadio(chirp_common.CloneModeRadio,
         if mem.empty:
             self._memobj.csetflag[cbyte].c[cbit] = 0
             self._memobj.cskipflag[cbyte].c[cbit] = 0
-            _mem.set_raw("\xff" * 32)
+            _mem.set_raw(b"\xff" * 32)
             return
 
-        _mem.set_raw("\x00" * 32)
+        _mem.set_raw(b"\x00" * 32)
 
         mode = mem.mode
         offset = mem.offset

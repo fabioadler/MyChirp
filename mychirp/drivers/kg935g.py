@@ -195,7 +195,6 @@ _MEM_FORMAT_935G = """
         u32    tx_stop;
     } uhf_limits;
 
-    #seekto 0x0054;
     struct {
         u32    rx_start;
         u32    rx_stop;
@@ -394,7 +393,6 @@ _MEM_FORMAT_935G = """
         u8 unknown087f;
     } settings;
 
-    #seekto 0x0880;
     struct {
         u32     rxfreq;
         u32     unknown0;
@@ -448,7 +446,6 @@ _MEM_FORMAT_935G = """
         u8      unknown6;
     } memory[1000];
 
-    #seekto 0x4780;
     struct {
         u8    name[8];
                 u8    unknown[4];
@@ -467,7 +464,6 @@ _MEM_FORMAT_935GPLUS = """
         u32    tx_stop;
     } uhf_limits;
 
-    #seekto 0x0054;
     struct {
         u32    rx_start;
         u32    rx_stop;
@@ -666,7 +662,6 @@ _MEM_FORMAT_935GPLUS = """
         u8 unknown087f;
     } settings;
 
-    #seekto 0x0880;
     struct {
         u32     rxfreq;
         u32     unknown0;
@@ -720,7 +715,6 @@ _MEM_FORMAT_935GPLUS = """
         u8      unknown6;
     } memory[1000];
 
-    #seekto 0x4780;
     struct {
         u8    name[8];
                 u8    unknown[4];
@@ -739,7 +733,6 @@ _MEM_FORMAT_UV8H = """
         u32    tx_stop;
     } uhf_limits;
 
-    #seekto 0x0054;
     struct {
         u32    rx_start;
         u32    rx_stop;
@@ -938,7 +931,6 @@ _MEM_FORMAT_UV8H = """
         u8 unknown087f;
     } settings;
 
-    #seekto 0x0880;
     struct {
         u32     rxfreq;
         u32     offset;
@@ -992,7 +984,6 @@ _MEM_FORMAT_UV8H = """
         u8      unknown6;
     } memory[1000];
 
-    #seekto 0x4780;
     struct {
         u8    name[8];
                 u8    unknown[4];
@@ -1016,7 +1007,6 @@ _MEM_FORMAT_935H = """
         u32    tx_stop;
     } uhf_limits;
 
-    #seekto 0x0054;
     struct {
         u32    rx_start;
         u32    rx_stop;
@@ -1215,7 +1205,6 @@ _MEM_FORMAT_935H = """
         u8 unknown087f;
     } settings;
 
-    #seekto 0x0880;
     struct {
         u32     rxfreq;
         u32     unknown0;
@@ -1269,7 +1258,6 @@ _MEM_FORMAT_935H = """
         u8      unknown6;
     } memory[1000];
 
-    #seekto 0x4780;
     struct {
         u8    name[8];
                 u8    unknown[4];
@@ -1680,7 +1668,7 @@ class KG935GRadio(chirp_common.CloneModeRadio,
             _mem.txfreq = int(mem.offset / 10)
         elif mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw(b"\xFF")
         elif mem.duplex == "+":
             _mem.txfreq = int(mem.freq / 10) + int(mem.offset / 10)
         elif mem.duplex == "-":

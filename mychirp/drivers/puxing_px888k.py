@@ -81,11 +81,10 @@ struct {
 #seekto 0x0c20;
         bit present[128];
 
-#seekto 0x0c30;
         bit priority[128];
     } channel_memory;
 
-#seekto 0x0c00;
+#overlayto 0x0c00;
     struct {
         // 0-3
         bbcd rx_freq[4];
@@ -136,10 +135,8 @@ struct {
         } band_limits[2];
     } model_information;
 
-#seekto 0x0c50;
     char radio_information_string[16];
 
-#seekto 0x0c60;
     struct {
         // 0
         u8 ptt_cancel_sq:1,
@@ -232,7 +229,6 @@ struct {
     } ptt_id_data[2];
     // 0 is BOT, 1 is EOT
 
-#seekto 0x0c90;
     struct {
         // 0
         u8 _unknown_0C90;
@@ -256,7 +252,6 @@ struct {
         } memory[10];
     } fm_radio;
 
-#seekto 0x0cc0;
     struct {
         char id_code[4];
         struct {
@@ -303,7 +298,6 @@ struct {
         %s
     } call_channel;
 
-#seekto 0x0d00;
     struct {
 
         // DTMF codes are stored as hex half-bytes,

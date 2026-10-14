@@ -56,7 +56,7 @@ struct {
   u8 unknown_1[10];
 } chan_names[200];
 
-#seekto 0x0C80;
+#overlayto 0x0C80;
 struct {           // Settings memory structure ( A-Frequency mode )
   lbcd freq_a_rx[4];
   lbcd freq_a_tx[4];
@@ -100,7 +100,6 @@ struct {
   u8 unknown_1_4[2];
 } settings;
 
-#seekto 0x0E40;
 struct {
   u8 fm_radio;        // FM radio
   u8 auto_lock;       // Auto lock

@@ -380,7 +380,7 @@ class RT1Radio(chirp_common.CloneModeRadio):
     def decode_tone(self, val):
         """Parse the tone data to decode from mem, it returns:
         Mode (''|DTCS|Tone), Value (None|###), Polarity (None,N,R)"""
-        if val.get_raw(asbytes=False) == "\xFF\xFF":
+        if val.get_raw() == b"\xFF\xFF":
             return '', None, None
 
         val = int(val)
@@ -475,7 +475,7 @@ class RT1Radio(chirp_common.CloneModeRadio):
         _mem = self._memobj.memory[mem.number - 1]
 
         if mem.empty:
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
+            _mem.set_raw(b"\xFF" * (_mem.size() // 8))
             return
 
         _mem.rxfreq = mem.freq / 10

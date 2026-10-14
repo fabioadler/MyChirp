@@ -39,7 +39,7 @@ struct {
 #seekto 0x3F52;
 u8 checksum3;
 
-#seekto 0x1202;
+#overlayto 0x1202;
 struct {
   u8 even_pskip:1,
      even_skip:1,
@@ -168,7 +168,7 @@ class VX7BankModel(chirp_common.BankModel):
 
 
 def _wipe_memory(mem):
-    mem.set_raw("\x00" * (mem.size() // 8))
+    mem.set_raw(b"\x00" * (mem.size() // 8))
     mem.unknown1 = 0x05
     mem.ones = 0x03
 

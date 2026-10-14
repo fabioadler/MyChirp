@@ -71,7 +71,7 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
         ]
 
     MEM_FORMAT = """
-        #seekto 0x%X;
+        #overlayto 0x%X;
         struct {
             u32 rxfreq;
             u16 is_rxdigtone:1,

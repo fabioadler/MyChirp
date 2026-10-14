@@ -178,7 +178,7 @@ struct {
 } vfo_info[6];
 
 // Settings
-#seekto 0x%(dtmadd)04X; // FT-1D:0e4a, FT2D:094a
+#overlayto 0x%(dtmadd)04X; // FT-1D:0e4a, FT2D:094a
 struct {
   u8 memory[16];
 } dtmf[10];
@@ -1216,7 +1216,7 @@ class FT1Radio(yaesu_clone.YaesuCloneModeRadio):
 
     @classmethod
     def _wipe_memory(cls, mem):
-        mem.set_raw("\x00" * (mem.size() // 8))
+        mem.set_raw(b"\x00" * (mem.size() // 8))
         mem.unknown1 = 0x05
 
     def get_bank_model(self):

@@ -49,7 +49,6 @@ char ident[32];
 u8 blank[16];
 struct memory vfo1;
 struct memory channels[128];
-#seekto 0x0840;
 struct memory vfo3;
 struct memory vfo2;
 
@@ -430,7 +429,6 @@ class Th350USRadio(Th350Radio):
     u8 blank[16];
     struct memory vfo1;
     struct memory channels[128];
-    #seekto 0x0840;
     struct memory vfo3;
     struct memory vfo2;
 
@@ -439,7 +437,6 @@ class Th350USRadio(Th350Radio):
       u8 name[8];
     } names[128];
 
-    #seekto 0x0D30;
     struct {
       u8 squelch;
       u8 freqmode_ab:1,
