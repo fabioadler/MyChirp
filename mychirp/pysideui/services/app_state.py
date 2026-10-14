@@ -22,6 +22,10 @@ MODE_LIGHT = "light"
 MODE_DARK = "dark"
 MODES = (MODE_SYSTEM, MODE_LIGHT, MODE_DARK)
 
+# Máximo de arquivos no histórico de recentes: reabrir promove à
+# primeira posição; lotado, o mais antigo (11º) é descartado.
+MAX_RECENT_FILES = 10
+
 
 class EditorSetState(QObject):
     """State of one opened radio (tab)."""
@@ -144,14 +148,28 @@ class AppState(QObject):
     # ----- recent files -----
     def get_recent_files(self) -> list[str]:
         raw = self.conf.get("last_open", "state") or ""
-        return [x for x in raw.split("$") if x][:8]
+        return [x for x in raw.split("$") if x][:MAX_RECENT_FILES]
 
     def push_recent_file(self, filename: str):
         files = self.get_recent_files()
         files = [filename] + [f for f in files if f != filename]
-        files = files[:8]
+        files = files[:MAX_RECENT_FILES]
         self.conf.set("last_open", "$".join(files), "state")
         self.conf.save()
+
+    def forget_file(self, filename: str):
+        """Remove @filename dos recentes (last_open) e da última
+        sessão (last_session). No-op se não constar em nenhum."""
+        changed = False
+        for key in ("last_open", "last_session"):
+            raw = self.conf.get(key, "state") or ""
+            files = [x for x in raw.split("$") if x]
+            if filename in files:
+                files.remove(filename)
+                self.conf.set(key, "$".join(files), "state")
+                changed = True
+        if changed:
+            self.conf.save()
 
     def clear_recent_files(self):
         """Forget the recent files list and the persisted session."""
@@ -184,15 +202,26 @@ class AppState(QObject):
         self.conf.set_bool("restore_session", bool(enabled), "state")
         self.conf.save()
 
-    def restore_session(self) -> int:
-        """Reopen the radios saved by save_session; files that no longer
-        exist on disk are silently skipped."""
+    def restore_session(self) -> tuple[int, list[str]]:
+        """Reopen the radios saved by save_session.
+
+        Files from the last session that no longer exist on disk are
+        purged from both the recent list and the session, and reported
+        back so the caller can show a single aggregated warning.
+
+        Returns (restored_count, purged_files).
+        """
         if not self.session_restore_enabled() or not self.main_window:
-            return 0
+            return 0, []
         raw = self.conf.get("last_session", "state") or ""
         restored = 0
+        purged = []
         for filename in [x for x in raw.split("$") if x]:
             if not os.path.exists(filename):
+                # Arquivo apagado: sai dos recentes e da sessão;
+                # chamador mostra o aviso agregado
+                self.forget_file(filename)
+                purged.append(filename)
                 continue
             if filename in (es.filename for es in self.editorsets):
                 continue
@@ -201,4 +230,4 @@ class AppState(QObject):
                 restored += 1
             except Exception:
                 LOG.exception("Failed to restore %s", filename)
-        return restored
+        return restored, purged

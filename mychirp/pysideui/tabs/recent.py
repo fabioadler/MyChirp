@@ -15,8 +15,9 @@ from PySide6.QtWidgets import (
 )
 
 from mychirp.pysideui.i18n import _
+from mychirp.pysideui.services.app_state import MAX_RECENT_FILES
 
-_MAX_ITEMS = 10
+_MAX_ITEMS = MAX_RECENT_FILES
 
 
 class RecentTab(QWidget):

@@ -51,7 +51,10 @@ def main():
     state.main_window = win
     win.show()
 
-    restored = state.restore_session()
+    restored, purged = state.restore_session()
+    if purged:
+        # Um único aviso agregado: vários pop-ups parecem erro
+        win.warn_deleted_files(purged)
     if restored:
         state.set_status(
             "Restored %i radio(s) from last session" % restored)

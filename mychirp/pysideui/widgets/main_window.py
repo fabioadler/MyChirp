@@ -656,6 +656,23 @@ class MainWindow(QMainWindow):
             self.open_file(filename)
 
     def open_file(self, filename, record_recent=True):
+        # Arquivo apagado que consta nos recentes/sessão: purga dos dois,
+        # avisa com pop-up e não tenta abrir (a sessão é pré-filtrada no
+        # boot, então este pop-up por arquivo cobre o clique na lista)
+        known = (filename in self.state.get_recent_files() or
+                 filename in (self.state.conf.get("last_session", "state")
+                              or "").split("$"))
+        if not os.path.exists(filename) and known:
+            self.state.forget_file(filename)
+            try:
+                self.recent.refresh()
+            except Exception:
+                pass
+            self.warn_deleted_files([filename])
+            self.state.set_status(
+                _("Arquivo apagado: %s") % os.path.basename(filename))
+            return
+
         self.state.set_status(_("Opening %s...") % filename)
         service = get_service(self)
 
@@ -880,8 +897,34 @@ class MainWindow(QMainWindow):
         rows.append("</table>")
         return "".join(rows)
 
+    def warn_deleted_files(self, files):
+        """Pop-up de arquivos apagados: um nome único (clique em um
+        recente) ou agregado (restauração da sessão no boot)."""
+        from PySide6.QtWidgets import QMessageBox
+        files = [f for f in files if f]
+        if not files:
+            return
+        if len(files) == 1:
+            QMessageBox.warning(
+                self, _("Arquivo não encontrado"),
+                _("O arquivo %s foi apagado do disco. "
+                  "Ele foi removido da lista de recentes.")
+                % files[0])
+        else:
+            listing = "\n".join("- %s" % f for f in files)
+            QMessageBox.warning(
+                self, _("Arquivos não encontrados"),
+                _("Os seguintes arquivos foram apagados do disco e foram "
+                  "removidos da lista de recentes:\n%s") % listing)
+
     def restore_session(self):
-        restored = self.state.restore_session()
+        restored, purged = self.state.restore_session()
+        if purged:
+            self.warn_deleted_files(purged)
+            try:
+                self.recent.refresh()
+            except Exception:
+                pass
         if restored:
             self.state.set_status(_("Restored %i radio(s)") % restored)
         else:

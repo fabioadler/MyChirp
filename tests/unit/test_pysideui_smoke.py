@@ -298,3 +298,139 @@ def test_tone_dialog_states(qapp):
     dlg.apply()
     assert mem.tmode == ""
     assert mem.rtone == 88.5 and mem.ctone == 88.5 and mem.dtcs == 23
+
+
+# ---------------------------------------------------------------------------
+# Arquivos recentes: limite de 10, promoção e purga de arquivo apagado
+# ---------------------------------------------------------------------------
+
+def _tmp_state(tmp_path):
+    """AppState com config descartável (não toca o ~/.chirp real)."""
+    from mychirp.config import ChirpConfig, ChirpConfigProxy
+    from mychirp.pysideui.services.app_state import AppState
+    state = AppState()
+    # Proxy como na produção (ChirpConfig cru não tem get_bool/set_bool)
+    state.conf = ChirpConfigProxy(ChirpConfig(str(tmp_path)), "state")
+    return state
+
+
+def test_recent_files_limit_10(tmp_path):
+    state = _tmp_state(tmp_path)
+    for i in range(12):
+        state.push_recent_file("/f/radio-%02d.img" % i)
+    recents = state.get_recent_files()
+    # exatamente 10, do mais novo para o mais antigo, 2 mais velhos fora
+    assert len(recents) == 10
+    assert recents[0] == "/f/radio-11.img"
+    assert recents[1] == "/f/radio-10.img"
+    assert recents[-1] == "/f/radio-02.img"
+    assert "/f/radio-01.img" not in recents
+    assert "/f/radio-00.img" not in recents
+
+
+def test_recent_files_promote_existing(tmp_path):
+    state = _tmp_state(tmp_path)
+    for f in ("/a.img", "/b.img", "/c.img"):
+        state.push_recent_file(f)
+    assert state.get_recent_files() == ["/c.img", "/b.img", "/a.img"]
+    # reabrir um existente promove à primeira posição (sem duplicar);
+    # a ordem relativa dos demais é preservada
+    state.push_recent_file("/a.img")
+    assert state.get_recent_files() == ["/a.img", "/c.img", "/b.img"]
+    state.push_recent_file("/b.img")
+    assert state.get_recent_files() == ["/b.img", "/a.img", "/c.img"]
+
+
+def test_forget_file_removes_from_recent_and_session(tmp_path):
+    state = _tmp_state(tmp_path)
+    state.conf.set("last_open", "/a.img$/b.img", "state")
+    state.conf.set("last_session", "/b.img$/c.img", "state")
+    state.conf.save()
+    state.forget_file("/b.img")
+    assert state.get_recent_files() == ["/a.img"]
+    assert (state.conf.get("last_session", "state") or "") == "/c.img"
+    # ausente: no-op
+    state.forget_file("/nao-estava.img")
+    assert state.get_recent_files() == ["/a.img"]
+    assert (state.conf.get("last_session", "state") or "") == "/c.img"
+
+
+def test_open_file_missing_recent_popup_purges(qapp, tmp_path,
+                                                monkeypatch):
+    """Clique em um recente apagado: pop-up individual + purga dupla."""
+    from PySide6.QtWidgets import QMessageBox
+    from mychirp.pysideui.widgets.main_window import MainWindow
+
+    state = _tmp_state(tmp_path)
+    state.conf.set("last_open", "/gone/x.img", "state")
+    state.conf.set("last_session", "/gone/x.img", "state")
+    state.conf.save()
+    win = MainWindow(state)
+    state.main_window = win
+
+    calls = []
+    monkeypatch.setattr(
+        QMessageBox, "warning",
+        lambda *a, **k: calls.append(a))
+    win.open_file("/gone/x.img")
+
+    # um único pop-up, nomeando o arquivo
+    assert len(calls) == 1
+    assert "/gone/x.img" in str(calls[0])
+    # purgado dos recentes E da última sessão
+    assert "/gone/x.img" not in state.get_recent_files()
+    assert "/gone/x.img" not in (state.conf.get("last_session", "state")
+                                 or "").split("$")
+    # nada foi aberto
+    qapp.processEvents()
+    assert not state.editorsets
+
+
+def test_restore_session_purges_and_aggregates(qapp, tmp_path,
+                                                monkeypatch):
+    """Boot com sessão contendo apagados: um único pop-up agregado,
+    purga dos dois lugares, existentes restaurados."""
+    from PySide6.QtWidgets import QMessageBox
+    from mychirp.pysideui.widgets.main_window import MainWindow
+
+    real_img = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "images",
+                     "Baofeng_UV-5R.img"))
+    state = _tmp_state(tmp_path)
+    state.conf.set(
+        "last_session",
+        "$".join([real_img, "/gone/x.img", "/gone/y.img"]), "state")
+    state.conf.set("last_open", "$".join([real_img, "/gone/x.img"]),
+                   "state")
+    state.conf.save()
+    win = MainWindow(state)
+    state.main_window = win
+
+    calls = []
+    monkeypatch.setattr(
+        QMessageBox, "warning",
+        lambda *a, **k: calls.append(a))
+
+    # ação de restaurar (mesma usada no boot via state.restore_session)
+    restored, purged = state.restore_session()
+    assert restored == 1
+    assert purged == ["/gone/x.img", "/gone/y.img"]
+    win.warn_deleted_files(purged)  # como fazem main.py e a ação do menu
+
+    # UM pop-up agregado com os dois nomes
+    assert len(calls) == 1
+    assert "x.img" in str(calls[0]) and "y.img" in str(calls[0])
+
+    # purgados saíram dos recentes e da sessão persistida
+    recents = state.get_recent_files()
+    assert "/gone/x.img" not in recents and "/gone/y.img" not in recents
+    session = (state.conf.get("last_session", "state") or "").split("$")
+    assert "/gone/x.img" not in session and "/gone/y.img" not in session
+
+    # o arquivo existente foi restaurado de verdade
+    import time as _time
+    deadline = _time.time() + 5
+    while _time.time() < deadline and not state.editorsets:
+        qapp.processEvents()
+        _time.sleep(0.05)
+    assert any(es.filename == real_img for es in state.editorsets)
