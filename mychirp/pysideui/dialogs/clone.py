@@ -127,9 +127,11 @@ class CloneDialog(QDialog):
             row.addWidget(hint)
         return row
 
-    def _no_radio_dialog(self):
+    def _no_radio_dialog(self, message=None):
+        """Aviso de porta/rádio; @message sobrepõe o texto padrão
+        (ex.: motivo da porta ocupada)."""
         QMessageBox.warning(
-            self, _("Radio not detected"), NO_RADIO_MESSAGE)
+            self, _("Aviso"), message or NO_RADIO_MESSAGE)
 
     def _on_vendor(self, vendor):
         if not vendor:
@@ -173,8 +175,8 @@ class CloneDialog(QDialog):
                 return
             try:
                 probe_port(port, rclass, timeout=2.0)
-            except PortProbeError:
-                self._no_radio_dialog()
+            except PortProbeError as e:
+                self._no_radio_dialog(str(e))
                 return
             self._busy = True
             self._set_busy(True)
@@ -189,8 +191,8 @@ class CloneDialog(QDialog):
                 return
             try:
                 probe_port(port, type(self.eset.radio), timeout=2.0)
-            except PortProbeError:
-                self._no_radio_dialog()
+            except PortProbeError as e:
+                self._no_radio_dialog(str(e))
                 return
             self._busy = True
             self._set_busy(True)

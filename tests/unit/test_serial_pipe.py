@@ -50,8 +50,13 @@ def test_log_on_unopened_port_does_not_raise():
     pipe.log("should not crash")
 
 
-def test_open_serial_uses_serial_pipe(monkeypatch):
+def test_open_serial_uses_serial_pipe(monkeypatch, tmp_path):
     from mychirp.pysideui.services import radio_service
+    from mychirp.serial_pipe import release_port_lock
+
+    lockdir = tmp_path / "port-locks"
+    monkeypatch.setattr("mychirp.serial_pipe.port_lock_dir",
+                        lambda: str(lockdir))
 
     opened = {}
 
@@ -60,9 +65,16 @@ def test_open_serial_uses_serial_pipe(monkeypatch):
             opened.update(kwargs)
             self.rts = None
             self.dtr = None
+            self._port_lock = None
 
         def open(self):
             opened["opened"] = True
+
+        def attach_port_lock(self, lockfile):
+            self._port_lock = lockfile
+
+        def fileno(self):
+            raise OSError("no real fd")
 
     monkeypatch.setattr("mychirp.serial_pipe.SerialPipe", FakePipe)
 
@@ -73,7 +85,13 @@ def test_open_serial_uses_serial_pipe(monkeypatch):
         WANTS_DTR = True
 
     pipe = radio_service.open_serial("/dev/null", DummyRadio)
-    assert opened["opened"] is True
-    assert pipe.port == "/dev/null"
-    assert pipe.rts is True and pipe.dtr is True
-    assert isinstance(pipe, FakePipe)
+    try:
+        assert opened["opened"] is True
+        assert pipe.port == "/dev/null"
+        assert pipe.rts is True and pipe.dtr is True
+        assert isinstance(pipe, FakePipe)
+        # a trava da porta foi adquirida e anexada ao pipe
+        assert pipe._port_lock is not None
+        assert (lockdir / "_dev_null.lock").exists()
+    finally:
+        release_port_lock(pipe._port_lock)

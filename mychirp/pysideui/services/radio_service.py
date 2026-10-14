@@ -25,18 +25,46 @@ def open_serial(port, rclass):
     Same setup as the CHIRP-next clone dialog: pyserial Serial with the
     radio's BAUD_RATE, hardware flow, RTS/DTR pin configuration and a
     short timeout so the clone protocol retries work.
-    """
-    from mychirp.serial_pipe import SerialPipe
 
-    pipe = SerialPipe(
-        baudrate=getattr(rclass, "BAUD_RATE", 9600),
-        rtscts=getattr(rclass, "HARDWARE_FLOW", False),
-        timeout=0.25,
+    Porta ocupada (outro processo/operação): falha imediatamente com um
+    aviso dizendo quem está usando a porta, para o usuário fechar e
+    tentar novamente — em vez de falhas de leitura/escrita.
+    """
+    from mychirp.serial_pipe import (
+        SerialPipe,
+        PortBusyError,
+        acquire_port_lock,
+        busy_port_message,
+        is_busy_osa_error,
+        release_port_lock,
     )
-    pipe.rts = getattr(rclass, "WANTS_RTS", True)
-    pipe.dtr = getattr(rclass, "WANTS_DTR", True)
-    pipe.port = port
-    pipe.open()
+
+    lockfile = acquire_port_lock(port)
+    try:
+        pipe = SerialPipe(
+            baudrate=getattr(rclass, "BAUD_RATE", 9600),
+            rtscts=getattr(rclass, "HARDWARE_FLOW", False),
+            timeout=0.25,
+        )
+        pipe.rts = getattr(rclass, "WANTS_RTS", True)
+        pipe.dtr = getattr(rclass, "WANTS_DTR", True)
+        pipe.port = port
+        pipe.open()
+    except Exception as e:
+        release_port_lock(lockfile)
+        if is_busy_osa_error(e):
+            raise PortBusyError(busy_port_message(port)) from e
+        raise
+    pipe.attach_port_lock(lockfile)
+
+    # Exclusividade dura: outros processos recebem EBUSY ao abrir a tty
+    try:
+        import fcntl
+        import termios
+        fcntl.ioctl(pipe.fileno(), termios.TIOCEXCL)
+    except Exception as e:
+        LOG.debug("TIOCEXCL indisponível em %s: %s", port, e)
+
     LOG.debug('Serial opened: %s (rts=%s dtr=%s br=%s)',
               pipe, pipe.rts, pipe.dtr, getattr(rclass, 'BAUD_RATE', None))
     return pipe
@@ -206,14 +234,22 @@ class RadioService(QObject):
         def _upload():
             pipe = open_serial(port, type(radio))
             radio.pipe = pipe
-            if on_progress:
-                def emit(status):
-                    try:
-                        job._signals.progress.emit(status)
-                    except Exception:
-                        pass
-                radio.status_fn = emit
-            radio.sync_out()
+            try:
+                if on_progress:
+                    def emit(status):
+                        try:
+                            job._signals.progress.emit(status)
+                        except Exception:
+                            pass
+                    radio.status_fn = emit
+                radio.sync_out()
+            finally:
+                # não vazar a porta (e a trava) após o upload
+                try:
+                    pipe.close()
+                except Exception:
+                    pass
+                radio.pipe = None
 
         job = RadioJob(_upload, radio=radio)
         job._signals = _WorkerSignals(self)

@@ -41,10 +41,14 @@ def probe_port(port, rclass, timeout=2.0):
     cannot be contacted within @timeout seconds.
     """
     from mychirp.pysideui.services.radio_service import open_serial
+    from mychirp.serial_pipe import PortBusyError
 
     pipe = None
     try:
         pipe = open_serial(port, rclass)
+    except PortBusyError as e:
+        # Motivo específico (porta ocupada) vai direto ao usuário
+        raise PortProbeError(str(e)) from e
     except Exception as e:
         if is_serial_error(e):
             raise PortProbeError(NO_RADIO_MESSAGE) from e

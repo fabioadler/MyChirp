@@ -184,8 +184,12 @@ class Demo:
 
 
 def setup(port, rcls):
+    from mychirp.serial_pipe import acquire_port_lock
     LOG.debug('Connecting to %s' % port)
+    # Aviso imediato se a porta estiver em uso por outro processo
+    lockfile = acquire_port_lock(port)
     s = serial.Serial(port, timeout=1)
+    s.mychirp_port_lock = lockfile
     LOG.debug('Starting radio')
     radio = rcls(s)
     LOG.debug('Detecting baudrate')
