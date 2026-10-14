@@ -49,8 +49,12 @@ class TestSettingValues(base.BaseTest):
         self._set_and_test(value, True, False)
 
     def test_radio_setting_value_list(self):
+        # testa o construtor legado por valor (emite FutureWarning)
+        import warnings
         opts = ["Abc", "Def", "Ghi"]
-        value = settings.RadioSettingValueList(opts, "Abc")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", FutureWarning)
+            value = settings.RadioSettingValueList(opts, "Abc")
         value.initialize()
         self.assertEqual(value.get_value(), "Abc")
         self.assertEqual(int(value), 0)

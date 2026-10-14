@@ -18,6 +18,8 @@ from builtins import bytes
 import unittest
 from unittest import mock
 
+import pytest
+
 
 from mychirp import bitwise
 from mychirp import memmap
@@ -306,6 +308,8 @@ class TestBitwiseCharTypes(BaseTest):
         obj.foo = [ord(c) for c in 'fffbbb']
         self.assertEqual('fffbbb', str(obj.foo))
 
+    @pytest.mark.filterwarnings(
+        "ignore:Driver is using non-byte-native")
     def test_string_get_raw(self):
         data = memmap.MemoryMapBytes(bytes(b"foobar"))
         obj = bitwise.parse("char foo[6];", data)
@@ -337,6 +341,8 @@ class TestBitwiseStructTypes(BaseTest):
         obj.foo.baz = 0x34
         self.assertEqual(data.get_packed(), b"\x12\x34")
 
+    @pytest.mark.filterwarnings(
+        "ignore:Driver is using non-byte-native")
     def test_struct_get_raw(self):
         data = memmap.MemoryMapBytes(bytes(b".."))
         defn = "struct { u8 bar; u8 baz; } foo;"
@@ -344,6 +350,8 @@ class TestBitwiseStructTypes(BaseTest):
         self.assertEqual(b'..', obj.get_raw())
         self.assertEqual('..', obj.get_raw(asbytes=False))
 
+    @pytest.mark.filterwarnings(
+        "ignore:Driver is using non-byte-native")
     def test_struct_get_raw_small(self):
         data = memmap.MemoryMapBytes(bytes(b"."))
         defn = "struct { u8 bar; } foo;"
@@ -351,6 +359,8 @@ class TestBitwiseStructTypes(BaseTest):
         self.assertEqual(b'.', obj.get_raw())
         self.assertEqual('.', obj.get_raw(asbytes=False))
 
+    @pytest.mark.filterwarnings(
+        "ignore:Driver is using non-byte-native")
     def test_struct_set_raw(self):
         data = memmap.MemoryMapBytes(bytes(b"."))
         defn = "struct { u8 bar; } foo;"

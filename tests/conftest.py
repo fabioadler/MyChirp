@@ -9,6 +9,25 @@ import pytest
 builtins._ = lambda s: s
 
 
+def pytest_configure(config):
+    """Registra dinamicamente os marks por módulo de driver.
+
+    O loader de testes (tests/__init__.py) aplica
+    ``pytest.mark.<driver_module>`` em cada classe gerada; sem o
+    registro, o pytest emite PytestUnknownMarkWarning para cada uma.
+    """
+    try:
+        from mychirp import directory
+        directory.import_drivers()
+        modules = {rclass.__module__.split('.')[-1]
+                   for rclass in directory.DRV_TO_RADIO.values()}
+        for module in sorted(modules):
+            config.addinivalue_line("markers", "%s: driver module" % module)
+    except Exception as e:
+        import warnings
+        warnings.warn("Falha ao registrar marks de driver: %s" % e)
+
+
 def pytest_collection_modifyitems(config, items):
     xfails = os.path.join(os.path.dirname(__file__), 'xfails.txt')
     with open(xfails) as f:

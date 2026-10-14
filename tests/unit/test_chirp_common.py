@@ -1012,7 +1012,8 @@ class TestMemory(base.BaseTest):
         m.extra.append(
             settings.RadioSetting('test2', 'Test Setting 2',
                                   settings.RadioSettingValueList(
-                                      ['foo', 'bar'], 'foo')))
+                                      ['foo', 'bar'],
+                                      current_index=0)))
         self.assertEqual(
             "<Memory Call(101): freq=146520000,name='',vfo=0,rtone=107.2,"
             "ctone=88.5,dtcs=23,rx_dtcs=23,tmode='Tone',"
@@ -1048,7 +1049,8 @@ class TestMemory(base.BaseTest):
         m2.extra.append(
             settings.RadioSetting('test2', 'Test Setting 2',
                                   settings.RadioSettingValueList(
-                                      ['foo', 'bar'], 'foo')))
+                                      ['foo', 'bar'],
+                                      current_index=0)))
         self.assertEqual(
             "extra.test1='False'/'<missing>',extra.test2='<missing>'/'foo',"
             "tmode=''/'TSQL'", m1.debug_diff(m2))
