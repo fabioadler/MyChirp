@@ -434,3 +434,35 @@ def test_restore_session_purges_and_aggregates(qapp, tmp_path,
         qapp.processEvents()
         _time.sleep(0.05)
     assert any(es.filename == real_img for es in state.editorsets)
+
+
+def test_clear_logs_menu_action(qapp, tmp_path, monkeypatch):
+    """Menu Ajuda > Limpar logs: confirmação, trunca o log e avisa."""
+    from PySide6.QtWidgets import QMessageBox
+    from mychirp import logger as chirp_logger
+    from mychirp.pysideui.widgets.main_window import MainWindow
+
+    state = _tmp_state(tmp_path)
+    win = MainWindow(state)
+
+    log_path = chirp_logger.project_log_file()
+    with open(log_path, "a", encoding="utf-8") as f:
+        f.write("historico-antigo-x7\n")
+
+    questions = []
+    monkeypatch.setattr(
+        QMessageBox, "question",
+        lambda *a, **k: (questions.append(a),
+                         QMessageBox.StandardButton.Yes)[1])
+
+    win.clear_logs()
+
+    # confirmação exibida uma vez; histórico limpo; logging segue ativo
+    assert len(questions) == 1
+    with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+        content = f.read()
+    assert "historico-antigo-x7" not in content
+    assert "log do sistema limpo" in content
+    # ação registrada no menu Ajuda
+    assert win.action_clear_logs is not None
+    assert win.action_clear_logs.text()

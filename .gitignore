@@ -3,9 +3,10 @@
 **.pyc
 **.orig
 **.rej
-# logs
+# logs (conteúdo de logs/ é local; a pasta e o .gitignore ficam no repo)
 *.log
-logs/
+logs/*
+!logs/.gitignore
 debug.log
 dist
 build

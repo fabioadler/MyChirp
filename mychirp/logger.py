@@ -30,6 +30,24 @@ from . import platform
 from mychirp import CHIRP_VERSION
 
 
+def project_log_dir():
+    """Diretório de logs do sistema (<raiz do projeto>/logs).
+
+    Derivado da localização do pacote mychirp — fica junto ao projeto
+    (no HD), não no ~/.chirp, e sobrevive a formatações do sistema.
+    Criado se não existir.
+    """
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(base, "logs")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def project_log_file():
+    """Arquivo de log do sistema: <projeto>/logs/log.txt."""
+    return os.path.join(project_log_dir(), "log.txt")
+
+
 def version_string():
     args = (CHIRP_VERSION,
             platform.get_platform().os_version_string(),
@@ -108,6 +126,12 @@ class Logger(object):
         self.console.setFormatter(logging.Formatter(console_format))
         self.logger.addHandler(self.console)
 
+        # Log do sistema sempre ativo em <projeto>/logs/log.txt (append,
+        # nível DEBUG): o arquivo é criado se não existir e acumula o
+        # histórico entre execuções. Limpo pelo menu Ajuda > Limpar logs.
+        self.project_log = self._make_project_handler()
+        self.logger.addHandler(self.project_log)
+
         # Set CHIRP_LOG in environment to the name of log file.
         logname = os.getenv("CHIRP_LOG")
         self.logfile = None
@@ -121,6 +145,24 @@ class Logger(object):
 
         if self.early_level <= logging.DEBUG:
             self.LOG.debug(version_string())
+
+    def _make_project_handler(self):
+        handler = logging.FileHandler(project_log_file(), mode="a",
+                                      encoding="utf-8")
+        handler.setLevel(logging.DEBUG)
+        handler.setFormatter(logging.Formatter(self.log_format))
+        return handler
+
+    def clear_project_log(self):
+        """Trunca o log do sistema (logs/log.txt) e reanexa o handler:
+        limpa o histórico sem interromper o logging."""
+        self.logger.removeHandler(self.project_log)
+        self.project_log.close()
+        with open(project_log_file(), "w", encoding="utf-8"):
+            pass
+        self.project_log = self._make_project_handler()
+        self.logger.addHandler(self.project_log)
+        self.LOG.debug("log do sistema limpo")
 
     def create_log_file(self, name):
         if self.logfile is None:

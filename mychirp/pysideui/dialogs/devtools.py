@@ -35,10 +35,10 @@ DEBUG_LOG_TAIL_LINES = 200
 
 
 def debug_log_path():
-    """Best-effort path of the CHIRP debug log (~/.chirp/debug.log)."""
+    """Caminho do log do sistema (<projeto>/logs/log.txt)."""
     try:
-        from mychirp import platform as chirp_platform
-        path = chirp_platform.get_platform().config_file("debug.log")
+        from mychirp import logger as chirp_logger
+        path = chirp_logger.project_log_file()
         if path:
             return path
     except Exception:

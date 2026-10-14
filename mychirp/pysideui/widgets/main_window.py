@@ -430,6 +430,9 @@ class MainWindow(QMainWindow):
         self.action_report_bug = QAction(_("Report a bug..."), self)
         self.action_report_bug.triggered.connect(self.report_bug)
         help_menu.addAction(self.action_report_bug)
+        self.action_clear_logs = QAction(_("Clear logs"), self)
+        self.action_clear_logs.triggered.connect(self.clear_logs)
+        help_menu.addAction(self.action_clear_logs)
         self.action_about = QAction(_("About"), self)
         self.action_about.triggered.connect(self.show_about)
         help_menu.addAction(self.action_about)
@@ -1046,6 +1049,19 @@ class MainWindow(QMainWindow):
     def report_bug(self):
         from mychirp.pysideui.dialogs.devtools import BugReportDialog
         BugReportDialog(self, self.state, self.current_editorset).exec()
+
+    def clear_logs(self):
+        """Limpa o histórico do log do sistema (logs/log.txt)."""
+        from mychirp import logger as chirp_logger
+        reply = QMessageBox.question(
+            self, _("Clear logs"),
+            _("Clear the system log history (logs/log.txt)?"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No)
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        chirp_logger.Logger.instance.clear_project_log()
+        self.state.set_status(_("Logs cleared"))
 
     # ----- about -----
     def show_about(self):

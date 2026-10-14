@@ -1,4 +1,5 @@
 import logging
+import os
 
 from mychirp import logger
 from tests.unit import base
@@ -36,3 +37,36 @@ class TestLogger(base.BaseTest):
         # Make sure we only have the captured logs, not any leftover from
         # the previous run
         self.assertEqual(2, len(history))
+
+
+class TestProjectLog(base.BaseTest):
+    """Log do sistema em <projeto>/logs/log.txt (append, sempre ativo)."""
+
+    def test_project_log_file_created_and_appends(self):
+        path = logger.project_log_file()
+        self.assertTrue(path.endswith(os.path.join("logs", "log.txt")))
+        # Logger já criou o arquivo no import (se não existisse)
+        self.assertTrue(os.path.exists(path))
+        size_before = os.path.getsize(path)
+        logging.getLogger("mychirp.test_project_log").debug("marcador-x9")
+        for handler in logging.getLogger().handlers:
+            handler.flush()
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+        self.assertIn("marcador-x9", content)
+        self.assertGreaterEqual(os.path.getsize(path), size_before)
+
+    def test_clear_project_log_truncates_and_keeps_logging(self):
+        logging.getLogger("mychirp.test_project_log").debug("antes-limpeza")
+        logger.Logger.instance.clear_project_log()
+        path = logger.project_log_file()
+        logging.getLogger("mychirp.test_project_log").debug("pos-limpeza")
+        for handler in logging.getLogger().handlers:
+            handler.flush()
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+        # histórico antigo foi limpo...
+        self.assertNotIn("antes-limpeza", content)
+        # ...e o logging continua ativo (handler reanexado)
+        self.assertIn("pos-limpeza", content)
+        self.assertIn("log do sistema limpo", content)
