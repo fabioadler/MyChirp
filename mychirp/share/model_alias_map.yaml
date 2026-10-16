@@ -37,8 +37,6 @@ Baofeng/Pofung:
   model: B-580T
 - alt: UV-17Pro
   model: UV-17R
-- alt: UV-17R-Plus
-  model: UV-17M
 - alt: UV-25
   model: BF-18H
 - alt: UV-25

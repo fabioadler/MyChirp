@@ -931,17 +931,19 @@ class UV17Pro(bfc.BaofengCommonHT):
                               RadioSettingValueBoolean(_mem.settings.gpsw))
             basic.append(rs)
 
-            rs = RadioSetting("settings.gpsmode", "GPS Mode",
-                              RadioSettingValueList(
-                                LIST_GPS_MODE,
-                                current_index=_mem.settings.gpsmode))
-            basic.append(rs)
+            if _mem.settings.gpsmode < len(LIST_GPS_MODE):
+                rs = RadioSetting("settings.gpsmode", "GPS Mode",
+                                  RadioSettingValueList(
+                                    LIST_GPS_MODE,
+                                    current_index=_mem.settings.gpsmode))
+                basic.append(rs)
 
-            rs = RadioSetting("settings.gpstimezone", "GPS Timezone",
-                              RadioSettingValueList(
-                                LIST_GPS_TIMEZONE,
-                                current_index=_mem.settings.gpstimezone))
-            basic.append(rs)
+            if _mem.settings.gpstimezone < len(LIST_GPS_TIMEZONE):
+                rs = RadioSetting("settings.gpstimezone", "GPS Timezone",
+                                  RadioSettingValueList(
+                                    LIST_GPS_TIMEZONE,
+                                    current_index=_mem.settings.gpstimezone))
+                basic.append(rs)
 
         if self._has_bt:
             rs = RadioSetting("settings.bluetooth", "Bluetooth",
@@ -1791,6 +1793,81 @@ class UV17RPlus(UV17Pro):
     VALID_BANDS = [UV17Pro._airband, UV17Pro._vhf_range, UV17Pro._vhf2_range,
                    UV17Pro._uhf_range, UV17Pro._uhf2_range]
     MODES = UV17Pro.MODES + ['AM']
+
+
+@directory.register
+class UV17M(UV17RPlus):
+    """Baofeng UV-17M (tela colorida + GPS)
+
+    Validado em hardware real (2026-10-15, Fábio Adler de Luna Gomes):
+    - Protocolo identico ao UV-17R-Plus: magic PROGRAMBFNORMALU, fingerprint
+      0x06, handshake 0x46(16)/0x4D(15)/SEND!(1), imagem 0x8380, XOR "CO 7",
+      115200 baud. O magic COLOR (PROGRAMCOLORPROU) e' recusado pelo radio.
+    - Round-trip upload->download byte-idêntico (sha256, 2x).
+    - 999 canais (o radio navega 1-999); manter _mem_params herdado (1000
+      slots no struct preserva fidelidade de bytes do slot reservado).
+    - GPS fisico: settings gpsw/gpsmode/gpstimezone mapeados; gpstimezone
+      em 0xFF no radio de fabrica (nao configurado) fica fora da lista e o
+      campo e' oculto ate o usuario definir um fuso no menu do proprio radio
+      (mesma regra de powerondistype/voice na familia).
+    - Texto de boot personalizado em 0xD000 (2 buffers de 16 bytes; o
+      primeiro, "   Welcome  " de fabrica, e' exposto como setting
+      "Power-On Message"; o segundo, 12 espacos, tem papel desconhecido).
+    - Mapa completo da EEPROM 64 KiB via clone: 0x8040-0x8C70 registros
+      tipo VFO, 0x9040-0x96CF copias de settings, 0xE000-0xF27F calibracao,
+      0xA2C0-0xD000/0xD040-0xE000/0xF280-0xFFFF vazios. Nao ha bitmap de
+      logo nesta janela (logo de fabrica vive na flash do firmware).
+    - Quirk CH340: a primeira abertura da porta pode ecoar o primeiro byte
+      do magic ou ficar muda; abrir/fechar a porta uma vez (probe) antes da
+      sessao resolve (mesma quirk do UV-16 Plus, ver PLAN.md).
+    - Boot observado em hardware com powerondistype=0: logo Baofeng ->
+      tela inicial (mensagem "   Welcome  " de fabrica nao e' exibida).
+    """
+    VENDOR = "Baofeng"
+    MODEL = "UV-17M"
+
+    # Mapeamento validado em hardware (2026-10-15): 0=logo Baofeng e
+    # 2=tensao da bateria confirmados por teste; 1=mensagem de boot
+    # (buffer 0xD000) inferido da mesma ordem usada pelo BFK6 nesta
+    # familia.
+    LIST_POWERON_DISPLAY_TYPE = ["LOGO", "Message", "BATT voltage"]
+
+    CHANNELS = 999
+    _has_gps = True
+    ALIASES = []
+
+    _end_fmt = UV17Pro._end_fmt + """
+    #seekto 0x8340;
+    struct {
+      char msg1[16];
+      u8 unknown1[16];
+      char msg2[16];
+      u8 unknown2[16];
+    } boottext;
+    """
+
+    def get_settings_pro_basic(self, basic, _mem):
+        super().get_settings_pro_basic(basic, _mem)
+
+        def _filterBootMsg(name):
+            fname = b""
+            for char in name:
+                if ord(str(char)) in [0, 255]:
+                    break
+                fname += int(char).to_bytes(1, 'big')
+            return fname.decode('ascii', errors='ignore').strip()
+
+        def apply_bootmsg(setting, obj):
+            msg = (str(setting.value).encode('ascii', 'ignore')[:12]
+                   .ljust(16, b"\xFF"))
+            obj.msg1 = msg
+
+        _bt = self._memobj.boottext
+        rs = RadioSetting("boottext.msg1", "Power-On Message",
+                          RadioSettingValueString(
+                              0, 12, _filterBootMsg(_bt.msg1)))
+        rs.set_apply_callback(apply_bootmsg, _bt)
+        basic.append(rs)
 
 
 @directory.register
