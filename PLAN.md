@@ -252,9 +252,14 @@ hardware V01. Driver `UV17M` em `baofeng_uv17Pro.py`:
 
 ### Fases
 
-- [ ] **B1** — Protocolo de boot mode (script Python standalone):
-  implementar handshake 0xA5 + flash read/write baseado na especificação
-  RE'd. Testar LEITURA primeiro (dump da flash do UV-17M real).
+- [ ] **B1** — Protocolo de boot mode: implementado (`mychirp/boot_image.py`),
+  mas **NÃO VALIDADO em hardware**. O UV-17M V0.04 não responde ao
+  0xA5 (boot mode). Ver seção 20-22 de `rethink/uv17m-descobertas.md`.
+  - **PRÓXIMO TESTE**: hipótese do boot mode silencioso — enviar 0xA5
+    e SEGUIR a sequência completa sem esperar ACK. Se CMD_READFLASH
+    retornar dados, o protocolo funciona sem ACK explícito.
+  - **ALTERNATIVA**: sniffing do Import Picture tools.exe com wine +
+    socat (serial virtual) para capturar a sequência EXATA.
 - [ ] **B2** — Ferramenta de boot image (CLI): converter BMP 160×128
   → formato do rádio → upload via protocolo B1. Validar em hardware.
 - [ ] **B3** — Integração no MyChirp (UI): menu Radio > Boot Image
