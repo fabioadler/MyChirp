@@ -244,6 +244,51 @@ hardware V01. Driver `UV17M` em `baofeng_uv17Pro.py`:
 3. Commit imediato por unidade lógica; `/graphify update` ao final de
    lotes grandes.
 
+## 7b. Boot Image / Firmware Access — plano de implementação
+
+> Descoberto por engenharia reversa do `Import Picture tools.exe` v1.1
+> (CPS oficial Baofeng UV-5RM Plus). Ver `rethink/uv17m-boot-image-protocol.md`
+> para a especificação completa do protocolo.
+
+### Fases
+
+- [ ] **B1** — Protocolo de boot mode (script Python standalone):
+  implementar handshake 0xA5 + flash read/write baseado na especificação
+  RE'd. Testar LEITURA primeiro (dump da flash do UV-17M real).
+- [ ] **B2** — Ferramenta de boot image (CLI): converter BMP 160×128
+  → formato do rádio → upload via protocolo B1. Validar em hardware.
+- [ ] **B3** — Integração no MyChirp (UI): menu Radio > Boot Image
+  com preview, seleção de arquivo BMP e progress bar.
+- [ ] **B4** — Firmware dump/read: CMD_READFLASH para dump completo
+  da flash (≥1MB) e comparação entre versões de firmware.
+- [ ] **B5** — Extensão para outros rádios da família UV-17Pro:
+  UV-17, UV-17Pro, UV-17ProGPS, 5RM, K6, UV-32, UV-28, BF-F8HP-PRO
+  (mesmo protocolo, endereços podem variar).
+- [ ] **B6** — Segurança: confirmação dupla para gravação de flash,
+  dump obrigatório antes de upload, aviso de risco de brick.
+
+### Rádios que suportam boot image (família UV-17Pro, tela colorida)
+
+| Modelo | Flash addr | Dimensão BMP | Confirmado |
+|---|---|---|---|
+| UV-17M | 0xC0000 (assumido, grupo UV17-20) | 160×128 | testar em HW |
+| UV-17, UV-18, UV-19, UV-20 | 0xC0000 | 150×128/160×128/128×160 | sim (video ref) |
+| UV-21 | 0x100000 | mesma | sim (tool v1.1) |
+| 5RM/5RM Plus/T6UV | 0xC0000 | mesma | sim (tool incluído) |
+| UV-32 GPS/28 Pro GPS | 0xC0000 | mesma | sim (CPS chama tool) |
+
+### Rádios sem boot image (família UV-5R, tela mono)
+
+UV-5R, UV-82, BF-888S, BF-T1, BF-T8: protocolo clone apenas (EEPROM 8KB),
+sem modo boot, sem tela colorida — boot image não se aplica.
+
+### Ferramenta de diagnóstico (paralelo)
+
+- [ ] **D1** — `mychirp-fw` CLI: dump de flash completa via CMD_READFLASH
+  para qualquer rádio da família UV-17Pro conectado.
+- [ ] **D2** — Comparação de dumps entre versões de firmware (diff byte-level).
+- [ ] **D3** — Extração de firmware de fábrica para backup antes de customização.
+
 ## 8. Ambiente (Linux/Debian 13)
 
 Python 3.13 · PySide6 6.12 · Flet 1.0.4 (legado, transição) · pytest 8.4.2
