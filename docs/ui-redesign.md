@@ -1,17 +1,17 @@
-# UI Redesign — Decisões de Design (interface Flet)
+# UI Redesign — Decisões de Design (interface PySide6)
 
 > Ferramenta de orientação: **ui-ux-pro-max-cli 2.15.0** (skill instalada em `.opencode/skills/` via `uipro init -a opencode`).
-> As recomendações da skill são orientadas a web (shadcn/ui + Tailwind). Elas são usadas **como referência** e os componentes são implementados **nativamente em Flet 1.0** (`mychirp/fletui`), sem interface web paralela. Histórico: os mesmos tokens foram aplicados primeiro na wxui (removida) e migrados para a Flet UI.
+> As recomendações da skill são orientadas a web (shadcn/ui + Tailwind). Elas são usadas **como referência** e os componentes são implementados **nativamente em PySide6 (Qt)** (`mychirp/pysideui`), sem interface web paralela. Histórico: os mesmos tokens foram aplicados primeiro na wxui (removida) e depois na Flet UI (removida na migração PySide6).
 
-## 1. Princípios adotados (da skill, adaptados ao Flet)
+## 1. Princípios adotados (da skill, adaptados ao PySide6)
 
-| Recomendação da skill (design-system) | Implementação no Flet |
+| Recomendação da skill (design-system) | Implementação no PySide6 |
 |---|---|
-| Arquitetura de tokens em 3 camadas (primitivo → semântico → componente) | `chirp/wxui/theme.py`: dicionários de primitivos (hex), papéis semânticos (`BG`, `FG`, `ACCENT`...) e helpers por componente |
+| Arquitetura de tokens em 3 camadas (primitivo → semântico → componente) | `mychirp/theme.py`: dicionários de primitivos (hex), papéis semânticos (`BG`, `FG`, `ACCENT`...) e helpers por componente |
 | Escala de espaçamento base 4px (4/8/12/16/24) | Constantes `SPACING_XS/SM/MD/LG/XL` aplicadas em margens/paddings dos painéis modernizados |
-| Raio discreto (4–8px), sem exageros | wx não tem bordas arredondadas nativas por widget em GTK; cantos ficam nativos — a "suavidade" vem do contraste e dos espaçamentos (decisão: não pintar cantos manualmente) |
+| Raio discreto (4–8px), sem exageros | QSS permite `border-radius` por widget; cantos discretos aplicados via tema (a "suavidade" vem do contraste e dos espaçamentos) |
 | Dark mode = remapeamento de papéis semânticos (não de componentes) | `theme.py` mantém dois dicionários de papéis; um switch troca todos os componentes que usam os helpers |
-| Estados de componente (default/hover/focus/active/disabled) com prioridade disabled > loading > active > focus > hover | Widgets wx/GTK mantêm estados nativos; o tema garante contraste mínimo WCAG AA nos dois modos |
+| Estados de componente (default/hover/focus/active/disabled) com prioridade disabled > loading > active > focus > hover | Widgets Qt mantêm estados nativos; o tema garante contraste mínimo WCAG AA nos dois modos |
 | Tipografia legível e hierarquia clara | Fonte padrão do sistema é preservada (decisão: não forçar fontes); hierarquia via espaçamento e peso do rótulo, não via tamanhos exóticos |
 
 ## 2. Paleta semântica (derivada da escala neutra da skill)
@@ -48,11 +48,13 @@ para texto sobre os fundos correspondentes:
 
 ## 4. Limitações honestas
 
-- wxGTK não permite estilizar controles nativos de menu/combobox sem
-  desativar o tema nativo — esses mantêm a aparência do sistema.
+- Menu/combobox são estilizados via QSS (`QMenuBar`, `QComboBox` com
+  `setStyleSheet` e `::item`/`::drop-down`); conteúdos com widgets
+  nativos do SO (diálogos de arquivo) herdam o tema do sistema
+  (aceitável; documentado).
 - O modo escuro cobre os componentes centrais (janela, grids, diálogos,
-  painéis modernizados); widgets nativos não pintados herdam o visual do
-  GTK (aceitável; documentado).
+  painéis modernizados); widgets não atendidos pelo QSS herdam a
+  QPalette (aceitável; documentado).
 - Sobre o relatório de saúde do graphify: o build inicial registrou
   arestas pendentes geradas pela própria extração AST (referências de
   import a módulos sem nó correspondente) — artefato conhecido da

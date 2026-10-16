@@ -4,7 +4,11 @@
 > Base de comparação: o MyChirp é um **fork direto do CHIRP-next** — a camada
 > de dados (drivers, protocolos, `chirp_common`, `bitwise`, `directory`,
 > `settings`, `import_logic`, fontes de rede) é a mesma árvore do upstream.
-> A interface atual é `mychirp/fletui` (Flet 1.0.4), que substituiu a wxui.
+> A interface atual é `mychirp/pysideui` (PySide6), que sucedeu wxui e a
+> Flet UI intermediária. Paths `fletui/` na tabela abaixo são históricos
+> (da auditoria de 2026-10-11); os módulos correspondentes hoje estão em
+> `pysideui/` (ex.: `fletui/dialogs/clone_dialog.py` →
+> `pysideui/dialogs/clone.py`).
 >
 > Legenda de situação: ✔ completo · ◐ parcial · ✖ ausente · ⚠ com defeito ·
 > (?) não verificado.

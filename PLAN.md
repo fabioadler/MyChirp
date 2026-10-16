@@ -10,11 +10,11 @@
 
 1. Suporte de **leitura** ao rádio **BOMVINK BOM-5701** (driver baseado no
    protocolo UV-5R) — **concluído e validado em hardware**.
-2. Interface gráfica moderna em **PySide6** (migração do Flet, direção
-   CHIRP-next com design tokens compartilhados) — **em andamento**.
+2. Interface gráfica moderna em **PySide6** (direção
+   CHIRP-next com design tokens compartilhados) — **concluída**.
 3. Estrutura de projeto limpa: pacote único `mychirp`, backend neutro
-   (`mychirp/theme.py`, `mychirp/memory_ops.py`), UIs em
-   `mychirp/fletui/` (faseado para remoção) e `mychirp/pysideui/`.
+   (`mychirp/theme.py`, `mychirp/memory_ops.py`), UI em
+   `mychirp/pysideui/`.
 
 ## 2. Arquitetura atual (2026-10-12, migração PySide6)
 
@@ -30,7 +30,6 @@ mychirp/
 │   ├── dialogs/       # CloneDialog (download/upload), About
 │   └── services/      # AppState (QObject), RadioService
 │   │                  # (QThreadPool + progress/finished signals)
-├── fletui/            # Interface Flet legada (faseado para remoção)
 ├── theme.py           # Tokens de cores/espaçamento compartilhados
 ├── memory_ops.py      # Operações de memória (backend puro, UndoStack)
 ├── config.py          # configuração persistente (ex-wxui/config.py)
@@ -40,13 +39,12 @@ mychirp/
 │                      # mychirp_logo_transparente.png, logo_empresa.png
 └── (núcleo: chirp_common, bitwise, directory, settings, platform...)
 
-Comandos: mychirp (GUI PySide6) · mychirp-flet (Flet legado) ·
-mychirpc (CLI) · experttune
+Comandos: mychirp (GUI PySide6) · mychirpc (CLI) · experttune
 ```
 
-**Tokens de design compartilhados:** `mychirp/theme.py` exporta
-`AppColors`/`Palette`/`SPACING` idênticos para ambos os UIs, garantindo
-cores consistentes entre Flet e PySide6 durante a transição.
+**Tokens de design:** `mychirp/theme.py` exporta
+`AppColors`/`Palette`/`SPACING`, fonte única das cores do tema
+mapeadas em QPalette + QSS por `pysideui/theme.py`.
 
 ## 3. Interface PySide6 — componentes e temas
 
@@ -55,8 +53,8 @@ cores consistentes entre Flet e PySide6 durante a transição.
   (docs/ui-redesign.md) mapeados em `mychirp/theme.py` (Light/Dark),
   gerados como QPalette + QSS por `pysideui/theme.py`.
 - **MainWindow**: QMenuBar (File/Edit/View/Radio/Help espelhando o
-  wxui) + QTabWidget movível/fechável por aba ( nativo no flet, aqui
-  implementado com QTabBar/QToolButton) + QStatusBar de 3 campos.
+  wxui) + QTabWidget movível/fechável por aba (implementado com
+  QTabBar/QToolButton) + QStatusBar de 3 campos.
 - **WelcomeTab**: logo ≤300px centralizada, segue o tema (sem fundo
   hardcoded).
 - **MemoriesTab**: QTableView + QAbstractTableModel paginado (50/
@@ -73,12 +71,6 @@ cores consistentes entre Flet e PySide6 durante a transição.
   download assíncrono via RadioService (sinais → GUI thread).
 - **AboutDialog**: logo MyChirp, créditos CHIRP original (GPLv3),
   "Desenvolvido por Fábio Adler de Luna Gomes", logo da empresa.
-
-## 3b. Interface Flet (mantida durante a migração)
-
-O fletui permanece intacto até o Fase 4 (remoção segura, diretriz §7).
-Entry point `mychirp-flet` chama `fletui:run` enquanto `mychirp` já
-aponta para `pysideui:run`.
 
 ## 4. Políticas de segurança vigentes
 
@@ -296,10 +288,9 @@ sem modo boot, sem tela colorida — boot image não se aplica.
 
 ## 8. Ambiente (Linux/Debian 13)
 
-Python 3.13 · PySide6 6.12 · Flet 1.0.4 (legado, transição) · pytest 8.4.2
-· pytest-qt (GUI offscreen) · zenity (diálogos de arquivo) ·
-venv em `./venv`. App em `venv/bin/mychirp` (PySide6) e
-`venv/bin/mychirp-flet` (legado Flet).
+Python 3.13 · PySide6 6.12 · pytest 8.4.2
+· pytest-qt (GUI offscreen) · venv em `./venv`. App em
+`venv/bin/mychirp` (PySide6).
 
 ## 9. Reversão
 

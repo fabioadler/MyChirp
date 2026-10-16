@@ -1,8 +1,8 @@
 # MyChirp
 
 Fork moderno do __[CHIRP](https://www.chirpmyradio.com)__ — programador de
-rádios amadores com interface **Flet** 100% responsiva e temas claro/escuro
-consistentes em todos os componentes.
+rádios amadores com interface **PySide6 (Qt)** 100% responsiva e temas
+claro/escuro consistentes em todos os componentes.
 
 Créditos do projeto original: CHIRP Project (Dan Smith e contribuidores),
 GPLv3. Esta versão: **Feita/modificada por Fábio Adler de Luna Gomes**.
@@ -13,7 +13,7 @@ GPLv3. Esta versão: **Feita/modificada por Fábio Adler de Luna Gomes**.
 ## Esta versão
 
 Mantém **todos os modelos do CHIRP original** e substitui a interface wxUI
-por uma interface nova (`mychirp/fletui`):
+por uma interface nova (`mychirp/pysideui`):
 
 - **Rádios adicionados nativamente**: Baofeng **UV-16** (legado), Baofeng
   **UV-16 Plus** (2024/25, driver criado por engenharia reversa — ver
