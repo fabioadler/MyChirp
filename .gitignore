@@ -49,3 +49,4 @@ result/
 # for nvim editor
 .nvim.lua
 .DS_Store
+rethink/

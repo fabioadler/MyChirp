@@ -1799,7 +1799,8 @@ class UV17RPlus(UV17Pro):
 class UV17M(UV17RPlus):
     """Baofeng UV-17M (tela colorida + GPS)
 
-    Validado em hardware real (2026-10-15, Fábio Adler de Luna Gomes):
+    Validado em hardware real (2026-10-15/16, Fábio Adler de Luna Gomes):
+    - Firmware V0.04, Hardware V01.
     - Protocolo identico ao UV-17R-Plus: magic PROGRAMBFNORMALU, fingerprint
       0x06, handshake 0x46(16)/0x4D(15)/SEND!(1), imagem 0x8380, XOR "CO 7",
       115200 baud. O magic COLOR (PROGRAMCOLORPROU) e' recusado pelo radio.
@@ -1810,27 +1811,31 @@ class UV17M(UV17RPlus):
       em 0xFF no radio de fabrica (nao configurado) fica fora da lista e o
       campo e' oculto ate o usuario definir um fuso no menu do proprio radio
       (mesma regra de powerondistype/voice na familia).
-    - Texto de boot personalizado em 0xD000 (2 buffers de 16 bytes; o
-      primeiro, "   Welcome  " de fabrica, e' exposto como setting
-      "Power-On Message"; o segundo, 12 espacos, tem papel desconhecido).
+    - Boot display: o radio so' tem 2 opcoes — logo Baofeng (byte 0) ou
+      tensao da bateria (byte != 0, confirmado com 1 e 2). NAO suporta
+      mensagem de texto no boot (verificado no menu do radio 2026-10-16).
+    - Buffer de texto em 0xD000 ("   Welcome  " de fabrica + 12 espacos):
+      existe no EEPROM mas nao e' exibido no boot deste modelo; struct
+      boottext preservado apenas para manter o parse fiel da regiao.
     - Mapa completo da EEPROM 64 KiB via clone: 0x8040-0x8C70 registros
-      tipo VFO, 0x9040-0x96CF copias de settings, 0xE000-0xF27F calibracao,
+      tipo VFO, 0x9040-0x9A90 copias de settings, 0xE000-0xF27F calibracao,
       0xA2C0-0xD000/0xD040-0xE000/0xF280-0xFFFF vazios. Nao ha bitmap de
       logo nesta janela (logo de fabrica vive na flash do firmware).
     - Quirk CH340: a primeira abertura da porta pode ecoar o primeiro byte
       do magic ou ficar muda; abrir/fechar a porta uma vez (probe) antes da
       sessao resolve (mesma quirk do UV-16 Plus, ver PLAN.md).
-    - Boot observado em hardware com powerondistype=0: logo Baofeng ->
-      tela inicial (mensagem "   Welcome  " de fabrica nao e' exibida).
     """
     VENDOR = "Baofeng"
     MODEL = "UV-17M"
 
-    # Mapeamento validado em hardware (2026-10-15): 0=logo Baofeng e
-    # 2=tensao da bateria confirmados por teste; 1=mensagem de boot
-    # (buffer 0xD000) inferido da mesma ordem usada pelo BFK6 nesta
-    # familia.
-    LIST_POWERON_DISPLAY_TYPE = ["LOGO", "Message", "BATT voltage"]
+    # Radio so' tem 2 modos de boot (confirmado no menu do radio):
+    # 0=logo, !=0=tensao da bateria. Sem opcao de mensagem.
+    LIST_POWERON_DISPLAY_TYPE = ["LOGO", "BATT voltage"]
+
+    # Listas para settings adicionais descobertos na imagem do radio
+    # (mesma familia do F8HPPro, struct compartilhado)
+    LIST_POWER_ON_TIME = ['3 Seconds', '5 Seconds', '10 Seconds']
+    LIST_GPS_UNITS = ['km/h', 'MPH', 'kn']
 
     CHANNELS = 999
     _has_gps = True
@@ -1849,25 +1854,46 @@ class UV17M(UV17RPlus):
     def get_settings_pro_basic(self, basic, _mem):
         super().get_settings_pro_basic(basic, _mem)
 
-        def _filterBootMsg(name):
-            fname = b""
-            for char in name:
-                if ord(str(char)) in [0, 255]:
-                    break
-                fname += int(char).to_bytes(1, 'big')
-            return fname.decode('ascii', errors='ignore').strip()
+        # Power On Tone (settings.tone — LIST_POWERON_TONE e' module-level)
+        if _mem.settings.tone < len(LIST_POWERON_TONE):
+            rs = RadioSetting("settings.tone", "Power On Tone",
+                              RadioSettingValueList(
+                                  LIST_POWERON_TONE,
+                                  current_index=_mem.settings.tone))
+            basic.append(rs)
 
-        def apply_bootmsg(setting, obj):
-            msg = (str(setting.value).encode('ascii', 'ignore')[:12]
-                   .ljust(16, b"\xFF"))
-            obj.msg1 = msg
+        # Power On Time (settings.pontime)
+        if _mem.settings.pontime < len(self.LIST_POWER_ON_TIME):
+            rs = RadioSetting("settings.pontime", "Power On Time",
+                              RadioSettingValueList(
+                                  self.LIST_POWER_ON_TIME,
+                                  current_index=_mem.settings.pontime))
+            basic.append(rs)
 
-        _bt = self._memobj.boottext
-        rs = RadioSetting("boottext.msg1", "Power-On Message",
-                          RadioSettingValueString(
-                              0, 12, _filterBootMsg(_bt.msg1)))
-        rs.set_apply_callback(apply_bootmsg, _bt)
+        # Display ANI (settings.dispani)
+        rs = RadioSetting("settings.dispani", "Display ANI",
+                          RadioSettingValueBoolean(_mem.settings.dispani))
         basic.append(rs)
+
+        # Input DTMF (settings.inputdtmf)
+        rs = RadioSetting("settings.inputdtmf", "Input DTMF",
+                          RadioSettingValueBoolean(_mem.settings.inputdtmf))
+        basic.append(rs)
+
+        # Single Watch (settings.singlewatch — 0xFF = nao configurado)
+        if _mem.settings.singlewatch in (0, 1):
+            rs = RadioSetting("settings.singlewatch", "Single Watch",
+                              RadioSettingValueBoolean(
+                                  _mem.settings.singlewatch))
+            basic.append(rs)
+
+        # GPS Speed Units (settings.gpsunits — o radio tem GPS fisico)
+        if _mem.settings.gpsunits < len(self.LIST_GPS_UNITS):
+            rs = RadioSetting("settings.gpsunits", "GPS Speed Units",
+                              RadioSettingValueList(
+                                  self.LIST_GPS_UNITS,
+                                  current_index=_mem.settings.gpsunits))
+            basic.append(rs)
 
 
 @directory.register
