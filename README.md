@@ -15,9 +15,11 @@ GPLv3. Esta versão: **Feita/modificada por Fábio Adler de Luna Gomes**.
 Mantém **todos os modelos do CHIRP original** e substitui a interface wxUI
 por uma interface nova (`mychirp/fletui`):
 
-- **Rádios adicionados nativamente**: Baofeng **UV-16** (legado) e Baofeng
+- **Rádios adicionados nativamente**: Baofeng **UV-16** (legado), Baofeng
   **UV-16 Plus** (2024/25, driver criado por engenharia reversa — ver
-  `mychirp/drivers/baofeng_uv16.py`)
+  `mychirp/drivers/baofeng_uv16.py`) e Baofeng **UV-17M** (tela colorida +
+  GPS, 999 canais, round-trip validado em hardware — ver
+  `mychirp/drivers/baofeng_uv17Pro.py`)
 
 - **Temas claro/escuro/sistema** aplicados de verdade em todos os
   componentes — abas, tabelas, navegação lateral, formulários, diálogos,

@@ -166,6 +166,33 @@ upstream — protocolo descoberto por engenharia reversa com o rádio físico:
 - [x] **V2** — Suporte oficial ao Baofeng UV-16 Plus: driver dedicado
   `baofeng_uv16.py` (engenharia reversa, ver §5b) + imagem de teste
   clonada do rádio real (35 testes do driver passando)
+- [x] **V3** — Suporte oficial ao Baofeng UV-17M (tela colorida + GPS,
+  firmware V0.04/H01): classe `UV17M` em `baofeng_uv17Pro.py` herda de
+  `UV17RPlus` (magic `PROGRAMBFNORMALU`), 999 canais, GPS settings,
+  6 settings adicionais descobertos na imagem real (Power On Tone/Time,
+  Display ANI, Input DTMF, Single Watch, GPS Speed Units), round-trip
+  byte-idêntico validado 2x, imagem de teste real. Boot display: só
+  LOGO ou tensão (sem mensagem de texto — confirmado no menu do rádio).
+
+## 5c. Diagnóstico do Baofeng UV-17M (2026-10-15/16, validado em hardware)
+
+Modelo 2024/25 (tela colorida, GPS, airband AM), firmware V0.04,
+hardware V01. Driver `UV17M` em `baofeng_uv17Pro.py`:
+
+- **Protocolo**: idêntico ao UV-17R-Plus (família NORMALU): magic
+  `PROGRAMBFNORMALU`, fingerprint `0x06`, handshake 0x46(16)/0x4D(15),
+  imagem 0x8380, XOR "CO 7", 115200 baud. O magic COLOR é recusado.
+- **Round-trip**: upload→download byte-idêntico (sha256, 2x).
+- **Canais**: 999 (o rádio navega 1-999); slot 1000 preservado no struct.
+- **GPS**: gpsw/gpsmode/gpstimezone mapeados; gpstimezone 0xFF de
+  fábrica fica oculto (regra de fora-de-faixa da família).
+- **Boot display**: apenas LOGO (byte 0) ou tensão da bateria
+  (byte != 0). Não suporta mensagem de texto (confirmado no hardware).
+- **EEPROM 64 KiB**: mapa completo via sonda de leitura; sem bitmap de
+  logo (logo vive na flash do firmware, fora do protocolo de clone).
+- **Quirk CH340**: primeira abertura da porta pode ecoar o 1º byte do
+  magic; probe open/close antes da sessão resolve (como UV-16 Plus).
+- Ver `rethink/uv17m-descobertas.md` para o diário completo de RE.
 
 ## 7. Correções pós-migração Flet (ordem de entrada)
 
