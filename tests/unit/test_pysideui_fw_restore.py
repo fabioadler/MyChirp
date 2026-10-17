@@ -45,6 +45,15 @@ def bf777_rclass():
     return r
 
 
+@pytest.fixture
+def bom5701_rclass():
+    directory.import_drivers()
+    r = directory.get_radio("BOMVINK_BOM-5701")
+    assert getattr(r, "_aux_first", False) and \
+        getattr(r, "_aux_block", False)  # família aux-first
+    return r
+
+
 def _select(dlg, rclass):
     dlg.vendor.setCurrentText(rclass.VENDOR)
     label = ("%s %s" % (rclass.MODEL, getattr(rclass, "VARIANT", "")
@@ -66,6 +75,55 @@ def test_h777_supported_and_other_refused(qapp, tmp_state, parent_widget,
         _select(dlg, other)
         assert not dlg._restore_supported(other)
         assert dlg.warn_label.text()
+
+
+def test_auxfirst_supported_and_size_map(qapp, tmp_state, parent_widget,
+                                         bom5701_rclass):
+    """Família UV-5R-aux-first (BOM-5701) aceita no diálogo com a
+    janela de 0x1948 B; tamanho errado (h777) marca SIZE MISMATCH."""
+    dlg = FirmwareRestoreDialog(parent_widget, tmp_state)
+    _select(dlg, bom5701_rclass)
+    assert dlg._restore_supported(bom5701_rclass)
+    assert not dlg.warn_label.text()
+    assert dlg._family_size(bom5701_rclass) == fwtool.UV5R_AUX_FIRST_IMAGE_END
+
+    # imagem de janela h777 (992 B) é tamanho ERRADO para esta família
+    with tempfile.TemporaryDirectory() as td:
+        wrong = os.path.join(td, "small.bin")
+        with open(wrong, "wb") as f:
+            f.write(b"\x00" * fwtool.H777_WINDOW_END)
+        dlg._set_image(wrong)
+        assert "SIZE MISMATCH" in dlg.img_label.text()
+
+        right = os.path.join(td, "bom.bin")
+        with open(right, "wb") as f:
+            f.write(b"\x00" * fwtool.UV5R_AUX_FIRST_IMAGE_END)
+        dlg._set_image(right)
+        assert dlg.image_path == right
+        assert "SIZE MISMATCH" not in dlg.img_label.text()
+
+
+def test_auxfirst_start_size_guard_blocks_send(qapp, tmp_state,
+                                               parent_widget,
+                                               bom5701_rclass, monkeypatch):
+    """_on_start com imagem de tamanho errado: falha amigável e NÃO
+    dispara a gravação (serviço nem chamado)."""
+    dlg = FirmwareRestoreDialog(parent_widget, tmp_state)
+    _select(dlg, bom5701_rclass)
+    with tempfile.TemporaryDirectory() as td:
+        wrong = os.path.join(td, "small.bin")
+        with open(wrong, "wb") as f:
+            f.write(b"\x00" * fwtool.H777_WINDOW_END)
+        dlg._set_image(wrong)
+        refusals = []
+
+        import mychirp.pysideui.dialogs.fw_restore as mod
+        monkeypatch.setattr(mod, "get_service", lambda d: refusals.append(1))
+
+        dlg._on_start()
+        assert not refusals  # serviço não chamado
+        assert "mismatch" in dlg.progress_label.text().lower() \
+            or "Image size mismatch" in dlg.progress_label.text()
 
 
 def test_image_picker_size_validation(qapp, tmp_state, parent_widget,
@@ -151,7 +209,7 @@ def test_restore_service_calls_fwtool(qapp, tmp_state, bf777_rclass,
     monkeypatch.setattr(rs.directory, "get_driver",
                         lambda r: "Baofeng_BF-777S")
     import mychirp.fwtool as real_fwtool
-    monkeypatch.setattr(real_fwtool, "restore_h777_image", fake_restore)
+    monkeypatch.setattr(real_fwtool, "restore_image", fake_restore)
 
     svc = rs.RadioService()
     done = []

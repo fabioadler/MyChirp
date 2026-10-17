@@ -169,17 +169,18 @@ class RadioService(QObject):
                    on_progress=None):
         """Read-then-write firmware restore on the worker thread.
 
-        ONLY for drivers whose clone protocol is the validated h777
-        window (PROGRAM handshake, 992 B). Calls
-        fwtool.restore_h777_image (fresh pre-dump, block-by-block ACK,
-        abort on NACK, post re-read + diff, automatic backups). The
-        result is the RestoreReport dict.
+        For drivers with a validated write family (h777 PROGRAM window,
+        992 B, or UV-5R aux-first, 0x1948 B) via
+        fwtool.restore_image: fresh pre-dump, block-validated writes
+        (abort on NACK), post re-read + diff, automatic backups. The
+        result is the RestoreReport dict. Unsupported drivers raise
+        fwtool.FwDumpError.
         """
         def _restore():
             import os as _os
             from mychirp import fwtool
             image = open(image_path, "rb").read()
-            return fwtool.restore_h777_image(
+            return fwtool.restore_image(
                 directory.get_driver(rclass), port, image)
 
         job = RadioJob(_restore)

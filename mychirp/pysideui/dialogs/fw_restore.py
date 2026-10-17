@@ -4,8 +4,9 @@ HIGH-RISK operation, gated by a double confirmation flow:
   1. modal warning explaining limits (same-unit backup, read-only
      pre-dump, abort on NACK)
   2. exact-phrase confirmation dialog ("GRAVAR")
-Only enabled for the validated h777 clone family (PROGRAM handshake,
-992 B window); other drivers are refused with a clear message.
+Only enabled for validated clone families: h777 (PROGRAM handshake,
+992 B window) and UV-5R aux-first (BOM-5701; 0x1948 image). Other
+drivers are refused with a clear message.
 """
 
 import hashlib
@@ -177,9 +178,28 @@ class FirmwareRestoreDialog(QDialog):
             return None
         return model_label_to_class(vendor, label)
 
+    def _fw_family(self, rclass):
+        """Família de escrita validada: 'h777', 'aux-first' ou None."""
+        if not rclass:
+            return None
+        if getattr(rclass, "PROGRAM_CMD", None) == \
+                fwtool.H777_PROGRAM_CMD:
+            return "h777"
+        if getattr(rclass, "_aux_first", False) and \
+                getattr(rclass, "_aux_block", False):
+            return "aux-first"
+        return None
+
+    def _family_size(self, rclass):
+        family = self._fw_family(rclass)
+        if family == "h777":
+            return fwtool.H777_WINDOW_END
+        if family == "aux-first":
+            return fwtool.UV5R_AUX_FIRST_IMAGE_END
+        return None
+
     def _restore_supported(self, rclass):
-        return bool(rclass) and getattr(rclass, "PROGRAM_CMD", None) == \
-            fwtool.H777_PROGRAM_CMD
+        return self._fw_family(rclass) is not None
 
     def _on_vendor(self, vendor):
         if not vendor:
@@ -196,9 +216,10 @@ class FirmwareRestoreDialog(QDialog):
             self.warn_label.clear()
         else:
             self.warn_label.setText(
-                _("Escrita validada apenas na família h777 "
-                  "(handshake PROGRAM; ex.: Baofeng BF-777S). "
-                  "Selecione um modelo da família."))
+                _("Escrita validada apenas nas famílias h777 "
+                  "(handshake PROGRAM; ex.: Baofeng BF-777S) e "
+                  "UV-5R-aux-first (ex.: BOMVINK BOM-5701). "
+                  "Selecione um modelo de uma dessas famílias."))
 
     def _pick_image(self):
         from mychirp import fwtool as _fw
@@ -220,8 +241,7 @@ class FirmwareRestoreDialog(QDialog):
         self.image_path = path
         sha16 = hashlib.sha256(data).hexdigest()[:16]
         rclass = self._current_rclass()
-        expected = fwtool.H777_WINDOW_END if self._restore_supported(
-            rclass) else None
+        expected = self._family_size(rclass)
         ok_size = expected is not None and len(data) == expected
         extra = ""
         if not ok_size:
@@ -282,13 +302,14 @@ class FirmwareRestoreDialog(QDialog):
         if not self._restore_supported(rclass):
             self._finish_label(
                 _("Driver not supported for restore (validated: h777 "
-                  "family)"))
+                  "family and UV-5R aux-first)"))
             return
         if not self.image_path:
             self._finish_label(_("No image selected"))
             return
         data = open(self.image_path, "rb").read()
-        if len(data) != fwtool.H777_WINDOW_END:
+        expected = self._family_size(rclass)
+        if len(data) != expected:
             self._finish_label(_("Image size mismatch (%d B)") % len(data))
             return
         try:
@@ -318,13 +339,18 @@ class FirmwareRestoreDialog(QDialog):
         rep = job.result
         if rep["ok"] and rep.get("diffs") == []:
             head = _("RESTORE OK: 0 divergências (re-leitura idêntica)")
-        elif rep.get("aborted") is not None or rep.get("diffs") is None:
+        elif rep.get("aborted") or rep.get("diffs") is None:
             head = _("RESTORE PITFALL: gravação incompleta (abortada)")
         else:
             head = ("%d divergências pós-gravação" % len(rep["diffs"]))
+        notes = ""
+        if rep.get("preserve_diffs"):
+            notes = _("\nNOTA: %d faixa(s) de proteção não gravada(s) "
+                      "pelo driver (conteúdo da unidade preservado)."
+                      ) % len(rep["preserve_diffs"])
         self._finish_label(
-            "%s\nsha_antigo: %s…\nsha_novo:   %s…\npre: %s\npost: %s" % (
-                head, (rep["sha_old"] or "-")[:16],
+            "%s%s\nsha_antigo: %s…\nsha_novo:   %s…\npre: %s\npost: %s" % (
+                head, notes, (rep["sha_old"] or "-")[:16],
                 (rep["sha_new"] or "-")[:16],
                 rep["pre_path"], rep["post_path"]))
         self.state.set_status(

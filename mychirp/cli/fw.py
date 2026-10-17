@@ -38,16 +38,40 @@ def list_radios(vendor=None):
         print("\t", ident)
 
 
+def _fw_family(radio_id):
+    """Família de protocolo de escrita validada do driver (ou None)."""
+    from mychirp import fwtool
+    rclass = fwtool.resolve_rclass(radio_id)
+    if getattr(rclass, "PROGRAM_CMD", None) == fwtool.H777_PROGRAM_CMD:
+        return "h777"
+    if getattr(rclass, "_aux_first", False) and \
+            getattr(rclass, "_aux_block", False):
+        return "aux-first"
+    return None
+
+
 def _fw_restore(radio_id, port, image_path, data_len):
     """Anúncio do que vai acontecer fisicamente, antes da 1ª confirmação."""
     from mychirp import fwtool
     rclass = fwtool.resolve_rclass(radio_id)
+    family = _fw_family(radio_id)
     print("O seguinte será enviado para o rádio em %s (%s):"
           % (port, directory.get_driver(rclass)))
-    print("- entra em PROGRAM e LÊ a janela clone %d B (read-only)"
-          % fwtool.H777_WINDOW_END)
-    print("- ESCRITA em %d blocos de 8 B (janela clone %d B)"
-          % (fwtool.H777_WINDOW_END // 8, fwtool.H777_WINDOW_END))
+    if family == "h777":
+        print("- entra em PROGRAM e LÊ a janela clone %d B (read-only)"
+              % fwtool.H777_WINDOW_END)
+        print("- ESCRITA em %d blocos de 8 B (janela clone %d B)"
+              % (fwtool.H777_WINDOW_END // 8, fwtool.H777_WINDOW_END))
+    elif family == "aux-first":
+        print("- handshake de ident e LÊ imagem %d B (read-only;"
+              " bloco AUX primeiro)"
+              % fwtool.UV5R_AUX_FIRST_IMAGE_END)
+        print("- ESCRITA em blocos de 16 B com retry: AUX "
+              "(0x1EC0-0x2000) primeiro, depois MAIN; %(n_skip)d blocos "
+              "de proteção do UV-5R NÃO são gravados"
+              % {"n_skip": len(fwtool.UV5R_UPLOAD_SKIP_IMAGE_OFFSETS)})
+    else:
+        print("- ERRO: família de escrita deste driver não validada")
     print("- re-leitura completa pós-escrita para diff/verify")
     print("- imagem: %s (%d B)" % (image_path, data_len))
     print("- backups .pre/.post em ~/.chirp/fw-backups/")
@@ -103,9 +127,11 @@ def main(args=None):
                         default=None,
                         help="ESCREVE uma imagem de clone na janela do "
                              "rádio (operação de gravação; exige dupla "
-                             "confirmação no terminal). Só família h777 "
-                             "(992 B) validada — use APENAS o backup da "
-                             "MESMA unidade (resgate)")
+                             "confirmação no terminal). Famílias "
+                             "validadas: h777 (992 B, ex. BF-777S/RC) e "
+                             "UV-5R-aux-first (6.472 B, ex. BOM-5701). "
+                             "Use APENAS o backup da MESMA unidade "
+                             "(resgate)")
     logger.add_arguments(parser)
     parser.add_argument("args", metavar="arg", nargs='*',
                         help="Argumentos extras")
@@ -153,12 +179,23 @@ def main(args=None):
         except OSError as e:
             LOG.error("Imagem inacessível: %s", e)
             return 2
+        try:
+            family = _fw_family(options.radio)
+        except _fw.FwDumpError as e:
+            LOG.error("%s", str(e))
+            return 1
+        if family is None:
+            print("Driver %s não tem família de escrita validada. "
+                  "Famílias: h777 (ex. Baofeng_BF-777S) e "
+                  "UV-5R-aux-first (ex. BOMVINK_BOM-5701)."
+                  % options.radio, file=sys.stderr)
+            return 1
         _fw_restore(options.radio, options.serial, image_path, data_len)
         if not _fw_restore_confirm(options.radio, image_path):
             print("Escrita cancelada pelo usuário.")
             return 3
         try:
-            rep = _fw.restore_h777_image(
+            rep = _fw.restore_image(
                 options.radio, options.serial,
                 open(image_path, "rb").read())
         except _fw.FwDumpError as e:
@@ -167,19 +204,26 @@ def main(args=None):
         except _PBE as e:
             LOG.error("Porta ocupada: %s", str(e))
             return 2
-        ok = rep["ok"] and rep["diffs"] == []
+        ab = rep["aborted"]
+        ok = bool(rep["ok"]) and rep.get("diffs") == []
         print("sha_antigo:", (rep["sha_old"] or "-")[:16])
         print("sha_novo:  ", (rep["sha_new"] or "-")[:16])
         print("pre:  %s" % rep["pre_path"])
         print("post: %s" % rep["post_path"])
-        if rep["aborted"] is not None:
-            print("Gravação ABORTADA em 0x%04X (NACK/timeout)."
-                  % rep["aborted"])
+        if ab and isinstance(ab, int):
+            print("Gravação ABORTADA em 0x%04X (NACK/timeout)." % ab)
+            return 4
+        if ab:
+            print("Gravação ABORTADA por NACK/timeout do rádio.")
             return 4
         if not ok:
             print("%d divergências pós-gravação (primeira: 0x%04X)"
                   % (len(rep["diffs"]), rep["diffs"][0]))
             return 5
+        if rep.get("preserve_diffs"):
+            print("NOTA: %d faixa(s) de proteção não gravada(s) pelo "
+                  "driver (conteúdo da unidade preservado): %s"
+                  % (len(rep["preserve_diffs"]), rep["preserve_diffs"]))
         print("RESTORE OK: 0 divergências (re-leitura idêntica).")
         return 0
 

@@ -63,3 +63,56 @@ def test_restore_cli_requires_tty_input(capsys, monkeypatch):
     out = capsys.readouterr()
     assert "confirm" in "".join(str(x) for x in (out.out, out.err)).lower() \
         or True
+
+
+def _mk_image(tmp_path, n):
+    p = tmp_path / "img.bin"
+    p.write_bytes(b"\x00" * n)
+    return str(p)
+
+
+def test_restore_cli_bom_family_tty_gate(capsys, monkeypatch, tmp_path):
+    """--restore na família aux-first (BOM-5701) sem TTY: cancela
+    antes de tocar no rádio (exit 3) — o anúncio menciona a família."""
+    from mychirp.cli import fw as fwcli
+    img = _mk_image(tmp_path, 0x1948)
+    rc = fwcli.main([
+        "--radio=BOMVINK_BOM-5701", "--serial=/dev/FAKE",
+        "--restore", img])
+    assert rc == 3
+    out = capsys.readouterr().out
+    assert "AUX" in out and "0x1EC0-0x2000" in out
+
+
+def test_restore_cli_family_not_validated(capsys, tmp_path):
+    """Driver SEM família validada: erro imediato (exit 1), sem
+    confirmação e sem tocar no rádio."""
+    from mychirp import directory
+    from mychirp.cli import fw as fwcli
+    directory.import_drivers()
+    other = next(
+        (r for r in directory.DRV_TO_RADIO.values()
+         if fw_family_is_none(r)), None)
+    if other is None:
+        # demasiadas famílias validadas: driver local inexistente
+        return
+    ident = directory.get_driver(other)
+    img = _mk_image(tmp_path, 128)
+    rc = fwcli.main([
+        "--radio=%s" % ident, "--serial=/dev/FAKE", "--restore", img])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "não tem família" in err or "familia" in err
+
+
+def fw_family_is_none(r):
+    """Predicado: driver de CLONE serial sem família de escrita
+    validada (exclui rádios file-backed, que nem clonam)."""
+    from mychirp import chirp_common, fwtool
+    if not issubclass(r, chirp_common.CloneModeRadio):
+        return False
+    if getattr(r, "PROGRAM_CMD", None) == fwtool.H777_PROGRAM_CMD:
+        return False
+    if getattr(r, "_aux_first", False) and getattr(r, "_aux_block", False):
+        return False
+    return True
