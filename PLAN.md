@@ -281,10 +281,17 @@ sem modo boot, sem tela colorida — boot image não se aplica.
 
 ### Ferramenta de diagnóstico (paralelo)
 
-- [ ] **D1** — `mychirp-fw` CLI: dump de flash completa via CMD_READFLASH
-  para qualquer rádio da família UV-17Pro conectado.
-- [ ] **D2** — Comparação de dumps entre versões de firmware (diff byte-level).
-- [ ] **D3** — Extração de firmware de fábrica para backup antes de customização.
+- [x] **D1 (parte clone)** — `mychirp-fw` CLI (`mychirp/cli/fw.py` +
+  `mychirp/fwtool.py`): dump de memória via `sync_in()` do driver
+  (**genérico** — qualquer CloneModeRadio do directory, incl. os 59
+  drivers Baofeng; abertura serial compartilhada em
+  `mychirp/serial_link.py`). Salva `.bin` + YAML de metadados
+  (sha256/porta/baud) e `~/.chirp/fw-backups/` com `--backup`. Read-only
+  (nunca grava no rádio). D1a/D1b validados com rádio simulado H777
+  (BF-777S) — testes em `tests/unit/test_fw_cli.py`.
+  **Teste de hardware pendente (CHECK: avisar mantenedor antes).**
+- [ ] **D2** — Comparação de dumps entre versões de firmware (diff byte-level). _(implementado: `mychirp-fw --diff a.bin b.bin`)_
+- [ ] **D3** — Extração de firmware de fábrica para backup antes de customização. _(implementado: `--backup` + YAML sidecar; falta validar em HW)_
 
 ## 8. Ambiente (Linux/Debian 13)
 
