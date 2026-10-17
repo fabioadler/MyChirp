@@ -401,6 +401,190 @@ def restore_h777_image(radio_id, port, image, backup=True):
             pass
 
 
+# ---------------------------------------------------------------------------
+# Escrita/restore família UV-5R aux-first (BOM-5701) — sessão 3 estágios,
+# reutilizando a maquinaria do driver (ident + X-frame 16 B com retry,
+# validados em hardware 2026-10-10/11, issue #12332).
+# ---------------------------------------------------------------------------
+
+UV5R_AUX_FIRST_IMAGE_END = 0x1948  # ident 8 + main 0x1800 + aux 0x140
+UV5R_AUX_FIRST_COOLDOWN = 2.0  # s entre sessões (quirk do rádio)
+
+# Faixas da IMAGEM que o upload do driver NÃO grava (gaps clássicos de
+# proteção do UV-5R: _ranges_main_default pula i = 0x0CF8-0x0D08 e
+# 0x0DF8-0x0E08 = chunks image[i..i+16) ⇒ bytes de imagem 0x0CF8-0x0D08
+# e 0x0DF8-0x0E08, que correspondem a wire 0x0CF0-0x0D00 e 0x0DF0-0x0E00).
+# O verify do restore EXCLUI essas faixas do diff (o conteúdo lá
+# permanece o da unidade — byte a byte, preservado do pre-dump).
+UV5R_UPLOAD_SKIP_IMAGE_OFFSETS = [(0x0CF8, 0x0D08), (0x0DF8, 0x0E08)]
+
+
+def _uv5r_auxfirst_dump(rclass, port):
+    """Sessão de download do driver: imagem 0x1948 B da unidade.
+
+    Mesmo caminho do dump_clone (sync_in, quirk aux-primeiro incluído);
+    validação de tamanho no fim.
+    """
+    from mychirp.serial_link import open_serial
+    pipe = open_serial(port, rclass)
+    try:
+        radio = rclass(pipe)
+        radio.status_fn = _progress_printer()
+        radio.sync_in()
+    finally:
+        print()
+        try:
+            pipe.close()
+        except Exception:
+            pass
+    data = radio.get_mmap().get_byte_compatible().get_packed()
+    if len(data) != UV5R_AUX_FIRST_IMAGE_END:
+        raise FwDumpError(
+            "download retornou %d B; esperado %d (BOM-5701)"
+            % (len(data), UV5R_AUX_FIRST_IMAGE_END))
+    return data
+
+
+def _uv5r_auxfirst_write(rclass, port, image):
+    """Sessão de gravação pela maquinaria do driver.
+
+    Constrói o radio a partir da imagem-alvo (MemoryMapBytes +
+    process_mmap) e roda sync_out() — que faz ident, grava o bloco
+    AUX primeiro (0x1EC0-0x2000 em 20× 16 B) e depois o MAIN (382×
+    16 B: a faixa wire completa tem 384 blocos, mas o driver pula os
+    chunks dos gaps de proteção do UV-5R nas offsets de imagem
+    0x0CF8 e 0x0DF8), com retry de 6× 0,15 s por bloco (janela de
+    commit). Retorna (aborted, addr) — aborted=False em sucesso;
+    addr do bloco recusado em falha (após 6 tentativas).
+    """
+    import re
+    from mychirp import memmap
+    from mychirp.serial_link import open_serial
+
+    pipe = open_serial(port, rclass)
+    radio = None
+    aborted, ab_addr = False, None
+    try:
+        radio = rclass(memmap.MemoryMapBytes(bytes(image)))
+        radio.process_mmap()
+        radio.pipe = pipe
+        try:
+            radio.sync_out()
+        except Exception as e:
+            aborted = True
+            m = re.search(r"0x[0-9A-Fa-f]{3,4}", str(e))
+            if m:
+                ab_addr = int(m.group(0), 16)
+    finally:
+        radio.pipe = None
+        try:
+            pipe.close()
+        except Exception:
+            pass
+    return aborted, ab_addr
+
+
+def restore_bom5701_image(radio_id, port, image, backup=True):
+    """Restore na janela clone UV-5R aux-first (BOM-5701): 3 sessões.
+
+    DIFERE do restore_h777_image porque a família UV-5R-aux-first
+    (BOM-5701) tem protocolo de escrita próprio (validado em HW,
+    2026-10-10/11): frame `X` de 16 B com retry (janela de commit do
+    EEPROM), ordem AUX→MAIN e remap de endereço (wire = imagem − 8 na
+    main; aux remap 0x1808..0x1948 → 0x1EC0..0x2000). Sessões:
+
+      1) download (driver read path) → sha_old + .pre
+      2) gravação (driver write path: ident + aux-first + retry)
+      3) re-download → sha_new + .post + diff byte-a-byte (a partir
+         do offset 8; os 8 B iniciais são ident de handshake, NÃO
+         graváveis via serial)
+    """
+    log = print
+    if len(image) != UV5R_AUX_FIRST_IMAGE_END:
+        raise FwDumpError(
+            "imagem deve ter %d B (6.472; tem %d)"
+            % (UV5R_AUX_FIRST_IMAGE_END, len(image)))
+    rclass = resolve_rclass(radio_id)
+
+    # 1) dump prévio
+    pre = _uv5r_auxfirst_dump(rclass, port)
+    sha_old = sha256_hex(pre)
+    log("dump prévio: sha256=%s" % sha_old[:16])
+
+    # 2) gravação pela maquinaria do driver
+    aborted, ab_addr = _uv5r_auxfirst_write(rclass, port, image)
+    if aborted:
+        log("ABORTADO: NACK após retries em/wire 0x%04X" % (ab_addr or 0))
+    time.sleep(UV5R_AUX_FIRST_COOLDOWN)
+
+    # 3) re-download de verificação
+    post = _uv5r_auxfirst_dump(rclass, port)
+    sha_new = sha256_hex(post)
+    if aborted:
+        diffs = None  # gravação incompleta: sem diff confiável
+        preserve_diffs = None
+    else:
+        diffs = [i for i in range(8, UV5R_AUX_FIRST_IMAGE_END)
+                 if post[i] != image[i]
+                 and not any(lo <= i < hi for lo, hi in
+                             UV5R_UPLOAD_SKIP_IMAGE_OFFSETS)]
+        # divergências nas faixas "preserve" (não gravadas pelo driver,
+        # ex.: gaps de proteção) — informativo, não falha o restore
+        preserve_diffs = [
+            (lo, hi) for lo, hi in UV5R_UPLOAD_SKIP_IMAGE_OFFSETS
+            if post[lo:hi] != image[lo:hi]]
+        if post[:8] != pre[:8]:
+            log("AVISO: ident pós-gravação difere do prévio (anômalo)")
+
+    paths = [None, None]
+    if backup:
+        fw_backup_dir_impl = fw_backup_dir()
+        os.makedirs(fw_backup_dir_impl, exist_ok=True)
+        import datetime
+        stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        name = "%s_RESTORE_%s.bin" % (directory.get_driver(rclass), stamp)
+        base = os.path.join(fw_backup_dir_impl, name)
+        paths[0] = base.replace(".bin", "_pre_%s.bin" % sha_old[:8])
+        paths[1] = base.replace(".bin", "_post_%s.bin" % sha_new[:8])
+        with open(paths[0], "wb") as f:
+            f.write(pre)
+        with open(paths[1], "wb") as f:
+            f.write(post)
+        meta = _dump_info(rclass, port, pre, datetime.datetime.now())
+        meta["note"] = "dump ANTES de restore_bom5701_image"
+        _write_sidecar(meta, paths[0])
+        meta["note"] = "dump DEPOIS de restore_bom5701_image"
+        meta["sha256"] = sha_new
+        meta["size"] = len(post)
+        _write_sidecar(meta, paths[1])
+
+    return RestoreReport(
+        ok=not aborted and diffs == [], aborted=aborted,
+        aborted_addr=ab_addr, sha_old=sha_old, sha_new=sha_new,
+        diffs=diffs, preserve_diffs=preserve_diffs,
+        pre_path=paths[0], post_path=paths[1])
+
+
+def restore_image(radio_id, port, image, backup=True):
+    """Dispatch de restore pela família de protocolo de @radio_id.
+
+    h777 (PROGRAM_CMD == b'PROGRAM'): restore_h777_image (janela 992 B
+    1:1). UV-5R-aux-first (_aux_first + _aux_block, ex. BOM-5701):
+    restore_bom5701_image (0x1948, X-frame 16 B, aux→main). Demais
+    famílias: recusa clara (escrita ainda não validada).
+    """
+    rclass = resolve_rclass(radio_id)
+    if getattr(rclass, "PROGRAM_CMD", None) == H777_PROGRAM_CMD:
+        return restore_h777_image(radio_id, port, image, backup=backup)
+    if getattr(rclass, "_aux_first", False) and \
+            getattr(rclass, "_aux_block", False):
+        return restore_bom5701_image(radio_id, port, image, backup=backup)
+    raise FwDumpError(
+        "família de protocolo do driver %s não tem escrita validada "
+        "(famílias suportadas: h777, UV-5R-aux-first/BOM-5701; "
+        "escrita nova = fase de RE própria)" % radio_id)
+
+
 def diff_files(a_path, b_path):
     """Diff byte-level entre dois dumps; retorna (a, b, faixas).
 
