@@ -23,6 +23,7 @@ import datetime
 import hashlib
 import logging
 import os
+import time
 
 from mychirp import directory
 from mychirp import chirp_common
@@ -181,6 +182,223 @@ def dump_clone(radio_id, port, out=None, backup=False):
     print("sha256: %s" % meta["sha256"])
     print("Meta  : %s" % yaml_path)
     return bin_path
+
+
+def dump_full_window(radio_id, port, out=None, backup=False):
+    """Dump da janela completa cabelada (radio 0x0000-0x1FFF, 8 KiB).
+
+    Somente drivers com ``download_full_window`` (quirk aux-primeiro,
+    p. ex. BOMVINK BOM-5701): inclui a área de calibração de fábrica
+    0x1800-0x1EC0 que o clone padrão (0x1948) NÃO cobre. Read-only do
+    começo ao fim; a ordem de leitura é a ordem da sessão validada em
+    hardware (warm-up → calibração → aux → main por último, que fecha
+    a sessão). Salva .bin + YAML sidecar igual ao dump_clone.
+    """
+    if not port:
+        raise FwDumpError("Informe a porta serial com --serial=/dev/ttyUSB0")
+    rclass = resolve_rclass(radio_id)
+    if not hasattr(rclass, "download_full_window"):
+        raise FwDumpError(
+            "driver %s não expõe download_full_window" % radio_id)
+    baud = getattr(rclass, "BAUD_RATE", 9600)
+    LOG.info("Dump janela completa %s @%s (baud %i)", radio_id, port, baud)
+
+    from mychirp.serial_link import open_serial
+    pipe = open_serial(port, rclass)
+    try:
+        radio = rclass(pipe)
+        data = radio.download_full_window(status_fn=_progress_printer())
+    finally:
+        print()
+        try:
+            pipe.close()
+        except Exception:
+            pass
+
+    timestamp = datetime.datetime.now()
+    stamp = timestamp.strftime("%Y%m%d-%H%M%S")
+    radio_id2 = directory.get_driver(rclass)
+    if backup and not out:
+        os.makedirs(fw_backup_dir(), exist_ok=True)
+        bin_path = os.path.join(
+            fw_backup_dir(),
+            "%s_FULLWINDOW_8K_%s_%s.bin" % (
+                radio_id2, sha256_hex(data)[:8], stamp))
+    else:
+        os.makedirs(os.path.dirname(os.path.abspath(out)) or ".",
+                    exist_ok=True)
+        bin_path = out
+    os.makedirs(os.path.dirname(bin_path) or ".", exist_ok=True)
+    with open(bin_path, "wb") as f:
+        f.write(data)
+
+    meta = _dump_info(rclass, port, data, timestamp)
+    meta["note"] = ("janela completa 8 KiB (0x0000-0x1FFF) via "
+                    "download_full_window; inclui calibração de fábrica "
+                    "0x1800-0x1EC0 fora da imagem padrão")
+    yaml_path = _write_sidecar(meta, bin_path)
+    print("Dumper: {vendor} {model} ({driver})".format(**meta))
+    print("Imagem: %s (%d bytes)" % (bin_path, len(data)))
+    print("sha256: %s" % meta["sha256"])
+    print("Meta  : %s" % yaml_path)
+    return bin_path
+
+
+# ---------------------------------------------------------------------------
+# Escrita/restore (gravação validada W1 — round-trip no-op em hardware
+# 2026-10-17, BF-777S, sha 4d8db228: 124 blocos ACK, re-leitura idêntica)
+# ---------------------------------------------------------------------------
+
+H777_PROGRAM_CMD = b"PROGRAM"
+H777_WINDOW_END = 0x03E0  # 992 B (janela do clone padrão h777)
+
+RestoreReport = dict  # {image, sha_old, sha_new, pre_path, post_path,
+#                        diffs, ok, aborted}
+
+
+def _h777_enter(serial):
+    import time
+    from mychirp import errors
+    import struct
+    serial.write(b"\x02")
+    time.sleep(0.1)
+    serial.write(H777_PROGRAM_CMD)
+    ack = serial.read(1)
+    if ack != b"\x06":
+        raise errors.RadioNoResponse()
+    serial.write(b"\x02")
+    ident = serial.read(8)
+    if not ident:
+        raise errors.RadioNoResponse()
+    serial.write(b"\x06")
+    serial.read(1)
+    return ident
+
+
+def _h777_read8(serial, addr):
+    import struct
+    cmd = struct.pack(">cHb", b"R", addr, 8)
+    serial.write(cmd)
+    serial.timeout = 0.25
+    resp = serial.read(4 + 8)
+    if resp[:1] != b"W" or resp[1:4] != cmd[1:4] or len(resp) != 4 + 8:
+        return None
+    serial.write(b"\x06")
+    serial.read(1)
+    return resp[4:]
+
+
+def _h777_write8(serial, addr, data):
+    import struct
+    cmd = struct.pack(">cHb", b"W", addr, 8)
+    serial.write(cmd + data)
+    serial.timeout = 0.5  # gravação pode levar até ~0,31 s (obs. driver)
+    return serial.read(1) == b"\x06"
+
+
+def _h777_read_window(serial):
+    out = bytearray()
+    for addr in range(0, H777_WINDOW_END, 8):
+        d = _h777_read8(serial, addr)
+        if d is None:
+            return None
+        out += d
+    return bytes(out)
+
+
+def restore_h777_image(radio_id, port, image, backup=True):
+    """Restore da janela clone h777 (992 B) com rails de segurança.
+
+    @image: bytes de exatamente 992 B (dump do MESMO modelo/família).
+    Fluxo validado em hardware (ver tools/roundtrip_noop.py e diário §12):
+      sessão 1: enter → ler janela → salvar .pre + sha_old → exit
+      sessão 2: enter → gravar image bloco a bloco (ACK por bloco,
+                ABORTAR em qualquer NACK/timeout) → exit
+      sessão 3: enter → re-ler janela → salvar .post + sha_new → exit
+    Gravação só funciona no padrão do driver (entrar e escrever logo
+    depois, sem pré-leitura na mesma sessão).
+    """
+    import datetime
+    import hashlib
+    import os as _os
+    import struct
+    log = print
+    if len(image) != H777_WINDOW_END:
+        raise FwDumpError("imagem deve ter %d B (tem %d)"
+                         % (H777_WINDOW_END, len(image)))
+    rclass = resolve_rclass(radio_id)
+    from mychirp.serial_link import open_serial
+    serial = open_serial(port, rclass)
+    try:
+        ident = _h777_enter(serial)
+        pre = _h777_read_window(serial)
+        if pre is None:
+            serial.write(b"E")
+            raise FwDumpError("leitura prévia falhou")
+        sha_old = hashlib.sha256(pre).hexdigest()
+        serial.write(b"E")
+        time.sleep(1.0)
+        serial.read(4096)
+        log("dump prévio: sha256=%s (%s)" % (sha_old[:16], ident.hex()))
+
+        # sessão de gravação: entra e escreve logo (padrão do_upload)
+        ident = _h777_enter(serial)
+        aborted = None
+        for addr in range(0, H777_WINDOW_END, 8):
+            if not _h777_write8(serial, addr, image[addr:addr + 8]):
+                aborted = addr
+                break
+        serial.write(b"E")
+        if aborted is not None:
+            log("ABORTADO: NACK/timeout em 0x%04X" % aborted)
+        time.sleep(1.0)
+        serial.read(4096)
+
+        # sessão de verificação
+        ident = _h777_enter(serial)
+        post = _h777_read_window(serial)
+        serial.write(b"E")
+        if post is None:
+            raise FwDumpError("re-leitura pós-gravação falhou")
+        sha_new = hashlib.sha256(post).hexdigest()
+        if aborted is None:
+            diffs = [i for i in range(H777_WINDOW_END)
+                     if post[i] != image[i]]
+        else:
+            diffs = None  # gravação incompleta: sem diff confiável
+
+        # backups automáticos (pré e pós)
+        paths = [None, None]
+        if backup:
+            fw_backup_dir_impl = fw_backup_dir()
+            _os.makedirs(fw_backup_dir_impl, exist_ok=True)
+            stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            name = "%s_RESTORE_%s_%s.bin" % (
+                directory.get_driver(rclass), stamp,
+                sha_new[:8])
+            base = _os.path.join(fw_backup_dir_impl, name)
+            paths[0] = base.replace(".bin", "_pre_%s.bin" % sha_old[:8])
+            paths[1] = base.replace(".bin", "_post_%s.bin" % sha_new[:8])
+            with open(paths[0], "wb") as f:
+                f.write(pre)
+            with open(paths[1], "wb") as f:
+                f.write(post)
+            meta = _dump_info(rclass, port, pre, datetime.datetime.now())
+            meta["note"] = "dump ANTES de restore_h777_image"
+            _write_sidecar(meta, paths[0])
+            meta["note"] = "dump DEPOIS de restore_h777_image "
+            meta["sha256"] = sha_new
+            meta["size"] = len(post)
+            _write_sidecar(meta, paths[1])
+        return RestoreReport(
+            ok=aborted is None and diffs == [], aborted=aborted,
+            sha_old=sha_old, sha_new=sha_new, diffs=diffs,
+            pre_path=paths[0], post_path=paths[1])
+    finally:
+        try:
+            serial.close()
+        except Exception:
+            pass
 
 
 def diff_files(a_path, b_path):
