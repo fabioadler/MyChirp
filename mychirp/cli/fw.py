@@ -6,6 +6,7 @@ Usage:
     mychirp-fw --serial=COM3 --radio=BAOFENG_UV-5R --backup
     mychirp-fw --list-radios --vendor=Baofeng
     mychirp-fw --diff antigo.bin novo.bin
+    mychirp-fw --map dump.bin
 """
 
 import argparse
@@ -56,6 +57,10 @@ def main(args=None):
                         help="Salvar em ~/.chirp/fw-backups/ além do --out")
     parser.add_argument("--diff", nargs=2, metavar=("A", "B"),
                         help="Comparar dois dumps byte a byte")
+    parser.add_argument("--map", dest="map_dump", metavar="DUMP",
+                        default=None,
+                        help="Análise semântica de um dump (canais, "
+                             "settings, regiões mapeadas vs não-mapeadas)")
     logger.add_arguments(parser)
     parser.add_argument("args", metavar="arg", nargs='*',
                         help="Argumentos extras")
@@ -69,11 +74,25 @@ def main(args=None):
         return 0
 
     if options.diff:
+        from mychirp import fwtool as _fw
         a_path, b_path = options.diff
-        a, b, ranges = fwtool.diff_files(a_path, b_path)
+        a, b, ranges = _fw.diff_files(a_path, b_path)
         print("Diff %s vs %s:" % (a_path, b_path))
-        print(fwtool.format_diff(ranges, len(a), len(b)))
+        print(_fw.format_diff(ranges, len(a), len(b)))
         return 0 if not ranges else 1
+
+    if options.map_dump:
+        from mychirp import fwtool as _fw
+        try:
+            rclass = None
+            if options.radio:
+                rclass = _fw.resolve_rclass(options.radio)
+            an = _fw.analyze_dump(options.map_dump, rclass=rclass)
+            print(_fw.format_map(an))
+            return 0
+        except _fw.FwDumpError as e:
+            LOG.error("%s", str(e))
+            return 1
 
     from mychirp.serial_pipe import PortBusyError
     try:

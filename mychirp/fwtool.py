@@ -212,6 +212,216 @@ def diff_files(a_path, b_path):
     return a, b, ranges
 
 
+def load_meta(bin_path):
+    """YAML sidecar de um dump do mychirp-fw; {} se não houver."""
+    yaml_path = os.path.splitext(bin_path)[0] + ".yaml"
+    if not os.path.exists(yaml_path):
+        return {}
+    import yaml
+    with open(yaml_path, encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def driver_from_meta(bin_path):
+    """(driver_id, meta) do yaml sidecar; (None, {}) sem sidecar."""
+    meta = load_meta(bin_path)
+    return meta.get("driver"), meta
+
+
+def _desc_value(value):
+    """String compacta de um RadioSettingValue* para o --map."""
+    from mychirp.settings import (
+        RadioSettingValueBoolean, RadioSettingValueInteger,
+        RadioSettingValueString, RadioSettingValueList,
+        RadioSettingValueFloat, RadioSettingValueInvertedBoolean)
+    val = value.get_value()
+    if isinstance(value, (RadioSettingValueBoolean,
+                          RadioSettingValueInvertedBoolean)):
+        return "on" if val else "off"
+    if isinstance(value, RadioSettingValueList):
+        if isinstance(val, int):
+            opts = value.get_options()
+            val = opts[val] if 0 <= val < len(opts) else str(val)
+        return str(val)
+    return str(val)
+
+
+def _collect_settings(root, out, prefix=""):
+    from mychirp.settings import RadioSetting, RadioSettingGroup
+    from mychirp import chirp_common
+    for el in root:
+        if isinstance(el, RadioSetting):
+            name = prefix + el.get_name()
+            try:
+                # RadioSetting.value -> RadioSettingValue (via __getattr__)
+                value = el.value
+                if isinstance(value, list):
+                    # setting-array: mostra um por item
+                    for i, sub in enumerate(value):
+                        out.append(("%s[%d]" % (name, i),
+                                    _desc_value(sub)))
+                else:
+                    out.append((name, _desc_value(value)))
+            except Exception as e:
+                out.append((name, "<erro: %s>" % type(e).__name__))
+        elif isinstance(el, RadioSettingGroup):
+            _collect_settings(el, out, prefix + el.get_shortname() + ": ")
+
+
+def _data_regions(data, width=8):
+    """Regiões contíguas com bytes != 0xFF: [(start, end), ...]."""
+    regions = []
+    cur = None
+    for off in range(0, len(data), width):
+        isdata = any(b != 0xFF for b in data[off:off + width])
+        if isdata and cur is None:
+            cur = off
+        elif not isdata and cur is not None:
+            regions.append((cur, off))
+            cur = None
+    if cur is not None:
+        regions.append((cur, len(data)))
+    return regions
+
+
+def analyze_dump(bin_path, rclass=None, max_channels=None,
+                 max_settings=40):
+    """Análise semântica de um dump (--map).
+
+    Resolve o driver pelo yaml sidecar do mychirp-fw (ou @rclass
+    explícito), carrega a imagem numa instância real do driver e
+    produz: canais usados, resumo de settings, e as regiões com dados
+    reais classificadas como mapeadas (dentro dos _ranges do driver)
+    ou não-mapeadas (candidatas a RE).
+    """
+    from mychirp import memmap
+
+    with open(bin_path, "rb") as f:
+        data = f.read()
+    if rclass is None:
+        ident, meta = driver_from_meta(bin_path)
+        if ident:
+            rclass = resolve_rclass(ident)
+    if rclass is None:
+        raise FwDumpError(
+            "Driver não identificável para %s — passe --radio (o yaml "
+            "sidecar do mychirp-fw também resolve o driver)."
+            % os.path.basename(bin_path))
+    if len(data) != getattr(rclass, "_memsize", 0):
+        LOG.warning("Dump %s tem %d bytes; driver espera %d",
+                    os.path.basename(bin_path), len(data),
+                    getattr(rclass, "_memsize", 0))
+
+    radio = rclass(memmap.MemoryMapBytes(bytes(data)))
+
+    # ----- canais -----
+    lo, hi = radio.get_features().memory_bounds
+    channels, empty = [], 0
+    for number in range(lo, hi + 1):
+        try:
+            mem = radio.get_memory(number)
+        except Exception:
+            continue
+        if mem.empty:
+            empty += 1
+            continue
+        tone = ""
+        if mem.tmode == "Tone":
+            tone = "T%d" % mem.rtone
+        elif mem.tmode == "TSQL":
+            tone = "TSQ%d" % mem.rtone
+        elif mem.tmode == "DTCS":
+            tone = "D%d%s" % (mem.dtcs, mem.dtcs_polarity)
+        elif mem.tmode == "Cross":
+            tone = mem.cross_mode
+        from mychirp import chirp_common
+        offset = ""
+        if mem.duplex not in ("", "off"):
+            offset = chirp_common.format_freq(mem.offset)
+        channels.append({
+            "number": number,
+            "freq": chirp_common.format_freq(mem.freq),
+            "duplex": mem.duplex or "",
+            "offset": offset,
+            "tone": tone,
+            "name": (mem.name or "").strip(),
+        })
+
+    # ----- settings -----
+    settings, trunc = [], 0
+    try:
+        _collect_settings(radio.get_settings(), settings)
+        trunc = max(0, len(settings) - max_settings)
+        settings = settings[:max_settings]
+    except Exception as e:
+        LOG.debug("get_settings indisponível: %s", e)
+
+    # ----- regiões -----
+    ranges = getattr(radio, "_ranges", None) or         getattr(type(radio), "_ranges", None)
+    mapped, unmapped = [], []
+    for s, e in _data_regions(data):
+        if not ranges or any(s >= rs and e <= re for rs, re in ranges):
+            mapped.append((s, e))
+        else:
+            unmapped.append((s, e))
+
+    return {
+        "path": bin_path,
+        "size": len(data),
+        "sha256": sha256_hex(data),
+        "driver": directory.get_driver(rclass),
+        "vendor": rclass.VENDOR,
+        "model": rclass.MODEL,
+        "memory_bounds": (lo, hi),
+        "channels": channels,
+        "empty": empty,
+        "total_slots": len(channels) + empty,
+        "settings": settings,
+        "settings_truncated": trunc,
+        "mapped_regions": mapped,
+        "unmapped_regions": unmapped,
+    }
+
+
+def format_map(an, max_channels=30):
+    """Resumo legível de analyze_dump() para o CLI (--map)."""
+    out = []
+    out.append("Dumper: %s %s (%s)" % (an["vendor"], an["model"],
+                                       an["driver"]))
+    out.append("Imagem: %s" % an["path"])
+    out.append("Tamanho: %d bytes (0x%X)" % (an["size"], an["size"]))
+    out.append("sha256: %s" % an["sha256"])
+
+    lo, hi = an["memory_bounds"]
+    ch = an["channels"]
+    out.append("Canais: %d usados de %d (%d vazios) [%d..%d]"
+               % (len(ch), an["total_slots"], an["empty"], lo, hi))
+    for c in ch[:max_channels]:
+        out.append("  #%3d  %-12s MHz  %-12s %s" % (
+            c["number"], c["freq"], c["tone"] or "-", c["name"]))
+    if len(ch) > max_channels:
+        out.append("  ... +%d canais" % (len(ch) - max_channels))
+
+    if an["settings"]:
+        out.append("Settings (%d):" % len(an["settings"]))
+        for k, v in an["settings"]:
+            out.append("  %-36s = %s" % (k, v))
+        if an["settings_truncated"]:
+            out.append("  ... +%d itens truncados"
+                       % an["settings_truncated"])
+
+    if an["mapped_regions"]:
+        out.append("Regiões mapeadas (dentro dos ranges do driver):")
+        for s, e in an["mapped_regions"]:
+            out.append("  0x%04X-0x%04X (%d B)" % (s, e, e - s))
+    if an["unmapped_regions"]:
+        out.append("Regiões NÃO-MAPEADAS (fora dos ranges do driver — "
+                   "candidatas a RE):")
+        for s, e in an["unmapped_regions"]:
+            out.append("  0x%04X-0x%04X (%d B)" % (s, e, e - s))
+    return "\n".join(out)
+
+
 def format_diff(ranges, a_size, b_size, max_examples=8):
     """Representação textual do diff (resumo por faixa)."""
     lines = []

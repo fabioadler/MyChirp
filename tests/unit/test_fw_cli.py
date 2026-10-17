@@ -186,6 +186,98 @@ def test_diff_files_detect_changes(tmp_path):
     assert "0x000010" in text or "0x000010" in text
 
 
+def _h777_map_image():
+    """Imagem H777 sintética p/ --map: 2 canais + região RE fora dos ranges."""
+    img = bytearray(b"\xff" * 0x3E0)
+    for i in range(2):
+        off = 0x0010 + i * 16
+        # lbcd LE: bcd 46|21|25|00 (b3..b0) -> 46212500 *10 = 462.125000 MHz
+        img[off:off + 8] = b"\x00\x25\x21\x46" * 2
+    # settings 0x02B0: voiceprompt=1, scan=0, vox=0... fmradio=1 (10 B)
+    img[0x02B0:0x02BA] = b"\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01"
+    # settings2 0x03C0: beep=1, squelchlevel=3, sidekeyfunction=0x01,
+    # timeouttimer=0x05, scanmode bit=0
+    img[0x03C0:0x03C5] = b"\x40\x03\x01\x05\x00"
+    # região fora dos _ranges do driver (candidata a RE)
+    img[0x0200:0x0210] = b"\x11\x22\x33\x44\x55\x66\x77\x88" * 2
+    return bytes(img)
+
+
+def _write_map_dump(tmp_path, image=None, sidecar=True):
+    bin_path = str(tmp_path / "map.bin")
+    with open(bin_path, "wb") as f:
+        f.write(image if image is not None else _h777_map_image())
+    if sidecar:
+        fwtool._write_sidecar({"driver": "Baofeng_BF-777S"}, bin_path)
+    return bin_path
+
+
+def test_load_meta_and_driver_from_meta(tmp_path):
+    bin_path = str(tmp_path / "x.bin")
+    with open(bin_path, "wb") as f:
+        f.write(b"\x00")
+    assert fwtool.load_meta(bin_path) == {}
+    assert fwtool.driver_from_meta(bin_path) == (None, {})
+    fwtool._write_sidecar({"driver": "Baofeng_BF-777S"}, bin_path)
+    ident, meta = fwtool.driver_from_meta(bin_path)
+    assert ident == "Baofeng_BF-777S"
+    assert meta["driver"] == "Baofeng_BF-777S"
+
+
+def test_analyze_dump_requires_driver(tmp_path):
+    bin_path = _write_map_dump(tmp_path, sidecar=False)
+    with pytest.raises(fwtool.FwDumpError):
+        fwtool.analyze_dump(bin_path)
+
+
+def test_analyze_dump_channels_settings_regions(tmp_path):
+    bin_path = _write_map_dump(tmp_path)
+    an = fwtool.analyze_dump(bin_path)
+    assert an["driver"] == "Baofeng_BF-777S"
+    assert an["vendor"] == "Baofeng"
+    assert an["memory_bounds"] == (1, 16)
+    # 2 canais programados de 16
+    assert len(an["channels"]) == 2
+    assert an["empty"] == 14
+    assert an["total_slots"] == 16
+    assert an["channels"][0]["freq"] == "462.125000"
+    # settings extraídos das structs do driver
+    keys = dict(an["settings"])
+    assert keys.get("Basic Settings: voiceprompt") == "on"
+    assert keys.get("Basic Settings: settings2.squelchlevel") == "3"
+    # regiões dos canais: mapeadas (dentro de (0x0000, 0x0110))
+    assert (0x0010, 0x0018) in an["mapped_regions"]
+    assert (0x0020, 0x0028) in an["mapped_regions"]
+    assert (0x02B0, 0x02C0) in an["mapped_regions"]   # settings
+    assert (0x03C0, 0x03C8) in an["mapped_regions"]   # settings2
+    # região RE marcada: fora dos ranges
+    assert (0x0200, 0x0210) in an["unmapped_regions"]
+
+
+def test_format_map_text(tmp_path):
+    bin_path = _write_map_dump(tmp_path)
+    an = fwtool.analyze_dump(bin_path)
+    text = fwtool.format_map(an)
+    assert "Baofeng BF-777S" in text
+    assert "462.125000" in text
+    assert "voiceprompt" in text
+    assert "0x0200-0x0210" in text
+    assert "NÃO-MAPEADAS" in text
+
+
+def test_cli_map_flag(tmp_path):
+    from mychirp.cli import fw as fw_cli
+    bin_path = _write_map_dump(tmp_path)
+    assert fw_cli.main(["--map", bin_path]) == 0
+    # sem sidecar nem --radio -> FwDumpError tratado pelo CLI (retorno 1)
+    raw_path = str(tmp_path / "raw.bin")
+    with open(raw_path, "wb") as f:
+        f.write(_h777_map_image())
+    assert fw_cli.main(["--map", raw_path]) == 1
+    # --radio explícito resolve sem sidecar
+    assert fw_cli.main(["--map", raw_path, "--radio", F777_ID]) == 0
+
+
 def test_diff_files_size_mismatch(tmp_path):
     a_path = str(tmp_path / "a.bin")
     b_path = str(tmp_path / "b.bin")
