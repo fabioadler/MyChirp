@@ -367,8 +367,7 @@ RC 3002 G2, BOM-5701 - rádios reconectados na bancada). Feitos:
   3002 G2 (`1fa31046…`, 18:54, mesmo protocolo, diffs=[]).
   **Pendência sequencial**: mais unidades da família h777 conforme
   chegarem (dupla confirmação por unidade). Família BOM-5701/UV-5R:
-  escrita implementada no fwtool (W3 abaixo), validação em
-  hardware pendente (W4).
+  escrita validada em hardware no BOM-5701 (W4 abaixo, 19:54).
 - [x] **GUI: `Radio > Firmware restore...`** (escrita): diálogo com
   vend/model/port preenchidos, picker de .bin (default em
   `~/.chirp/fw-backups/`) validando tamanho 992 B, apenas família
@@ -393,12 +392,11 @@ RC 3002 G2, BOM-5701 - rádios reconectados na bancada). Feitos:
   família e nota de faixas preservadas. Docs:
   `docs/dump-format-uv5r.md` §6. Testes fake-serial (6, com modelo
   de memória compartilhado entre as sessões) + 2 GUI + 2 CLI.
-- [ ] **W4 — W3 validado em hardware**: round-trip no-op na
-  unidade BOM-5701 (restaurar o dump próprio `bccd9a99…`, 402
-  blocos, sha_old == sha_new, diffs=[]) com dupla confirmação
-  própria dessa unidade; depois restore real (imagem de conteúdo
-  distinto) na mesma unidade. Rails: pré-dump idêntico 2× antes de
-  qualquer escrita.
+- [x] **W4 — W3 validado em hardware**: round-trip no-op na
+  unidade BOM-5701 (`bccd9a99…` restaurado nela mesma, 402 blocos
+  escrevendo AUX + MAIN com ACK/retry, re-leitura idêntica em
+  `20261017-195404`, sha_old == sha_new == `bccd9a99`, diffs=[])
+  com dupla confirmação realizada. Backups pre/post salvos.
 - [ ] **P1 — Família 115200**: dump real do **UV-17M** (imagem
   33,6 KB = codeplug 0x8380 da família UV-17Pro confirmado em
   `radio_tool`; XOR "CO 7" = chave 1 da tabela de 20). Dados de RE em
