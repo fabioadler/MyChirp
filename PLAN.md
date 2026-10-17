@@ -299,13 +299,29 @@ sem modo boot, sem tela colorida — boot image não se aplica.
   Também **BOMVINK BOM-5701** (3ª família de protocolo, UV-5R schema
   com quirk aux-primeiro): 2 dumps byte-idênticos (sha256 `6efa912e…`,
   6472 B @9600, ~20 s entre sessões respeitado).
-
-  **Modelos em mãos no momento**: esses 3 apenas — varredura HW
-  encerrada por falta de unidades. Pendente de teste com hardware:
-  família a 115200 (UV-17M, imagem 33,6 KB, XOR "CO 7" — dados de RE
-  no rethink/) e demais famílias do catálogo (59 Baofeng).
 - [ ] **D2** — Comparação de dumps entre versões de firmware (diff byte-level). _(implementado: `mychirp-fw --diff a.bin b.bin`)_
 - [ ] **D3** — Extração de firmware de fábrica para backup antes de customização. _(implementado: `--backup` + YAML sidecar; falta validar em HW)_
+
+#### Pendências do mychirp-fw (pós-sessão 2026-10-16)
+
+Condição da sessão: **apenas 3 unidades em mãos** (BF-777S,
+RC 3002 G2, BOM-5701) — varredura de hardware encerrada por falta de
+rádios. Pendências, em ordem de prioridade:
+
+- [ ] **P1 — Família 115200**: dump real do **UV-17M** (imagem 33,6 KB,
+  XOR "CO 7", dados de RE em `rethink/uv17m-descobertas.md`). Fecha a
+  varredura dos protocolos de clone já implementados nos drivers.
+- [ ] **P2 — D1-boot (família UV-17Pro/5RM/UV21)**: validar a hipótese
+  do boot mode silencioso (descobertas §22) — enviar 0xA5 e SEGUIR a
+  sequência; primeiro teste com CMD_READFLASH (leitura). Base:
+  `mychirp/boot_image.py` (B1). Testar também o sniffing do
+  `Import Picture tools.exe` via wine+socat antes, se possível.
+- [ ] **P3 — D2 com dumps de firmware de nível diferente**: diff entre
+  versões de firmware quando houver dumps de unidades com builds
+  distintos (hoje o D2 já provado entre codeplugs de unidades).
+- [ ] **P4 — Demais unidades que chegarem**: cada rádio novo = 1 dump
+  (2x byte-idêntico) + nota aqui; catálogo genérico pronto (59 drivers
+  Baofeng + todos os demais vendors).
 
 ## 8. Ambiente (Linux/Debian 13)
 
