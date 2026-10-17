@@ -74,14 +74,26 @@ mapeadas em QPalette + QSS por `pysideui/theme.py`.
 
 ## 4. Políticas de segurança vigentes
 
-1. **Gravação de firmware NÃO existe** (impossível pelo protocolo de
-   clone; risco de brick permanente).
-2. **Dupla confirmação obrigatória para upload** (ação destrutiva).
-3. **BOM-5701**: upload permanece bloqueado até autorização explícita.
-4. **Backups automáticos** em `~/.chirp/backups/` antes de gravar.
+1. **Gravação de janela clone (992 B) família h777 — RESTORE AUTORIZADO
+   e validado** em hardware real (2026-10-17, round-trip no-op BF-777S
+   sha `4d8db228`: 124 blocos ACK + re-leitura byte-idêntica). Guias:
+   `Radio > Firmware restore...` (GUI, dupla confirmação modal +
+   backups automáticos .pre/.post em `~/.chirp/fw-backups/`) e
+   `mychirp-fw --restore` (CLI, dupla confirmação no terminal;
+   impossível sem TTY). Restaura só a MESMA unidade via backup
+   sha-assinado. Outras famílias (UV-5R, BOM-5701, RC via própria
+   janela estendida) recusadas com mensagem clara até validação
+   (senão, entrar no fluxo do P1/análogo do BF-777S).
+2. **Firmware de nível binário (flash do MCU) NÃO existe por cabo**:
+   apenas codeplug/EEPROM é endereçável (código do MCU via biopsia de
+   hardware, adiada — ver diário forense).
+3. **Dupla confirmação obrigatória para upload/restore** ( ações
+   destrutivas — marca uma exceção validada acima).
+4. **Backups automáticos** em `~/.chirp/backups/` (codeplug GUI) e
+   `~/.chirp/fw-backups/` (dump/restore fwtool) antes de gravar.
 5. **Versão do sistema (`CHIRP_VERSION`)**: só muda por ordem explícita
-   do mantenedor (Fábio). Nenhuma alteração/commit deve tocar na versão
-   por iniciativa própria.
+   do mantenedor (Fábio). Nenhuma alteração/commit deve tocar na
+   versão por iniciativa própria.
 
 ## 5. Diagnóstico do BOM-5701 (histórico validado em hardware)
 
@@ -311,22 +323,53 @@ sem modo boot, sem tela colorida — boot image não se aplica.
   `docs/dump-format-h777.md`, `docs/dump-format-uv5r.md`
   (UV-17M/115200 fica para o P1).
 
-#### Pendências do mychirp-fw (pós-sessão 2026-10-16)
+#### Pendências do mychirp-fw (pós-sessão 2026-10-17)
 
-Condição da sessão: **apenas 3 unidades em mãos** (BF-777S,
-RC 3002 G2, BOM-5701) — varredura de hardware encerrada por falta de
-rádios. Pendências, em ordem de prioridade:
+Sessões 2026-10-17 (tarde): **3 unidades varridas** (BF-777S,
+RC 3002 G2, BOM-5701 - rádios reconectados na bancada). Feitos:
 
-- [ ] **F1/F2 — Extração de firmware (2026-10-17)**: CPS oficiais
-  baixadas/RE'd (`rethink/cps-flash-status.md`; `tools/cps/` fora do
-  git). **Conclusão verificada**: famílias BF-888S/777S e UV-5R legacy
-  NÃO têm leitura de flash de MCU por serial publicada (CPS oficial =
-  clone de EEPROM; `radio_tool` open-source confirma e valida o layout
-  do dump BOM-5701 = 0x1948 exato). Caminhos publicados de flash
-  existem só para UV-K5, DM-32UV, BF-F8HP PRO, UV-PRO (chips distintos).
-  Firmware binário dessas famílias: via BIN de fonte comunitária
-  (RE estática) ou biopsia de hardware (programmer), fora do escopo
-  da sessão.
+- [x] **Mapa estendido H777 por serial** (`9c8a3562`): RC 3002 G2
+  responde até 0x8000; máscara `0x3FFF` (período 0x4000); zonas reais
+  = codeplug 0x0000-0x07FF + **zona-mirror 0x1000-0x17FF** (cópia
+  byte-a-byte); 8-B único tamanho confiável; `E`→`0x46`; sem boot por
+  serial (0xA5 não acorda). `docs/dump-format-h777.md` §5.
+- [x] **Janela completa 8 KiB BOM-5701** (`d15dc044`): calibração de
+  fábrica 0x1800-0x1900 preservada 1ª vez (curvas TX VHF/UHF); byte
+  `0x1FCE` volátil entre sessões (0x16→0x13), estável em sessão;
+  ident igual ao UV-16 Plus (não único por modelo).
+  `docs/dump-format-uv5r.md` §5.
+- [x] **GUI: `Radio > Firmware dump...`** (read-only): diálogo com
+  vendor/model/porta preenchído do rádio aberto, opção "janela
+  completa" só p/ drivers suportados, job em thread, save
+  `~/.chirp/fw-backups/` + YAML sidecar assinado por sha;
+  `fwtool.dump_full_window` + `RadioService.fw_dump`;
+  `tests/unit/test_pysideui_fw_dump.py`.
+- [x] **W1 — escrita/restore de firmware (BF-777S primeiro)**:
+  round-trip no-op **validado em hardware** (2026-10-17, sha
+  `4d8db228`, 124 blocos ACK + re-leitura byte-idêntica; script
+  `tools/roundtrip_noop.py`). Backend `fwtool.restore_h777_image`
+  (janela 992 B, 3 sessões: dump prévio + escrita com ACK por bloco +
+  re-leitura diff; ABORT em NACK/timeout; backups .pre/.post
+  automáticos sha-assinados). Entregues: CLI `mychirp-fw --restore`
+  (dupla confirmação no terminal; ideal sem TTY cancela) + GUI
+  `Radio > Firmware restore...` (Ctrl+Shift+W; dupla confirmação
+  modal: QMessageBox.question + digitar "GRAVAR"; diff pré/pós no
+  fim). Alcance do cabo = imagem de EEPROM apenas (código do MCU
+  exige biopsia §8.7).
+- [ ] **W2 — restore real (não no-op) em hardware**: gravar o backup
+  sha-assinado da própria unidade (ex.: `4d8db228…`) no BF-777S com
+  dupla confirmação específica do usuário e verificar re-leitura
+  diff=0; depois RC 3002 G2 (mesma família); BOM-5701 famílias
+  UV-5R/aux-first ainda sem escrita validada (não expor).
+- [x] **GUI: `Radio > Firmware restore...`** (escrita): diálogo com
+  vend/model/port preenchidos, picker de .bin (default em
+  `~/.chirp/fw-backups/`) validando tamanho 992 B, apenas família
+  h777 habilitada (recusa de driver fora com explicação), dupla
+  confirmação (modal + palavra "GRAVAR"), verify pós-escrita com
+  diff e paths .pre/.post exibidos. `RadioService.fw_restore` +
+  `fwtool.restore_h777_image` em thread; testes
+  `tests/unit/test_pysideui_fw_restore.py` e
+  `tests/unit/test_fwtool_restore.py`.
 - [ ] **P1 — Família 115200**: dump real do **UV-17M** (imagem
   33,6 KB = codeplug 0x8380 da família UV-17Pro confirmado em
   `radio_tool`; XOR "CO 7" = chave 1 da tabela de 20). Dados de RE em

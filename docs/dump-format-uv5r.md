@@ -113,7 +113,48 @@ default de hardware (VHF 128-176, UHF 384-524).
 - 60+ itens de Work Mode Settings além dos 40 mostrados pelo `--map`
   (truncamento configurável).
 
-## 5. Pontos abertos (RE futura)
+## 5. Janela completa 8 KiB (FULLWINDOW) e calibração de fábrica
+
+> Sessão 2026-10-17: `tools/dump_full_window.py` (commit `d15dc044`) +
+> driver `download_full_window` (sessão anterior: 942 blocos
+> sondados, 810 alias). Dump salvo:
+> `BOMVINK_BOM-5701_FULLWINDOW_8K_20261017-130920.bin`, 8192 B,
+> sha256 `7a3deee6d300ae3e…`.
+
+- **Alcance físico do cabo**: `0x0000-0x1FFF` (8 KiB), espelhado 8× no
+  espaço de 16 bits; acima disso não responde. **Código de firmware
+  NÃO endereçável por cabo** — igual à família H777.
+- **Ordem da sessão**: warm-up (`0x1E80`) → gap de calibração
+  (`0x1800-0x1E80`) → aux (`0x1E80-0x2000`) → main (0x0000-0x1800, por
+  último — **fecha a sessão**; qualquer pedido depois é ignorado
+  até religar o rádio).
+- **Calibração de fábrica** (individual por unidade — nunca clonar
+  entre rádios), primeira preservação desta unidade:
+  - Curvas TX VHF: `0x1810 e3 e4 e2 e3 ea ea e4 e3 e9` ;
+    `0x1830 b0 a6 a0 99 94 94 99 9c 9e` ; `0x1840 5a 5d 5d 59 56 53
+    52 50 50` (padrão descendente de potência)
+  - Cabeçalho de banda repetido: `0x1860` = `0x18C0` =
+    `00 00 00 00 00 00 00 64 a0 0f c0 12 00 00 00 00`
+  - Curvas TX UHF: `0x1870 e9 e0 de dc de de de dd df` ;
+    `0x1890 74 7c 8c 83 7f 78 6e 74 79` ; `0x18A0 4f 51 56 58 5b 5f
+    61 61 61` (padding `40`/`20`)
+  - Área com conteúdo: `0x1800-0x1900`; `0x1900-0x1E80` = `FF`.
+
+### 5.1 Byte volátil `0x1FCE` (adjacente ao dropped-byte 0x1FCF)
+
+- Mesma sessão: **estável** (3/3 leituras idênticas, `0x13`).
+- Entre sessões: mudou (`0x16` → `0x13`) ⇒ byte
+  **volátil/computado** (suspeita: métrica de runtime — contador de
+  uso/energia). Não é dropped-byte (sem shift). Impacto no clone: nulo
+  (main byte-idêntico; driver valida `0x1FCF` apenas).
+
+### 5.2 Ident não é único por modelo
+
+- Ident do BOM-5701: `aa 30 76 04 00 05 20 dd` — **igual** ao
+  fingerprint do Baofeng UV-16 Plus (PLAN §5b). Não usar ident 8-B
+  sozinho como chave de identificação.
+
+## 6. Pontos abertos (RE futura)
 
 1. Semântica de `scode`/`pttid` quando os blocos `0x0B08`/`0x0C88`
    estão `FF` (PTT-ID sempre ausente? Reset apaga?).

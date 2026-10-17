@@ -129,14 +129,129 @@ Canais RC (resumo): CH01 `462.5625`, CH02-15 `462.575-462.7125`
 (passo irregular ~10,6 kHz), CH14-16 sobre `467.5625-467.5875`,
 DTCS 023 predominante.
 
-## 5. Pontos abertos (RE futura)
+## 5. Mapa estendido por serial (sessão 2026-10-17, RC 3002 G2)
+
+> Fonte: `tools/probe_serial_fw.py` + `tools/dump_full_map.py`
+> (commit `9c8a3562`), dump validado cross-check com o clone oficial.
+
+### 5.1 O que o cabo expõe além do clone
+
+- **Mapa endereçável**: responde até **0x8000** (32 KB solicitados);
+  dump completo `Intelbras_RC_3002_G2_MAPFULL_8B.bin`, 32 768 B,
+  0 endereços ruins, 111 s (só blocos de 8 B).
+- **Máscara de endereço = `0x3FFF`**: o conteúdo **repete** com período
+  `0x4000` — endereços ≥0x4000 são alias do primeiro bloco de 16 KB;
+  endereços ≥0x8000 respondem `FF` (fora do decode do handler).
+- **Zonas reais** (dentro dos 16 KB):
+  | Faixa | Conteúdo |
+  |---|---|
+  | `0x0000-0x07FF` | codeplug + calibração + settings (o clone 992 B) |
+  | `0x0800-0x0FFF` | zeros |
+  | `0x1000-0x17FF` | **cópia byte-a-byte da zona 0x0000-0x07FF** — zona-mirror REAL de fábrica (design dual-zone de recuperação; não é alias: 0x2000+ = zeros) |
+  | `0x1800-0x3FFF` | zeros (10 KB livres) |
+
+### 5.2 Regras do protocolo (validated em hardware)
+
+- **Leitura**: só blocos de **8 B são confiáveis**. Tamanhos `0x40/80/C0`
+  são aceitos (echo correto) mas **dados corrompidos** — handler só
+  refresca as páginas de 8 B; `0xFF` falha.
+- **Saindo de comandos**: `E` responde `0x46` ('F'); demais comandos
+  desconhecidos (`V?IF`, 0xA5) = timeout. **Não há modo boot via
+  serial** nesta família (0xA5 não acorda nada).
+- **Ident não distingue marcas**: BF-777S e RC 3002 G2 = mesmo
+  `P3107` (`50 33 31 30 37 f7 00 00`).
+- **Firmware e vozes NÃO estão no espaço serial** — a voz PT do RC é
+  propriedade do flash interno do MCU (manual Intelbras: "anúncios em
+  português"; manual BF-888S: CHI/ENG apenas). Extração: cirurgia de
+  hardware (§ do diário, adiada a pedido do usuário).
+- **Valor de resgate**: a zona-mirror `0x1000-0x17FF` é um backup
+  natural do codeplug; o dump 8-B é o registro fiel para restore.
+
+## 6. Protocolo de escrita (restore) — validado em hardware W1
+
+> Fonte: `tools/roundtrip_noop.py` — round-trip no-op no BF-777S real
+> (2026-10-17, unidade sha `4d8db228…`) e no RC 3002 G2. Backend:
+> `mychirp/fwtool.py` (`restore_h777_image`) · CLI `mychirp-fw
+> --restore` · GUI `Radio > Firmware restore...` (Ctrl+Shift+W).
+
+### 6.1 Frame de gravação
+
+```c
+struct write_frame {       // 12 bytes TX (4 header + 8 data)
+    uint8_t  cmd;          // 'W' (0x57)
+    uint16_t addr;         // BE; janela clone 0x0000-0x03D8
+    uint8_t  count;        // sempre 8
+    uint8_t  data[8];      // bytes a gravar
+};
+// RX do rádio: 1 byte apenas — 0x06 (ACK) em até ~0,31 s.
+// NÃO há eco de endereço (diferente da leitura, que ecoa 'W'+addr+count).
+```
+
+- **Janela clone = 992 B (0x03E0)**: 124 blocos de 8 B, offsets
+  `0x0000 … 0x03D8`. A imagem do clone (download padrão) escreve
+  **1:1 na memória** (sem prefixo de ident, ao contrário do UV-5R).
+- **Sessão única viva**: igual ao download, gravar exige entrar
+  (0x02 + `PROGRAM` → 0x06) e já sair gravando. **Pré-leitura de
+  992 B na MESMA sessão causa NACK no 1º bloco** (comportamento
+  observado em hardware; causa-raiz da 1ª falha de escrita às 14:00
+  do diário). O dump/verify pré e pós são sessões SEPARADAS.
+- **Fechamento**: 'E' → 0x46 ('F'), igual à leitura.
+- **Aborto no meio**: rádio fica num estado que exige religar
+  fisicamente (observado; não há forma de recuperação conhecida via
+  cabo — trate como regra de operação: aborto = religar o rádio).
+
+### 6.2 Rails de segurança do restore (`fwtool.restore_h777_image`)
+
+1. **Imagem deve ter exatamente 992 B** — erro claro caso contrário.
+2. **Sessão 1 (read-only)**: entra, lê os 992 B, salva
+   `<driver>_RESTORE_<data>_pre_<sha8>.bin` (e .yaml sidecar) em
+   `~/.chirp/fw-backups/` antes de qualquer escrita.
+3. **Sessão 2 (write)**: entra e grava; **cada bloco AGUARDA o ACK
+   0x06**. Qualquer NACK/timeout → ABORTA imediatamente (resto dos
+   blocos NÃO é enviado); reporta `aborted=<endereço>`.
+4. **Sessão 3 (verify)**: re-entra, re-lê 992 B, salva
+   `_post_<sha8>.bin`, calcula diff por byte. Com gravação completa:
+   `diffs=[]` esperado se a imagem = conteúdo da unidade (no-op) ou
+   se a gravação foi fiável; com aborto: `diffs=None` (sem diff
+   confiável).
+5. **Dupla confirmação humana**: GUI em 2 modais (QMessageBox.question
+   + input da palavra exata "GRAVAR"); CLI em 2 fases de stdin
+   (sim/NÃO + digitar GRAVAR — impossível sem TTY interativo).
+6. **Família restrita**: só drivers com `PROGRAM_CMD == b"PROGRAM"` —
+   família h777 (BF-777S, RC 3002 G2, BF-888S). GUI e CLI recusam os
+   demais com mensagem explícita.
+
+### 6.3 Dicionário reportado por restore (RestoreReport)
+
+```python
+{
+  "ok": bool            # True somente com gravação completa e diffs=[]
+  "aborted": addr|None  # endereço do primeiro NACK/timeout (se any)
+  "sha_old": hex        # sha256 do dump prévio (sessão 1)
+  "sha_new": hex        # sha256 da re-leitura pós-escrita (sessão 3)
+  "diffs": [offsets]    # bytes divergentes pós-escrita (None se abort)
+  "pre_path": path      # backup prévio .bin (e .yaml lado a lado)
+  "post_path": path     # re-leitura pós-escrita .bin (e .yaml)
+}
+```
+
+## 7. Pontos abertos (RE futura)
 
 1. `unknown4[3]` de cada canal e os 3 bits superiores de `flags`.
 2. Curvas de calibração em `0x0200-0x02FF`/`0x0300-0x032F` — mapear
    unidades (RSSI? tensão de bateria? pontos de squelch).
 3. Blocos com marcador `0x55` de stride 17 B (exatamente um por bloco
    de preenchimento) — cadência constante em RC, ausente em BF.
-4. Area `0x0000-0x0010` não lida pelo driver (ident no protocolo).
+4. Área `0x0000-0x0010` não lida pelo driver (ident no protocolo).
 5. Bytes `0x0300-0x031E` incluem valor `0x0305: E0→2D`, e texto ASCII
    detectável em `0x030E-0x0315` (`"2/…"` dígito-dígito) — pode ser
    serial/calibração gravada.
+6. **Escrita fora da janela clone**: em RC (§5) o handler serial lê
+   até 0x8000 — falta testar se o frame `W` aceita endereços além de
+   0x03D8 (janela clone), para o restore do mapa estendido (as
+   zonas-mirror e a área livre podem ser graváveis → mais resgate
+   útil).
+7. **Perfis de escrita BC vs brand**: BF e RC divergem só em 1 byte
+   (fmradio @0x02B9) no estado não-programado — mapear se a unidade
+   responde diferente ao frame `W` por marca (perfil forense por
+   unidade).
