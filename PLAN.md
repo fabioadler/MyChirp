@@ -299,6 +299,11 @@ sem modo boot, sem tela colorida — boot image não se aplica.
   Também **BOMVINK BOM-5701** (3ª família de protocolo, UV-5R schema
   com quirk aux-primeiro): 2 dumps byte-idênticos (sha256 `6efa912e…`,
   6472 B @9600, ~20 s entre sessões respeitado).
+
+  **Modelos em mãos no momento**: esses 3 apenas — varredura HW
+  encerrada por falta de unidades. Pendente de teste com hardware:
+  família a 115200 (UV-17M, imagem 33,6 KB, XOR "CO 7" — dados de RE
+  no rethink/) e demais famílias do catálogo (59 Baofeng).
 - [ ] **D2** — Comparação de dumps entre versões de firmware (diff byte-level). _(implementado: `mychirp-fw --diff a.bin b.bin`)_
 - [ ] **D3** — Extração de firmware de fábrica para backup antes de customização. _(implementado: `--backup` + YAML sidecar; falta validar em HW)_
 
