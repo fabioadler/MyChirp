@@ -294,13 +294,22 @@ sem modo boot, sem tela colorida — boot image não se aplica.
   `P3107 f7 00 00`; diff entre dumps = 0 faixas. Também
   **Intelbras RC 3002 G2** (outro driver da família H777, 0 linhas
   novas): 2 dumps byte-idênticos (sha256 `1fa31046…`); prova de D2:
-  BF-777S × RC3002G2 = 83 faixas diferentes, todas no codeplug de
-  canais (0x0010-0x0110) — conteúdo de unidades distintas.
+  BF-777S × RC3002G2 = 83 faixas diferentes atribuídas campo a campo
+  (16/16 canais com programação de fábrica distinta; settings
+  idênticos; curvas de calibração/blocos `0x55` fora das structs —
+  ver `docs/dump-format-h777.md`).
   Também **BOMVINK BOM-5701** (3ª família de protocolo, UV-5R schema
   com quirk aux-primeiro): 2 dumps byte-idênticos (sha256 `6efa912e…`,
   6472 B @9600, ~20 s entre sessões respeitado).
 - [ ] **D2** — Comparação de dumps entre versões de firmware (diff byte-level). _(implementado: `mychirp-fw --diff a.bin b.bin`)_
 - [ ] **D3** — Extração de firmware de fábrica para backup antes de customização. _(implementado: `--backup` + YAML sidecar; falta validar em HW)_
+- [x] **D4 — RE dos dumps (`--map` + docs de formato)** — `mychirp-fw
+  --map <dump.bin>`: análise semântica (canais usados, settings por
+  grupo e regiões reais classificadas mapeadas × não-mapeadas), driver
+  resolvido pelo YAML sidecar. Formatos das 3 famílias de protocolo
+  documentados com structs "limpas" e valores de fábrica:
+  `docs/dump-format-h777.md`, `docs/dump-format-uv5r.md`
+  (UV-17M/115200 fica para o P1).
 
 #### Pendências do mychirp-fw (pós-sessão 2026-10-16)
 

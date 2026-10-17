@@ -75,11 +75,18 @@ venv/bin/mychirp-fw --serial=/dev/ttyUSB0 \
     --radio=BAOFENG_BF-777S                            # dump .bin + .yaml
 venv/bin/mychirp-fw --serial=COM3 --radio=BAOFENG_UV-5R --backup
 venv/bin/mychirp-fw --diff antigo.bin novo.bin         # diff byte-level
+venv/bin/mychirp-fw --map dump.bin                     # análise semântica
 ```
 
 - `--backup` salva também em `~/.chirp/fw-backups/` (nome assinado pelo
   sha256), junto do YAML de metadados (modelo, porta, baud, data, hash).
 - O `--diff` compara dois dumps byte a byte (resumo por faixa).
+- O `--map` dá o resumo semântico de um dump (driver resolvido pelo
+  YAML sidecar ou `--radio`): canais usados, settings por grupo e
+  regiões com dados reais — destacando as que ficam FORA das structs
+  do driver (candidatas a engenharia reversa).
+- Formatos documentados: [família H777](docs/dump-format-h777.md) e
+  [família UV-5R](docs/dump-format-uv5r.md).
 
 ## Notas do BOM-5701
 
