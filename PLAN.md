@@ -289,7 +289,9 @@ sem modo boot, sem tela colorida — boot image não se aplica.
   (sha256/porta/baud) e `~/.chirp/fw-backups/` com `--backup`. Read-only
   (nunca grava no rádio). D1a/D1b validados com rádio simulado H777
   (BF-777S) — testes em `tests/unit/test_fw_cli.py`.
-  **Teste de hardware pendente (CHECK: avisar mantenedor antes).**
+  **Validado em hardware real (2026-10-16)**: BF-777S @/dev/ttyUSB0,
+  2 dumps byte-idênticos (sha256 `4d8db228…`, 992 B @9600), ident
+  `P3107 f7 00 00`; diff entre dumps = 0 faixas.
 - [ ] **D2** — Comparação de dumps entre versões de firmware (diff byte-level). _(implementado: `mychirp-fw --diff a.bin b.bin`)_
 - [ ] **D3** — Extração de firmware de fábrica para backup antes de customização. _(implementado: `--backup` + YAML sidecar; falta validar em HW)_
 
