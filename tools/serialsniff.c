@@ -131,9 +131,14 @@ void hexdump(char *buf, int len, FILE *dest)
 	}
 }
 
-int saferead(int fd, char *buf, int len)
+/* handler vazio: só para quebrar o read() com EINTR (ver main/saferead) */
+static void noop_handler(int sig)
 {
-	struct itimerval val;
+	(void)sig;
+}
+
+int saferead(int fd, char *buf, int len)
+{	struct itimerval val;
 	int ret;
 	int count = 0;
 
@@ -426,7 +431,12 @@ int main(int argc, char **argv)
 	}
 
 	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = SIG_IGN;
+	/* handler vazio (não SIG_IGN): o setitimer/saferead precisa que o
+	 * SIGALRM interrompa o read() com EINTR para detectar silêncio de
+	 * 50 ms. SIG_IGN impede a entrega e o read() fica preso esperando
+	 * completar o buffer inteiro (4096 B) — trava o proxy após o 1º
+	 * frame de genérico ESTE (descoberto no teste sintético pty). */
+	sa.sa_handler = noop_handler;
 	sigaction(SIGALRM, &sa, NULL);
 
 	if ((pathA.fd < 0) || (pathB.fd < 0)) {
