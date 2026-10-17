@@ -21,6 +21,7 @@ setup(name='mychirp',
           'console_scripts': [
               "mychirp=mychirp.pysideui:run",
               "mychirpc=mychirp.cli.main:main",
+              "mychirp-fw=mychirp.cli.fw:main",
               "experttune=mychirp.cli.experttune:main",
           ],
       },
