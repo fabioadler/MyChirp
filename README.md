@@ -63,6 +63,24 @@ venv/bin/mychirpc --serial=/dev/ttyUSB0 --radio=BOMVINK_BOM-5701 \
     --upload-mmap --mmap=backup.img       # gravar (protocolo validado)
 ```
 
+## Dump de memória (mychirp-fw)
+
+Ferramenta read-only: baixa a **imagem completa de memória** de
+qualquer rádio do catálogo (a partir de um driver de clone — os 59
+Baofeng incluídos), sem nunca gravar nada no rádio:
+
+```bash
+venv/bin/mychirp-fw --list-radios --vendor=baofeng     # catálogo
+venv/bin/mychirp-fw --serial=/dev/ttyUSB0 \
+    --radio=BAOFENG_BF-777S                            # dump .bin + .yaml
+venv/bin/mychirp-fw --serial=COM3 --radio=BAOFENG_UV-5R --backup
+venv/bin/mychirp-fw --diff antigo.bin novo.bin         # diff byte-level
+```
+
+- `--backup` salva também em `~/.chirp/fw-backups/` (nome assinado pelo
+  sha256), junto do YAML de metadados (modelo, porta, baud, data, hash).
+- O `--diff` compara dois dumps byte a byte (resumo por faixa).
+
 ## Notas do BOM-5701
 
 - Aguarde **~20 s entre sessões** de clonagem (o rádio reinicia após
