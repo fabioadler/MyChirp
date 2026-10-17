@@ -291,7 +291,11 @@ sem modo boot, sem tela colorida — boot image não se aplica.
   (BF-777S) — testes em `tests/unit/test_fw_cli.py`.
   **Validado em hardware real (2026-10-16)**: BF-777S @/dev/ttyUSB0,
   2 dumps byte-idênticos (sha256 `4d8db228…`, 992 B @9600), ident
-  `P3107 f7 00 00`; diff entre dumps = 0 faixas.
+  `P3107 f7 00 00`; diff entre dumps = 0 faixas. Também
+  **Intelbras RC 3002 G2** (outro driver da família H777, 0 linhas
+  novas): 2 dumps byte-idênticos (sha256 `1fa31046…`); prova de D2:
+  BF-777S × RC3002G2 = 83 faixas diferentes, todas no codeplug de
+  canais (0x0010-0x0110) — conteúdo de unidades distintas.
 - [ ] **D2** — Comparação de dumps entre versões de firmware (diff byte-level). _(implementado: `mychirp-fw --diff a.bin b.bin`)_
 - [ ] **D3** — Extração de firmware de fábrica para backup antes de customização. _(implementado: `--backup` + YAML sidecar; falta validar em HW)_
 
