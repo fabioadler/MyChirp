@@ -140,6 +140,51 @@ class RadioService(QObject):
         except Exception:
             LOG.exception("Failed delivering radio job result")
 
+    # ----- firmware dump (read-only) -----
+    def fw_dump(self, rclass, port, full_window=False, on_done=None,
+                on_progress=None):
+        """Read-only firmware dump via fwtool (clone or full window).
+
+        Runs on the worker thread like download/upload; the result is
+        (bin_path, yaml_path) of the saved .bin + YAML sidecar inside
+        ~/.chirp/fw-backups/ (mdilename signed by sha256). No write
+        command ever reaches the radio.
+        """
+        def _dump():
+            from mychirp import fwtool
+            import os as _os
+            radio_id = directory.get_driver(rclass)
+            if full_window:
+                bin_path = fwtool.dump_full_window(
+                    radio_id, port, backup=True)
+            else:
+                bin_path = fwtool.dump_clone(radio_id, port, backup=True)
+            yaml_path = _os.path.splitext(bin_path)[0] + ".yaml"
+            return bin_path, yaml_path
+
+        job = RadioJob(_dump)
+        self._run_async(job, on_done, progress_cb=on_progress)
+
+    def fw_restore(self, rclass, port, image_path, on_done=None,
+                   on_progress=None):
+        """Read-then-write firmware restore on the worker thread.
+
+        ONLY for drivers whose clone protocol is the validated h777
+        window (PROGRAM handshake, 992 B). Calls
+        fwtool.restore_h777_image (fresh pre-dump, block-by-block ACK,
+        abort on NACK, post re-read + diff, automatic backups). The
+        result is the RestoreReport dict.
+        """
+        def _restore():
+            import os as _os
+            from mychirp import fwtool
+            image = open(image_path, "rb").read()
+            return fwtool.restore_h777_image(
+                directory.get_driver(rclass), port, image)
+
+        job = RadioJob(_restore)
+        self._run_async(job, on_done, progress_cb=on_progress)
+
     # ----- operations -----
     def open_file(self, filename, on_done):
         def _open():

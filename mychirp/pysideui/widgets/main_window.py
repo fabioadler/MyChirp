@@ -408,6 +408,22 @@ class MainWindow(QMainWindow):
         self.action_upload.triggered.connect(self.upload_to_radio)
         radio_menu.addAction(self.action_upload)
 
+        self.action_fw_dump = QAction(_("Firmware dump..."), self)
+        self.action_fw_dump.setShortcut("Ctrl+Shift+D")
+        self.action_fw_dump.setToolTip(
+            _("Read-only raw dump of the radio memory (clone image or "
+              "full window), saved to ~/.chirp/fw-backups/"))
+        self.action_fw_dump.triggered.connect(self.firmware_dump)
+        radio_menu.addAction(self.action_fw_dump)
+        self.action_fw_restore = QAction(_("Firmware restore..."), self)
+        self.action_fw_restore.setShortcut("Ctrl+Shift+W")
+        self.action_fw_restore.setToolTip(
+            _("WRITE a cloned image window back to the radio "
+              "(validated h777 family; double confirmation + automatic "
+              "pre/post backups)"))
+        self.action_fw_restore.triggered.connect(self.firmware_restore)
+        radio_menu.addAction(self.action_fw_restore)
+
         radio_menu.addSeparator()
 
         self.action_network_source = QAction(_("Network source..."), self)
@@ -970,6 +986,16 @@ class MainWindow(QMainWindow):
     def open_network_source(self):
         dlg = NetworkSourceDialog(self, self.state)
         dlg.exec()
+
+    def firmware_dump(self):
+        eset = self.current_editorset
+        from mychirp.pysideui.dialogs.fw_dump import FirmwareDumpDialog
+        FirmwareDumpDialog(self, self.state, eset=eset).exec()
+
+    def firmware_restore(self):
+        eset = self.current_editorset
+        from mychirp.pysideui.dialogs.fw_restore import FirmwareRestoreDialog
+        FirmwareRestoreDialog(self, self.state, eset=eset).exec()
 
     # ----- band plan -----
     def _bandplan_registry(self):
