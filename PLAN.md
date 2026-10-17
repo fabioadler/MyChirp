@@ -365,9 +365,10 @@ RC 3002 G2, BOM-5701 - rádios reconectados na bancada). Feitos:
   Sidecars `.pre_…`/`.post_…` salvos em `~/.chirp/fw-backups/`.
   **W2-B validado em sequência na 2ª unidade da família**: RC
   3002 G2 (`1fa31046…`, 18:54, mesmo protocolo, diffs=[]).
-  **Pendência sequencial**: mais unidades da família h777 robôteicas
-  conforme chegarem; BOM-5701/UV-5R famílias ainda SEM escrita
-  validada (não expor).
+  **Pendência sequencial**: mais unidades da família h777 conforme
+  chegarem (dupla confirmação por unidade). Família BOM-5701/UV-5R:
+  escrita implementada no fwtool (W3 abaixo), validação em
+  hardware pendente (W4).
 - [x] **GUI: `Radio > Firmware restore...`** (escrita): diálogo com
   vend/model/port preenchidos, picker de .bin (default em
   `~/.chirp/fw-backups/`) validando tamanho 992 B, apenas família
@@ -377,6 +378,27 @@ RC 3002 G2, BOM-5701 - rádios reconectados na bancada). Feitos:
   `fwtool.restore_h777_image` em thread; testes
   `tests/unit/test_pysideui_fw_restore.py` e
   `tests/unit/test_fwtool_restore.py`.
+- [x] **W3 — escrita/restore família UV-5R-aux-first (BOM-5701):
+  backend + CLI/GUI** (`3bf4596a`, `b342bcd4`):
+  `fwtool.restore_bom5701_image` — 3 sessões: pre-dump read-only
+  (sha_old + `.pre`) → gravação pela maquinaria do PRÓPRIO driver
+  (`sync_out`: ident + frame `X` 16 B com `_send_block_retry`,
+  ordem AUX→MAIN = 402 blocos ACK: 20 aux + 382 main) → re-download
+  de verify (sha_new + `.post` + diff). Gaps de proteção do UV-5R
+  (image `0x0CF8-0x0D08`/`0x0DF8-0x0E08`) NÃO graváveis: excluídos
+  do diff e reportados como `preserve_diffs`; aborto por NACK
+  persistente reporta o wire addr do bloco recusado. Dispatcher
+  `fwtool.restore_image` por família (h777 × aux-first × recusa
+  clara); CLI `--restore` e diálogo GUI com gate/tamanho por
+  família e nota de faixas preservadas. Docs:
+  `docs/dump-format-uv5r.md` §6. Testes fake-serial (6, com modelo
+  de memória compartilhado entre as sessões) + 2 GUI + 2 CLI.
+- [ ] **W4 — W3 validado em hardware**: round-trip no-op na
+  unidade BOM-5701 (restaurar o dump próprio `bccd9a99…`, 402
+  blocos, sha_old == sha_new, diffs=[]) com dupla confirmação
+  própria dessa unidade; depois restore real (imagem de conteúdo
+  distinto) na mesma unidade. Rails: pré-dump idêntico 2× antes de
+  qualquer escrita.
 - [ ] **P1 — Família 115200**: dump real do **UV-17M** (imagem
   33,6 KB = codeplug 0x8380 da família UV-17Pro confirmado em
   `radio_tool`; XOR "CO 7" = chave 1 da tabela de 20). Dados de RE em

@@ -5,6 +5,9 @@
 > Dados validados em hardware real: 2 dumps byte-idênticos
 > (_sessão 2026-10-16_, sha256 `6efa912e…`, 6472 B @9600, ~20 s de
 > pausa entre sessões de clone — o rádio reinicia).
+> Referência atual da unidade (2026-10-17 19:01): sha256 `bccd9a99…`
+> (mudou após o upload de 16/10 — esperado; 2 dumps byte-idênticos
+> na sessão).
 > Ferramenta: `mychirp-fw --map <dump.bin>`.
 
 ## 1. Layout da imagem (6472 B)
@@ -154,7 +157,53 @@ default de hardware (VHF 128-176, UHF 384-524).
   fingerprint do Baofeng UV-16 Plus (PLAN §5b). Não usar ident 8-B
   sozinho como chave de identificação.
 
-## 6. Pontos abertos (RE futura)
+## 6. Protocolo de escrita aux-first (restore — backend `fwtool`)
+
+> Backend: `fwtool.restore_bom5701_image` + dispatcher
+> `fwtool.restore_image` (commit `3bf4596a`). A maquinaria de escrita
+> é **a do próprio driver** `uv5r.py` (`sync_out` → `_do_upload`,
+> ramo `_aux_first`), validada em hardware em 2026-10-10/11 (round
+> trip do driver, issue #12332). CLI/GUI: `mychirp-fw --restore` e
+> diálogo `Firmware restore...` (commit `b342bcd4`).
+
+DIFERE da família h777 em tudo e **não reusa o mesmo backend**:
+
+- **Imagem**: 0x1948 B — ident de handshake 8 B + main 0x1800 + aux
+  0x140 (`UV5R_AUX_FIRST_IMAGE_END`).
+- **Remap de endereço**: frame `X` `>BHB` com bloco de **16 B**;
+  main: wire = image − 8 (image[8..0x1808] → wire 0x0000-0x1800);
+  aux: image[0x1808..0x1948] → wire 0x1EC0-0x2000.
+- **Ordem**: AUX primeiro (20× 16 B), depois MAIN (382× 16 B) — o
+  rádio fecha a sessão quando a main termina, igual ao download.
+- **Retry**: o rádio NACKa o bloco emitido logo após um aceito
+  (janela de commit da EEPROM) — `_send_block_retry` tenta 6× a
+  cada 0,15 s; esgotadas as tentativas → aborto com o wire addr do
+  bloco recusado reportado. Aborto exige religar o rádio.
+- **Gaps de proteção** (`UV5R_UPLOAD_SKIP_IMAGE_OFFSETS`): o driver
+  NÃO grava os chunks em image `0x0CF8-0x0D08` e `0x0DF8-0x0E08`
+  (faixas de proteção herdadas do UV-5R; wire `0x0CF0-0x0D00` /
+  `0x0DF0-0x0E00`). O conteúdo dessas faixas permanece o da
+  unidade; o verify do restore os **exclui do diff** e informa
+  divergências lá como `preserve_diffs` (não falha o restore).
+  Restaurar imagem de UNIDADE DIFERENTE tem esse custo documentado.
+- **Ident não é gravável**: os 8 B iniciais da imagem são o ident
+  do handshake (protocolo, não EEPROM); o verify compara a partir
+  do offset 8.
+- **Sessões (3 estágios)**: 1ª pré_dump read-only (sha_old +
+  backup `.pre`); 2ª escrita pela maquinaria do driver (ident +
+  aux-first + retry — cada bloco exige ACK); 3ª re-download de
+  verify (sha_new + `.post` + diff byte a byte). Cooldown ~2 s
+  entre sessões (o rádio reinicia; quirk da família).
+
+### 6.1 Relatório (RestoreReport)
+
+`{ok, aborted, aborted_addr, sha_old, sha_new, diffs, preserve_diffs,
+pre_path, post_path}` — `ok` exige gravação completa (não
+abortada) e diffs == []; diffs são contados a partir do offset 8 e
+excluindo as faixas preserve. CLI imprime nota de faixas
+preservadas; GUI idem no relatório final.
+
+## 7. Pontos abertos (RE futura)
 
 1. Semântica de `scode`/`pttid` quando os blocos `0x0B08`/`0x0C88`
    estão `FF` (PTT-ID sempre ausente? Reset apaga?).
