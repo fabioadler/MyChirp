@@ -50,3 +50,4 @@ result/
 .nvim.lua
 .DS_Store
 rethink/
+tools/cps/
