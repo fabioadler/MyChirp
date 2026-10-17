@@ -408,7 +408,11 @@ def restore_h777_image(radio_id, port, image, backup=True):
 # ---------------------------------------------------------------------------
 
 UV5R_AUX_FIRST_IMAGE_END = 0x1948  # ident 8 + main 0x1800 + aux 0x140
-UV5R_AUX_FIRST_COOLDOWN = 2.0  # s entre sessões (quirk do rádio)
+UV5R_AUX_FIRST_COOLDOWN = 8.0  # s entre sessões (o rádio reinicia e
+# demora a ficar pronto: 2 s NÃO bastam — falha W4 1ª rodada, nenhuma
+# gravação ocorreu porque a sessão de escrita nem entrou em PROGRAM)
+UV5R_AUX_FIRST_WRITE_RETRIES = 1  # retries da sessão de escrita após
+# ident/NACK fatal; re-gravar os mesmos blocos é idempotente
 
 # Faixas da IMAGEM que o upload do driver NÃO grava (gaps clássicos de
 # proteção do UV-5R: _ranges_main_default pula i = 0x0CF8-0x0D08 e
@@ -454,33 +458,40 @@ def _uv5r_auxfirst_write(rclass, port, image):
     16 B: a faixa wire completa tem 384 blocos, mas o driver pula os
     chunks dos gaps de proteção do UV-5R nas offsets de imagem
     0x0CF8 e 0x0DF8), com retry de 6× 0,15 s por bloco (janela de
-    commit). Retorna (aborted, addr) — aborted=False em sucesso;
-    addr do bloco recusado em falha (após 6 tentativas).
+    commit). Em ident/NACK fatal do rádio, repete a sessão inteira
+    até UV5R_AUX_FIRST_WRITE_RETRIES vezes (com cooldown entre
+    tentativas — re-gravar os mesmos blocos é idempotente).
+    Retorna (aborted, addr): aborted False em sucesso; True se as
+    tentativas se esgotaram; addr do bloco recusado (ou None quando
+    a falha é de ident — o rádio nem entra em programação).
     """
     import re
     from mychirp import memmap
     from mychirp.serial_link import open_serial
 
-    pipe = open_serial(port, rclass)
-    radio = None
     aborted, ab_addr = False, None
-    try:
-        radio = rclass(memmap.MemoryMapBytes(bytes(image)))
-        radio.process_mmap()
-        radio.pipe = pipe
+    for attempt in range(UV5R_AUX_FIRST_WRITE_RETRIES + 1):
+        pipe = open_serial(port, rclass)
+        radio = None
         try:
-            radio.sync_out()
-        except Exception as e:
-            aborted = True
-            m = re.search(r"0x[0-9A-Fa-f]{3,4}", str(e))
-            if m:
-                ab_addr = int(m.group(0), 16)
-    finally:
-        radio.pipe = None
-        try:
-            pipe.close()
-        except Exception:
-            pass
+            radio = rclass(memmap.MemoryMapBytes(bytes(image)))
+            radio.process_mmap()
+            radio.pipe = pipe
+            try:
+                radio.sync_out()
+                return False, None
+            except Exception as e:
+                aborted = True
+                m = re.search(r"0x[0-9A-Fa-f]{3,4}", str(e))
+                ab_addr = int(m.group(0), 16) if m else None
+        finally:
+            radio.pipe = None
+            try:
+                pipe.close()
+            except Exception:
+                pass
+        if attempt < UV5R_AUX_FIRST_WRITE_RETRIES:
+            time.sleep(UV5R_AUX_FIRST_COOLDOWN)
     return aborted, ab_addr
 
 
@@ -510,6 +521,7 @@ def restore_bom5701_image(radio_id, port, image, backup=True):
     pre = _uv5r_auxfirst_dump(rclass, port)
     sha_old = sha256_hex(pre)
     log("dump prévio: sha256=%s" % sha_old[:16])
+    time.sleep(UV5R_AUX_FIRST_COOLDOWN)
 
     # 2) gravação pela maquinaria do driver
     aborted, ab_addr = _uv5r_auxfirst_write(rclass, port, image)
