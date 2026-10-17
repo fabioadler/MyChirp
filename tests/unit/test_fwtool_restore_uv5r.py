@@ -180,6 +180,13 @@ def patch_open_serial(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _isolated_backups(monkeypatch, tmp_path):
+    """Sem poluição do ~/.chirp/fw-backups/ real: backups gerados
+    pelos testes vão para tmp_path."""
+    monkeypatch.setattr(fwtool, "fw_backup_dir", lambda: str(tmp_path))
+
+
+@pytest.fixture(autouse=True)
 def _no_sleep(monkeypatch):
     # cooldown do fwtool + sleeps do driver ficam nulos no teste
     monkeypatch.setattr("mychirp.fwtool.time.sleep", lambda s: None)

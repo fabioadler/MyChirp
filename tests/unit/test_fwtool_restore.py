@@ -117,6 +117,13 @@ def fake_serial_factory(fail_write_at=None, initial=None):
     return _Factory(), fake
 
 
+@pytest.fixture(autouse=True)
+def _isolated_backups(monkeypatch, tmp_path):
+    """Sem poluição do ~/.chirp/fw-backups/ real: backups gerados
+    pelos testes vão para tmp_path."""
+    monkeypatch.setattr(fwtool, "fw_backup_dir", lambda: str(tmp_path))
+
+
 @pytest.fixture
 def patch_open_serial(monkeypatch):
     def _install(fail_write_at=None, initial=None):
