@@ -356,11 +356,16 @@ RC 3002 G2, BOM-5701 - rádios reconectados na bancada). Feitos:
   modal: QMessageBox.question + digitar "GRAVAR"; diff pré/pós no
   fim). Alcance do cabo = imagem de EEPROM apenas (código do MCU
   exige biopsia §8.7).
-- [ ] **W2 — restore real (não no-op) em hardware**: gravar o backup
-  sha-assinado da própria unidade (ex.: `4d8db228…`) no BF-777S com
-  dupla confirmação específica do usuário e verificar re-leitura
-  diff=0; depois RC 3002 G2 (mesma família); BOM-5701 famílias
-  UV-5R/aux-first ainda sem escrita validada (não expor).
+- [x] **W2 — restore real (não no-op) em hardware** (18:49): backup
+  da própria unidade `4d8db228…` restaurado na MESMA unidade com
+  dupla confirmação pela frente ("Tente restaurar agora" +
+  "Pode gravar") — `fwtool.restore_h777_image` end-to-end: sha_old
+  == sha_new == `4d8db228…`, diffs == [] (124 blocos W-frame,
+  contíguo, gaps de `_ranges` também gravados — padrão W1).
+  Sidecars `.pre_…`/`.post_…` salvos em `~/.chirp/fw-backups/`.
+  **Pendência sequencial**: RC 3002 G2 (mesma família) como 2ª
+  unidade; BOM-5701/UV-5R famílias ainda SEM escrita validada
+  (não expor).
 - [x] **GUI: `Radio > Firmware restore...`** (escrita): diálogo com
   vend/model/port preenchidos, picker de .bin (default em
   `~/.chirp/fw-backups/`) validando tamanho 992 B, apenas família
