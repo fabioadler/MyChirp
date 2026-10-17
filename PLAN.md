@@ -317,9 +317,20 @@ Condição da sessão: **apenas 3 unidades em mãos** (BF-777S,
 RC 3002 G2, BOM-5701) — varredura de hardware encerrada por falta de
 rádios. Pendências, em ordem de prioridade:
 
-- [ ] **P1 — Família 115200**: dump real do **UV-17M** (imagem 33,6 KB,
-  XOR "CO 7", dados de RE em `rethink/uv17m-descobertas.md`). Fecha a
-  varredura dos protocolos de clone já implementados nos drivers.
+- [ ] **F1/F2 — Extração de firmware (2026-10-17)**: CPS oficiais
+  baixadas/RE'd (`rethink/cps-flash-status.md`; `tools/cps/` fora do
+  git). **Conclusão verificada**: famílias BF-888S/777S e UV-5R legacy
+  NÃO têm leitura de flash de MCU por serial publicada (CPS oficial =
+  clone de EEPROM; `radio_tool` open-source confirma e valida o layout
+  do dump BOM-5701 = 0x1948 exato). Caminhos publicados de flash
+  existem só para UV-K5, DM-32UV, BF-F8HP PRO, UV-PRO (chips distintos).
+  Firmware binário dessas famílias: via BIN de fonte comunitária
+  (RE estática) ou biopsia de hardware (programmer), fora do escopo
+  da sessão.
+- [ ] **P1 — Família 115200**: dump real do **UV-17M** (imagem
+  33,6 KB = codeplug 0x8380 da família UV-17Pro confirmado em
+  `radio_tool`; XOR "CO 7" = chave 1 da tabela de 20). Dados de RE em
+  `rethink/uv17m-descobertas.md`.
 - [ ] **P2 — D1-boot (família UV-17Pro/5RM/UV21)**: validar a hipótese
   do boot mode silencioso (descobertas §22) — enviar 0xA5 e SEGUIR a
   sequência; primeiro teste com CMD_READFLASH (leitura). Base:
