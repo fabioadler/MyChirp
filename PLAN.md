@@ -363,9 +363,11 @@ RC 3002 G2, BOM-5701 - rádios reconectados na bancada). Feitos:
   == sha_new == `4d8db228…`, diffs == [] (124 blocos W-frame,
   contíguo, gaps de `_ranges` também gravados — padrão W1).
   Sidecars `.pre_…`/`.post_…` salvos em `~/.chirp/fw-backups/`.
-  **Pendência sequencial**: RC 3002 G2 (mesma família) como 2ª
-  unidade; BOM-5701/UV-5R famílias ainda SEM escrita validada
-  (não expor).
+  **W2-B validado em sequência na 2ª unidade da família**: RC
+  3002 G2 (`1fa31046…`, 18:54, mesmo protocolo, diffs=[]).
+  **Pendência sequencial**: mais unidades da família h777 robôteicas
+  conforme chegarem; BOM-5701/UV-5R famílias ainda SEM escrita
+  validada (não expor).
 - [x] **GUI: `Radio > Firmware restore...`** (escrita): diálogo com
   vend/model/port preenchidos, picker de .bin (default em
   `~/.chirp/fw-backups/`) validando tamanho 992 B, apenas família
