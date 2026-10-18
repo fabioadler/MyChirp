@@ -185,6 +185,7 @@ class FirmwareDumpDialog(QDialog):
     def _supported_vendors(self):
         """Retorna vendors que possuem ao menos um modelo com família
         de dump testada (h777 PROGRAM_CMD ou UV-5R-aux-first)."""
+        directory.import_drivers()
         vendors = set()
         for rclass in directory.DRV_TO_RADIO.values():
             if self._fw_family(rclass) is not None:
@@ -194,6 +195,7 @@ class FirmwareDumpDialog(QDialog):
     def _supported_dump_models(self, vendor):
         """Lista apenas modelos do vendor com família de dump testada
         (h777 PROGRAM_CMD ou UV-5R-aux-first)."""
+        directory.import_drivers()
         models = []
         seen = set()
         for rclass in directory.DRV_TO_RADIO.values():
