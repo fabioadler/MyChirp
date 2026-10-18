@@ -87,7 +87,7 @@ class FirmwareRestoreDialog(QDialog):
         form.setFormAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.vendor = QComboBox()
-        self.vendor.addItems(list_vendors())
+        self.vendor.addItems(self._supported_vendors())
         self.vendor.currentTextChanged.connect(self._on_vendor)
         form.addRow(_("Vendor:"), self.vendor)
 
@@ -211,6 +211,15 @@ class FirmwareRestoreDialog(QDialog):
         self.model.addItems(self._supported_restore_models(vendor))
         self.model.blockSignals(False)
         self._on_model(self.model.currentText())
+
+    def _supported_vendors(self):
+        """Retorna vendors que possuem ao menos um modelo com família
+        de gravação testada (h777 PROGRAM_CMD ou UV-5R-aux-first)."""
+        vendors = set()
+        for rclass in directory.DRV_TO_RADIO.values():
+            if self._fw_family(rclass) is not None:
+                vendors.add(rclass.VENDOR)
+        return sorted(vendors)
 
     def _supported_restore_models(self, vendor):
         """Lista apenas modelos do vendor com família de gravação testada

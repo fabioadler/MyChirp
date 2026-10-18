@@ -66,15 +66,22 @@ def test_h777_supported_and_other_refused(qapp, tmp_state, parent_widget,
     dlg = FirmwareRestoreDialog(parent_widget, tmp_state)
     _select(dlg, bf777_rclass)
     assert dlg._restore_supported(bf777_rclass)
+    assert not dlg.warn_label.text()
 
+    # Modelos de famílias não testadas (não h777 PROGRAM_CMD e não
+    # aux-first) não aparecem na lista filtrada de modelos.
     other = next(
         (r for r in directory.DRV_TO_RADIO.values()
-         if getattr(r, "PROGRAM_CMD", None) != fwtool.H777_PROGRAM_CMD),
+         if getattr(r, "PROGRAM_CMD", None) != fwtool.H777_PROGRAM_CMD
+         and not (getattr(r, "_aux_first", False) and
+                  getattr(r, "_aux_block", False))),
         None)
     if other is not None:
+        label = ("%s %s" % (other.MODEL, getattr(other, "VARIANT", "")
+                            or "")).strip()
         _select(dlg, other)
-        assert not dlg._restore_supported(other)
-        assert dlg.warn_label.text()
+        # Modelo não suportado não está na lista filtrada do vendor
+        assert dlg.model.findText(label) < 0
 
 
 def test_auxfirst_supported_and_size_map(qapp, tmp_state, parent_widget,
