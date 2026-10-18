@@ -8,6 +8,8 @@ command ever reaches the radio.
 """
 
 import logging
+import os
+import shutil
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -19,21 +21,18 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QMessageBox,
     QProgressBar,
-    QPushButton,
     QVBoxLayout,
 )
 
 from mychirp import directory
-from mychirp import chirp_common
+from mychirp import fwtool
 from mychirp.pysideui.i18n import _
 from mychirp.pysideui.services.app_state import EditorSetState
 from mychirp.pysideui.services.radio_service import (
     get_service,
     list_serial_ports,
-    list_vendors,
     model_label_to_class,
 )
 from mychirp.pysideui.services.serial_probe import (
@@ -76,7 +75,7 @@ class FirmwareDumpDialog(QDialog):
         form.setFormAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.vendor = QComboBox()
-        self.vendor.addItems(list_vendors())
+        self.vendor.addItems(self._supported_vendors())
         self.vendor.currentTextChanged.connect(self._on_vendor)
         form.addRow(_("Vendor:"), self.vendor)
 
@@ -95,19 +94,6 @@ class FirmwareDumpDialog(QDialog):
         form.addRow(_("Port:"), self._port_row(ports))
 
         root.addLayout(form)
-
-        # save-to selector (user chooses where to write the dump .bin)
-        save_row = QHBoxLayout()
-        self.save_path = QLineEdit()
-        self.save_path.setPlaceholderText(
-            _("Leave empty to save to ~/.chirp/fw-backups/ (default)"))
-        self.save_btn = QPushButton(_("Choose file…"))
-        self.save_btn.setToolTip(_("Choose where to save the dump .bin"))
-        self.save_btn.clicked.connect(self._pick_save_file)
-        save_row.addWidget(QLabel(_("Save to:")))
-        save_row.addWidget(self.save_path, 1)
-        save_row.addWidget(self.save_btn)
-        root.addLayout(save_row)
 
         self.full_window = QCheckBox(
             _("Full memory window (adds factory calibration area)"))
@@ -184,14 +170,36 @@ class FirmwareDumpDialog(QDialog):
         self.model.blockSignals(False)
         self._on_model(self.model.currentText())
 
+    def _fw_family(self, rclass):
+        """Família de escrita/dump validada: 'h777', 'aux-first' ou None."""
+        if not rclass:
+            return None
+        if getattr(rclass, "PROGRAM_CMD", None) == \
+                fwtool.H777_PROGRAM_CMD:
+            return "h777"
+        if getattr(rclass, "_aux_first", False) and \
+                getattr(rclass, "_aux_block", False):
+            return "aux-first"
+        return None
+
+    def _supported_vendors(self):
+        """Retorna vendors que possuem ao menos um modelo com família
+        de dump testada (h777 PROGRAM_CMD ou UV-5R-aux-first)."""
+        vendors = set()
+        for rclass in directory.DRV_TO_RADIO.values():
+            if self._fw_family(rclass) is not None:
+                vendors.add(rclass.VENDOR)
+        return sorted(vendors)
+
     def _supported_dump_models(self, vendor):
-        """Lista apenas modelos do vendor que suportam dump (CloneModeRadio)."""
+        """Lista apenas modelos do vendor com família de dump testada
+        (h777 PROGRAM_CMD ou UV-5R-aux-first)."""
         models = []
         seen = set()
         for rclass in directory.DRV_TO_RADIO.values():
             if rclass.VENDOR != vendor:
                 continue
-            if not issubclass(rclass, chirp_common.CloneModeRadio):
+            if self._fw_family(rclass) is None:
                 continue
             label = "%s %s" % (rclass.MODEL, rclass.VARIANT or "")
             label = label.strip()
@@ -200,18 +208,9 @@ class FirmwareDumpDialog(QDialog):
                 models.append(label)
         return sorted(models)
 
-    def _pick_save_file(self):
-        """Abre QFileDialog para o usuário escolher onde salvar o .bin do dump."""
-        start = self.save_path.text() or None
-        path = QFileDialog.getSaveFileName(
-            self, _("Salvar firmware dump como"),
-            start, _("Raw clone images (*.bin);;Todos os arquivos (*)"))[0]
-        if path:
-            self.save_path.setText(path)
-
     def _on_model(self, label):
         rclass = self._current_rclass()
-        supported = bool(rclass) and issubclass(rclass, chirp_common.CloneModeRadio)
+        supported = self._fw_family(rclass) is not None
         self.full_window.setEnabled(
             supported and hasattr(rclass, "download_full_window"))
         if not supported:
@@ -247,12 +246,10 @@ class FirmwareDumpDialog(QDialog):
         self._set_busy(True)
         self.state.conf.set("clone_last_port", port, "state")
         self.state.conf.save()
-        out = self.save_path.text().strip() or None
         get_service(self).fw_dump(
             rclass, port,
             full_window=self.full_window.isChecked() and
             hasattr(rclass, "download_full_window"),
-            out=out,
             on_done=self._dump_done)
 
     def _dump_done(self, job):
@@ -275,9 +272,35 @@ class FirmwareDumpDialog(QDialog):
             sha, size = meta.get("sha256"), meta.get("size")
         except Exception:
             LOG.debug("sidecar readback failed", exc_info=True)
-        msg = _("Saved: %s (%s bytes)\nsha256: %s\nmeta: %s") % (
-            bin_path, size or "?", (sha or "-")[:16] + "…"
-            if sha else "-", yaml_path)
+
+        # Pergunta ao usuário onde deseja salvar a imagem extraída
+        default_name = os.path.basename(bin_path)
+        dest_bin = QFileDialog.getSaveFileName(
+            self, _("Salvar firmware dump como"),
+            default_name,
+            _("Raw clone images (*.bin);;Todos os arquivos (*)"))[0]
+
+        final_bin = bin_path
+        final_yaml = yaml_path
+        if dest_bin:
+            try:
+                shutil.copy2(bin_path, dest_bin)
+                dest_yaml = os.path.splitext(dest_bin)[0] + ".yaml"
+                if os.path.exists(yaml_path):
+                    shutil.copy2(yaml_path, dest_yaml)
+                final_bin = dest_bin
+                final_yaml = dest_yaml
+            except Exception as e:
+                LOG.error("Falha ao salvar cópia no destino escolhido: %s", e)
+                QMessageBox.warning(
+                    self, _("Aviso"),
+                    _("Não foi possível salvar em %s: %s\n"
+                      "O backup original foi mantido em %s") % (
+                        dest_bin, e, bin_path))
+
+        msg = _("Dump concluído!\nSalvo em: %s (%s bytes)\nsha256: %s\nmeta: %s") % (
+            final_bin, size or "?", (sha or "-")[:16] + "…"
+            if sha else "-", final_yaml)
         self._finish_label(msg)
         self.state.set_status(
-            _("Firmware dump saved to %s") % bin_path)
+            _("Firmware dump salvo em %s") % final_bin)
