@@ -290,10 +290,12 @@ class FirmwareRestoreDialog(QDialog):
         sha16 = hashlib.sha256(data).hexdigest()[:16]
         rclass = self._current_rclass()
         expected = self._family_size(rclass)
+        family_name = self._fw_family(rclass) or "?"
         ok_size = expected is not None and len(data) == expected
         extra = ""
         if not ok_size:
-            extra = _("  [SIZE MISMATCH]")
+            extra = _("  [SIZE MISMATCH: esperado %d B para %s]") % (
+                expected or 0, family_name)
         self.img_label.setText(
             _("%s\nsha256: %s…  %d B%s") % (path, sha16, len(data), extra))
         self._validate_start()
@@ -358,8 +360,11 @@ class FirmwareRestoreDialog(QDialog):
             return
         data = open(self.image_path, "rb").read()
         expected = self._family_size(rclass)
-        if len(data) != expected:
-            self._finish_label(_("Image size mismatch (%d B)") % len(data))
+        if expected is None or len(data) != expected:
+            family_name = self._fw_family(rclass) or "desconhecida"
+            self._finish_label(
+                _("Image size mismatch: %d B (esperado %d B para "
+                  "família %s)") % (len(data), expected or 0, family_name))
             return
 
         # aviso de risco explícito antes da gravação
