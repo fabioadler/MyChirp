@@ -63,7 +63,7 @@ class FirmwareRestoreDialog(QDialog):
         self._busy = False
         self.image_path = None
 
-        self.setWindowTitle(_("Firmware restore (WRITE)"))
+        self.setWindowTitle(_("Firmware gravar (ESCRITA)"))
         self._icon_text = "⚠"
 
         root = QVBoxLayout(self)
@@ -89,10 +89,12 @@ class FirmwareRestoreDialog(QDialog):
         self.vendor = QComboBox()
         self.vendor.addItems(self._supported_vendors())
         self.vendor.currentTextChanged.connect(self._on_vendor)
+        self.vendor.currentTextChanged.connect(self._validate_start)
         form.addRow(_("Vendor:"), self.vendor)
 
         self.model = QComboBox()
         self.model.currentTextChanged.connect(self._on_model)
+        self.model.currentTextChanged.connect(self._validate_start)
         form.addRow(_("Model:"), self.model)
 
         self.port = QComboBox()
@@ -103,6 +105,7 @@ class FirmwareRestoreDialog(QDialog):
             idx = self.port.findText(last)
             if idx >= 0:
                 self.port.setCurrentIndex(idx)
+        self.port.currentTextChanged.connect(self._validate_start)
         form.addRow(_("Port:"), self._port_row(ports))
 
         pick = QHBoxLayout()
@@ -141,7 +144,9 @@ class FirmwareRestoreDialog(QDialog):
         buttons.accepted.connect(self._on_start)
         buttons.rejected.connect(self.reject)
         buttons.button(QDialogButtonBox.StandardButton.Ok).setText(
-            _("Restore"))
+            _("Gravar"))
+        self._gravar_btn = buttons.button(QDialogButtonBox.StandardButton.Ok)
+        self._gravar_btn.setEnabled(False)
         root.addWidget(buttons)
 
         self.setMinimumWidth(520)
@@ -160,6 +165,7 @@ class FirmwareRestoreDialog(QDialog):
         elif self.vendor.count():
             self._on_vendor(self.vendor.currentText())
 
+        self._validate_start()
         self.adjustSize()
 
     # ----- helpers -----
@@ -248,6 +254,19 @@ class FirmwareRestoreDialog(QDialog):
                   "(handshake PROGRAM; ex.: Baofeng BF-777S) e "
                   "UV-5R-aux-first (ex.: BOMVINK BOM-5701). "
                   "Selecione um modelo de uma dessas famílias."))
+        self._validate_start()
+
+    def _validate_start(self):
+        """Habilita o botão Gravar apenas quando todos os campos
+        obrigatórios estão preenchidos e válidos."""
+        ok = False
+        port = self.port.currentText()
+        rclass = self._current_rclass()
+        if (port and rclass is not None
+                and self._restore_supported(rclass)
+                and self.image_path):
+            ok = True
+        self._gravar_btn.setEnabled(ok)
 
     def _pick_image(self):
         from mychirp import fwtool as _fw
@@ -265,6 +284,7 @@ class FirmwareRestoreDialog(QDialog):
         except OSError as e:
             self.img_label.setText(str(e))
             self.image_path = None
+            self._validate_start()
             return
         self.image_path = path
         sha16 = hashlib.sha256(data).hexdigest()[:16]
@@ -276,6 +296,7 @@ class FirmwareRestoreDialog(QDialog):
             extra = _("  [SIZE MISMATCH]")
         self.img_label.setText(
             _("%s\nsha256: %s…  %d B%s") % (path, sha16, len(data), extra))
+        self._validate_start()
 
     def _finish_label(self, text):
         self.progress_label.setText(text)

@@ -415,12 +415,12 @@ class MainWindow(QMainWindow):
               "full window), saved to ~/.chirp/fw-backups/"))
         self.action_fw_dump.triggered.connect(self.firmware_dump)
         radio_menu.addAction(self.action_fw_dump)
-        self.action_fw_restore = QAction(_("Firmware restore..."), self)
+        self.action_fw_restore = QAction(_("Firmware gravar..."), self)
         self.action_fw_restore.setShortcut("Ctrl+Shift+W")
         self.action_fw_restore.setToolTip(
-            _("WRITE a cloned image window back to the radio "
-              "(validated h777 family; double confirmation + automatic "
-              "pre/post backups)"))
+            _("GRAVAR uma imagem de clone na janela de memória do rádio "
+              "(famílias h777 e UV-5R-aux-first; dupla confirmação + "
+              "backups automáticos pré/post)"))
         self.action_fw_restore.triggered.connect(self.firmware_restore)
         radio_menu.addAction(self.action_fw_restore)
 
