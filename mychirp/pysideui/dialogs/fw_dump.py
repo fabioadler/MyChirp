@@ -23,11 +23,12 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from mychirp import directory
+from mychirp import chirp_common
 from mychirp.pysideui.i18n import _
 from mychirp.pysideui.services.app_state import EditorSetState
 from mychirp.pysideui.services.radio_service import (
     get_service,
-    list_models,
     list_serial_ports,
     list_vendors,
     model_label_to_class,
@@ -163,14 +164,31 @@ class FirmwareDumpDialog(QDialog):
             return
         self.model.blockSignals(True)
         self.model.clear()
-        self.model.addItems(list_models(vendor))
+        self.model.addItems(self._supported_dump_models(vendor))
         self.model.blockSignals(False)
         self._on_model(self.model.currentText())
 
+    def _supported_dump_models(self, vendor):
+        """Lista apenas modelos do vendor que suportam dump (CloneModeRadio)."""
+        models = []
+        seen = set()
+        for rclass in directory.DRV_TO_RADIO.values():
+            if rclass.VENDOR != vendor:
+                continue
+            if not issubclass(rclass, chirp_common.CloneModeRadio):
+                continue
+            label = "%s %s" % (rclass.MODEL, rclass.VARIANT or "")
+            label = label.strip()
+            if label not in seen:
+                seen.add(label)
+                models.append(label)
+        return sorted(models)
+
     def _on_model(self, label):
         rclass = self._current_rclass()
-        supported = bool(rclass) and hasattr(rclass, "download_full_window")
-        self.full_window.setEnabled(supported)
+        supported = bool(rclass) and issubclass(rclass, chirp_common.CloneModeRadio)
+        self.full_window.setEnabled(
+            supported and hasattr(rclass, "download_full_window"))
         if not supported:
             self.full_window.setChecked(False)
 

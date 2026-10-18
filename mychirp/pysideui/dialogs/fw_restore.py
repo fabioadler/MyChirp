@@ -29,7 +29,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from mychirp import directory
 from mychirp import fwtool
+from mychirp import chirp_common
 from mychirp.pysideui.i18n import _
 from mychirp.pysideui.services.app_state import EditorSetState
 from mychirp.pysideui.services.radio_service import (
@@ -206,9 +208,26 @@ class FirmwareRestoreDialog(QDialog):
             return
         self.model.blockSignals(True)
         self.model.clear()
-        self.model.addItems(list_models(vendor))
+        self.model.addItems(self._supported_restore_models(vendor))
         self.model.blockSignals(False)
         self._on_model(self.model.currentText())
+
+    def _supported_restore_models(self, vendor):
+        """Lista apenas modelos do vendor com família de gravação testada
+        (h777 PROGRAM_CMD ou UV-5R-aux-first)."""
+        models = []
+        seen = set()
+        for rclass in directory.DRV_TO_RADIO.values():
+            if rclass.VENDOR != vendor:
+                continue
+            if self._fw_family(rclass) is None:
+                continue
+            label = "%s %s" % (rclass.MODEL, rclass.VARIANT or "")
+            label = label.strip()
+            if label not in seen:
+                seen.add(label)
+                models.append(label)
+        return sorted(models)
 
     def _on_model(self, label):
         rclass = self._current_rclass()
@@ -312,6 +331,21 @@ class FirmwareRestoreDialog(QDialog):
         if len(data) != expected:
             self._finish_label(_("Image size mismatch (%d B)") % len(data))
             return
+
+        # aviso de risco explícito antes da gravação
+        reply = QMessageBox.warning(
+            self, _("Aviso de risco — gravação de firmware"),
+            _("Esta operação GRAVA na memória do rádio e pode torná-lo "
+              "inutilizável se usada incorretamente.\n\n"
+              "Use APENAS um backup da MESMA unidade.\n"
+              "O dump prévio é salvo automaticamente antes de gravar.\n\n"
+              "Deseja continuar?"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No)
+        if reply != QMessageBox.StandardButton.Yes:
+            self._finish_label(_("Operação cancelada pelo usuário"))
+            return
+
         try:
             probe_port(port, rclass, timeout=2.0)
         except PortProbeError as e:

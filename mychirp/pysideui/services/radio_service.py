@@ -141,14 +141,15 @@ class RadioService(QObject):
             LOG.exception("Failed delivering radio job result")
 
     # ----- firmware dump (read-only) -----
-    def fw_dump(self, rclass, port, full_window=False, on_done=None,
-                on_progress=None):
+    def fw_dump(self, rclass, port, full_window=False, out=None,
+                on_done=None, on_progress=None):
         """Read-only firmware dump via fwtool (clone or full window).
 
         Runs on the worker thread like download/upload; the result is
-        (bin_path, yaml_path) of the saved .bin + YAML sidecar inside
-        ~/.chirp/fw-backups/ (mdilename signed by sha256). No write
-        command ever reaches the radio.
+        (bin_path, yaml_path) of the saved .bin + YAML sidecar.
+        When @out is given, the file is written there; otherwise it is
+        saved to ~/.chirp/fw-backups/ with a sha256-signed name.
+        No write command ever reaches the radio.
         """
         def _dump():
             from mychirp import fwtool
@@ -156,9 +157,10 @@ class RadioService(QObject):
             radio_id = directory.get_driver(rclass)
             if full_window:
                 bin_path = fwtool.dump_full_window(
-                    radio_id, port, backup=True)
+                    radio_id, port, out=out, backup=out is None)
             else:
-                bin_path = fwtool.dump_clone(radio_id, port, backup=True)
+                bin_path = fwtool.dump_clone(
+                    radio_id, port, out=out, backup=out is None)
             yaml_path = _os.path.splitext(bin_path)[0] + ".yaml"
             return bin_path, yaml_path
 
