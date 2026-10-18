@@ -443,9 +443,6 @@ class MainWindow(QMainWindow):
 
         # Help menu
         help_menu = menubar.addMenu(_("&Help"))
-        self.action_report_bug = QAction(_("Report a bug..."), self)
-        self.action_report_bug.triggered.connect(self.report_bug)
-        help_menu.addAction(self.action_report_bug)
         self.action_clear_logs = QAction(_("Clear logs"), self)
         self.action_clear_logs.triggered.connect(self.clear_logs)
         help_menu.addAction(self.action_clear_logs)
@@ -1086,10 +1083,6 @@ class MainWindow(QMainWindow):
                 _("Enable View > Developer mode first"))
         from mychirp.pysideui.dialogs.devtools import DeveloperDialog
         DeveloperDialog(self, self.state, self.current_editorset).exec()
-
-    def report_bug(self):
-        from mychirp.pysideui.dialogs.devtools import BugReportDialog
-        BugReportDialog(self, self.state, self.current_editorset).exec()
 
     def clear_logs(self):
         """Limpa o histórico do log do sistema (logs/log.txt)."""
