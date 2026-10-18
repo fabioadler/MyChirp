@@ -115,8 +115,8 @@ def main(args=None):
     parser.add_argument("--backup", action="store_true",
                         help="Salvar em ~/.chirp/fw-backups/ além do --out")
     parser.add_argument("--full-window", action="store_true",
-                        help="Dump da janela completa cabelada (só drivers "
-                             "com download_full_window, ex.: BOM-5701)")
+                        help="Dump da janela completa cabelada (8 KiB; SOMENTE "
+                             "família UV-5R-aux-first testada, ex.: BOM-5701)")
     parser.add_argument("--diff", nargs=2, metavar=("A", "B"),
                         help="Comparar dois dumps byte a byte")
     parser.add_argument("--map", dest="map_dump", metavar="DUMP",

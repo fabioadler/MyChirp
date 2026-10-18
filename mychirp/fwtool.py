@@ -208,9 +208,18 @@ def dump_full_window(radio_id, port, out=None, backup=False):
     if not port:
         raise FwDumpError("Informe a porta serial com --serial=/dev/ttyUSB0")
     rclass = resolve_rclass(radio_id)
+    # dump da janela completa cabelada foi testado SOMENTE na família
+    # UV-5R-aux-first (BOM-5701); outros drivers não são expostos p/ evitar
+    # comportamento não validado.
     if not hasattr(rclass, "download_full_window"):
         raise FwDumpError(
             "driver %s não expõe download_full_window" % radio_id)
+    if not (getattr(rclass, "_aux_first", False) and
+            getattr(rclass, "_aux_block", False)):
+        raise FwDumpError(
+            "dump de janela completa só suportado na família "
+            "UV-5R-aux-first (ex.: BOMVINK_BOM-5701); driver %s não "
+            "testado" % radio_id)
     baud = getattr(rclass, "BAUD_RATE", 9600)
     LOG.info("Dump janela completa %s @%s (baud %i)", radio_id, port, baud)
 
