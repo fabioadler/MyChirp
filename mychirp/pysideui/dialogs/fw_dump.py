@@ -15,11 +15,14 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFormLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QProgressBar,
+    QPushButton,
     QVBoxLayout,
 )
 
@@ -92,6 +95,19 @@ class FirmwareDumpDialog(QDialog):
         form.addRow(_("Port:"), self._port_row(ports))
 
         root.addLayout(form)
+
+        # save-to selector (user chooses where to write the dump .bin)
+        save_row = QHBoxLayout()
+        self.save_path = QLineEdit()
+        self.save_path.setPlaceholderText(
+            _("Leave empty to save to ~/.chirp/fw-backups/ (default)"))
+        self.save_btn = QPushButton(_("Choose file…"))
+        self.save_btn.setToolTip(_("Choose where to save the dump .bin"))
+        self.save_btn.clicked.connect(self._pick_save_file)
+        save_row.addWidget(QLabel(_("Save to:")))
+        save_row.addWidget(self.save_path, 1)
+        save_row.addWidget(self.save_btn)
+        root.addLayout(save_row)
 
         self.full_window = QCheckBox(
             _("Full memory window (adds factory calibration area)"))
@@ -184,6 +200,15 @@ class FirmwareDumpDialog(QDialog):
                 models.append(label)
         return sorted(models)
 
+    def _pick_save_file(self):
+        """Abre QFileDialog para o usuário escolher onde salvar o .bin do dump."""
+        start = self.save_path.text() or None
+        path = QFileDialog.getSaveFileName(
+            self, _("Salvar firmware dump como"),
+            start, _("Raw clone images (*.bin);;Todos os arquivos (*)"))[0]
+        if path:
+            self.save_path.setText(path)
+
     def _on_model(self, label):
         rclass = self._current_rclass()
         supported = bool(rclass) and issubclass(rclass, chirp_common.CloneModeRadio)
@@ -222,10 +247,12 @@ class FirmwareDumpDialog(QDialog):
         self._set_busy(True)
         self.state.conf.set("clone_last_port", port, "state")
         self.state.conf.save()
+        out = self.save_path.text().strip() or None
         get_service(self).fw_dump(
             rclass, port,
             full_window=self.full_window.isChecked() and
             hasattr(rclass, "download_full_window"),
+            out=out,
             on_done=self._dump_done)
 
     def _dump_done(self, job):

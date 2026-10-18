@@ -243,9 +243,9 @@ class FirmwareRestoreDialog(QDialog):
     def _pick_image(self):
         from mychirp import fwtool as _fw
         start = _fw.fw_backup_dir()
-        path, _ = QFileDialog.getOpenFileName(
+        path = QFileDialog.getOpenFileName(
             self, _("Choose the image (.bin) to restore"),
-            start, _("Raw clone images (*.bin)"))
+            start, _("Raw clone images (*.bin)"))[0]
         if not path:
             return
         self._set_image(path)
