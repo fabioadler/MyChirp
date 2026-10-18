@@ -203,3 +203,30 @@ def test_non_h777_driver_recusado(patch_open_serial):
     fake = patch_open_serial()
     with pytest.raises(Exception):
         restore_h777_image(other_id, "/dev/FAKE", b"\x00" * 992)
+
+
+def test_progress_printer_aceita_int_e_objeto():
+    """_progress_printer (usado por dump_full_window) recebe tanto int
+    (endereço da janela full window, chamado por _download_full_window)
+    quanto objeto com .cur/.max (chamado por sync_in)."""
+    import io
+    from contextlib import redirect_stdout
+    from mychirp.fwtool import _progress_printer
+
+    fn = _progress_printer()
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        fn(0x1000)   # 50% da janela 0x2000
+        fn(0x2000)   # 100%
+    out = buf.getvalue()
+    assert "50%" in out and "100%" in out, out
+
+    class _Status:
+        cur = 300
+        max = 1000
+        msg = "Clonando"
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        fn(_Status())
+    out = buf.getvalue()
+    assert "30%" in out and "Clonando" in out, out

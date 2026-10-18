@@ -49,16 +49,27 @@ def fw_backup_dir():
 
 
 def _progress_printer():
-    """Callback de progresso do sync_in(): linha única com percentual."""
+    """Callback de progresso do sync_in(): linha única com percentual.
+
+    Aceita dois formatos de chamada:
+      - objeto com atributos .cur/.max (./.msg opcional) — usado por
+        sync_in() do driver (dump_clone);
+      - int com o endereço atual — usado por download_full_window()
+        do driver UV-5R (janela de 0x2000 B).
+    """
     last_line = [""]
 
     def _status(status):
-        if status.max:
-            pct = 100 * status.cur // status.max
+        if isinstance(status, int):
+            cur = status
+            maxv = 0x2000  # janela completa UV-5R/BOM-5701 (8 KiB)
+            msg = "Cloning"
         else:
-            pct = 0
-        cur = getattr(status, "msg", "") or "Cloning"
-        line = "%s: %3d%%" % (cur, pct)
+            maxv = getattr(status, "max", 0) or 0
+            cur = getattr(status, "cur", 0)
+            msg = getattr(status, "msg", "") or "Cloning"
+        pct = 100 * cur // maxv if maxv else 0
+        line = "%s: %3d%%" % (msg, pct)
         if line != last_line[0]:
             print("\r" + line + "    ", end="", flush=True)
             last_line[0] = line
