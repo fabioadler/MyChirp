@@ -531,9 +531,16 @@ def restore_bom5701_image(radio_id, port, image, backup=True):
          graváveis via serial)
     """
     log = print
+    if len(image) == 0x2000:
+        # Imagem full window (8 KiB: 0x0000-0x2000). Extrai bloco main
+        # (0x0000-0x1800) e bloco aux (0x1EC0-0x2000) e compõe no formato
+        # clone de 6.472 B (8 B ident + main + aux). A calibração de fábrica
+        # (0x1800-0x1EC0) não é gravável pelo protocolo normal.
+        image = b"\x00" * 8 + image[0x0000:0x1800] + image[0x1EC0:0x2000]
+
     if len(image) != UV5R_AUX_FIRST_IMAGE_END:
         raise FwDumpError(
-            "imagem deve ter %d B (6.472; tem %d)"
+            "imagem deve ter %d B (6.472; clone) ou 8.192 B (full window); tem %d B"
             % (UV5R_AUX_FIRST_IMAGE_END, len(image)))
     rclass = resolve_rclass(radio_id)
 
@@ -542,6 +549,9 @@ def restore_bom5701_image(radio_id, port, image, backup=True):
     sha_old = sha256_hex(pre)
     log("dump prévio: sha256=%s" % sha_old[:16])
     time.sleep(UV5R_AUX_FIRST_COOLDOWN)
+
+    # Preserva o ident real da unidade a partir do dump prévio
+    image = pre[:8] + image[8:]
 
     # 2) gravação pela maquinaria do driver
     aborted, ab_addr = _uv5r_auxfirst_write(rclass, port, image)

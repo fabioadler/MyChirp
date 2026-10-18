@@ -92,7 +92,8 @@ def test_auxfirst_supported_and_size_map(qapp, tmp_state, parent_widget,
     _select(dlg, bom5701_rclass)
     assert dlg._restore_supported(bom5701_rclass)
     assert not dlg.warn_label.text()
-    assert dlg._family_size(bom5701_rclass) == fwtool.UV5R_AUX_FIRST_IMAGE_END
+    assert fwtool.UV5R_AUX_FIRST_IMAGE_END in \
+        dlg._family_sizes(bom5701_rclass)
 
     # imagem de janela h777 (992 B) é tamanho ERRADO para esta família
     with tempfile.TemporaryDirectory() as td:
@@ -107,6 +108,15 @@ def test_auxfirst_supported_and_size_map(qapp, tmp_state, parent_widget,
             f.write(b"\x00" * fwtool.UV5R_AUX_FIRST_IMAGE_END)
         dlg._set_image(right)
         assert dlg.image_path == right
+        assert "SIZE MISMATCH" not in dlg.img_label.text()
+
+        # imagem full window (8.192 B) também é aceita (convertida
+        # internamente no fwtool ao gravar)
+        full = os.path.join(td, "full.bin")
+        with open(full, "wb") as f:
+            f.write(b"\x00" * 0x2000)
+        dlg._set_image(full)
+        assert dlg.image_path == full
         assert "SIZE MISMATCH" not in dlg.img_label.text()
 
 

@@ -198,13 +198,19 @@ class FirmwareRestoreDialog(QDialog):
             return "aux-first"
         return None
 
-    def _family_size(self, rclass):
+    def _family_sizes(self, rclass):
+        """Tamanhos de imagem aceitáveis para a família de escrita do
+        modelo (h777: 992 B; aux-first: 6.472 B clone OU 8.192 B full
+        window). Retorna tupla, ou None quando não suportado."""
         family = self._fw_family(rclass)
         if family == "h777":
-            return fwtool.H777_WINDOW_END
+            return (fwtool.H777_WINDOW_END,)
         if family == "aux-first":
-            return fwtool.UV5R_AUX_FIRST_IMAGE_END
+            return (fwtool.UV5R_AUX_FIRST_IMAGE_END, 0x2000)
         return None
+
+    def _restore_supported(self, rclass):
+        return self._fw_family(rclass) is not None
 
     def _restore_supported(self, rclass):
         return self._fw_family(rclass) is not None
@@ -221,6 +227,7 @@ class FirmwareRestoreDialog(QDialog):
     def _supported_vendors(self):
         """Retorna vendors que possuem ao menos um modelo com família
         de gravação testada (h777 PROGRAM_CMD ou UV-5R-aux-first)."""
+        directory.import_drivers()
         vendors = set()
         for rclass in directory.DRV_TO_RADIO.values():
             if self._fw_family(rclass) is not None:
@@ -230,6 +237,7 @@ class FirmwareRestoreDialog(QDialog):
     def _supported_restore_models(self, vendor):
         """Lista apenas modelos do vendor com família de gravação testada
         (h777 PROGRAM_CMD ou UV-5R-aux-first)."""
+        directory.import_drivers()
         models = []
         seen = set()
         for rclass in directory.DRV_TO_RADIO.values():
@@ -289,13 +297,14 @@ class FirmwareRestoreDialog(QDialog):
         self.image_path = path
         sha16 = hashlib.sha256(data).hexdigest()[:16]
         rclass = self._current_rclass()
-        expected = self._family_size(rclass)
+        sizes = self._family_sizes(rclass)
         family_name = self._fw_family(rclass) or "?"
-        ok_size = expected is not None and len(data) == expected
+        ok_size = sizes is not None and len(data) in sizes
         extra = ""
         if not ok_size:
-            extra = _("  [SIZE MISMATCH: esperado %d B para %s]") % (
-                expected or 0, family_name)
+            if sizes:
+                extra = _("  [SIZE MISMATCH: esperado %s B para %s]") % (
+                    " / ".join(str(s) for s in sizes), family_name)
         self.img_label.setText(
             _("%s\nsha256: %s…  %d B%s") % (path, sha16, len(data), extra))
         self._validate_start()
@@ -359,12 +368,13 @@ class FirmwareRestoreDialog(QDialog):
             self._finish_label(_("No image selected"))
             return
         data = open(self.image_path, "rb").read()
-        expected = self._family_size(rclass)
-        if expected is None or len(data) != expected:
+        sizes = self._family_sizes(rclass)
+        if sizes is None or len(data) not in sizes:
             family_name = self._fw_family(rclass) or "desconhecida"
+            esperado = " / ".join(str(s) for s in sizes) if sizes else "?"
             self._finish_label(
-                _("Image size mismatch: %d B (esperado %d B para "
-                  "família %s)") % (len(data), expected or 0, family_name))
+                _("Image size mismatch: %d B (esperado %s B para "
+                  "família %s)") % (len(data), esperado, family_name))
             return
 
         # aviso de risco explícito antes da gravação

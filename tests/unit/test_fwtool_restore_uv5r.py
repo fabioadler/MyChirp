@@ -298,3 +298,25 @@ def test_dispatcher_recente(patch_open_serial):
 
     with pytest.raises(fwtool.FwDumpError):
         restore_image("Driver_Inexistente", "/dev/FAKE", image)
+
+
+def test_full_window_8k_aceito_e_convertido(patch_open_serial):
+    """Imagem full window (8.192 B, 0x0000-0x1FFF) deve ser aceita e
+    convertida ao formato clone de 6.472 B antes da gravação/verify."""
+    model, fakes = patch_open_serial()
+    full = IDENT + model["main"] + model["aux"]
+    # full window: 8 KiB com main em 0x0000-0x1800, gap 0x1800-0x1EC0,
+    # aux em 0x1EC0-0x2000
+    fw_full = bytearray(0x2000)
+    fw_full[0x0000:0x1800] = model["main"]
+    fw_full[0x1EC0:0x2000] = model["aux"]
+    rep = restore_bom5701_image("BOMVINK_BOM-5701", "/dev/FAKE",
+                                bytes(fw_full))
+    assert rep["ok"] is True
+    assert rep["diffs"] == []
+    # 3 sessões: gravação escreveu 402 blocos (20 aux + 382 main)
+    wf = fakes[1]
+    assert len(wf.accepted_writes) == 402
+    # memórias refletem o full window (main + aux; ident do pré-dump)
+    assert bytes(fakes[-1].model["main"]) == fw_full[0x0000:0x1800]
+    assert bytes(fakes[-1].model["aux"]) == fw_full[0x1EC0:0x2000]
