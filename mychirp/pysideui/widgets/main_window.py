@@ -444,8 +444,6 @@ class MainWindow(QMainWindow):
         # Help menu
         help_menu = menubar.addMenu(_("&Help"))
         self.action_report_bug = QAction(_("Report a bug..."), self)
-        self.action_report_bug.setEnabled(
-            False)  # sem servidor para receber relatórios (P1 futuro)
         self.action_report_bug.triggered.connect(self.report_bug)
         help_menu.addAction(self.action_report_bug)
         self.action_clear_logs = QAction(_("Clear logs"), self)
@@ -1090,8 +1088,8 @@ class MainWindow(QMainWindow):
         DeveloperDialog(self, self.state, self.current_editorset).exec()
 
     def report_bug(self):
-        # Desabilitado no menu: sem servidor para receber relatórios.
-        # Reabilitar quando houver backend de coleta de bugs (P1 futuro).
+        # Popup de contato (logos + e-mail do suporte) + cópia dos
+        # últimos logs: o usuário escreve e envia o próprio e-mail.
         from mychirp.pysideui.dialogs.devtools import BugReportDialog
         BugReportDialog(self, self.state, self.current_editorset).exec()
 

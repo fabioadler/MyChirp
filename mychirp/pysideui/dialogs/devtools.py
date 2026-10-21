@@ -7,18 +7,17 @@ image serialization) happens on the shared radio service thread pool.
 import logging
 import os
 import platform
-import subprocess
 import sys
 
-from PySide6.QtCore import qVersion
+from PySide6.QtCore import Qt, qVersion
 from PySide6.QtCore import __version__ as PYSIDE_VERSION
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
     QDialogButtonBox,
-    QFormLayout,
+    QHBoxLayout,
     QLabel,
-    QLineEdit,
     QPushButton,
     QTabWidget,
     QTextEdit,
@@ -33,17 +32,17 @@ LOG = logging.getLogger(__name__)
 
 DEBUG_LOG_TAIL_LINES = 200
 
+SHARE = os.path.normpath(os.path.join(
+    os.path.dirname(__file__), "..", "..", "share"))
+
 
 def debug_log_path():
-    """Caminho do log do sistema (<projeto>/logs/log.txt)."""
-    try:
-        from mychirp import logger as chirp_logger
-        path = chirp_logger.project_log_file()
-        if path:
-            return path
-    except Exception:
-        pass
-    return os.path.join(os.path.expanduser("~"), ".chirp", "debug.log")
+    """Caminho do log do sistema (<projeto>/logs/log.txt).
+
+    Sem fallback externo: TODO log fica dentro da pasta do projeto.
+    """
+    from mychirp import logger as chirp_logger
+    return chirp_logger.project_log_file()
 
 
 def read_debug_log_tail(lines=DEBUG_LOG_TAIL_LINES):
@@ -222,69 +221,90 @@ class DeveloperDialog(QDialog):
 
 
 class BugReportDialog(QDialog):
-    """Help > Report a bug: form + copyable diagnostics."""
+    """Help > Report a bug: popup de contato + cópia dos últimos logs.
+
+    O usuário escreve o próprio e-mail e envia ao suporte; o popup
+    apenas orienta (logos, e-mail de contato) e facilita anexar os
+    últimos logs do sistema (<projeto>/logs/log.txt) via clipboard.
+    """
+
+    CONTACT_EMAIL = "adlercyberlab@gmail.com"
 
     def __init__(self, parent, state, eset=None):
         super().__init__(parent)
         self.state = state
         self.eset = eset
         self.setWindowTitle(_("Report a bug"))
-        self.setMinimumSize(560, 440)
-        self.resize(560, 480)
+        self.setMinimumSize(480, 360)
+        self.resize(500, 400)
 
         root = QVBoxLayout(self)
-        form = QFormLayout()
-        self.summary = QLineEdit()
-        form.addRow(_("Summary:"), self.summary)
-        self.steps = QLineEdit()
-        form.addRow(_("Steps to reproduce:"), self.steps)
-        root.addLayout(form)
+        root.setContentsMargins(24, 24, 24, 24)
+        root.setSpacing(12)
 
-        root.addWidget(QLabel(_("Description:")))
-        self.description = QTextEdit()
-        root.addWidget(self.description, 1)
+        # Logos lado a lado: empresa + sistema (mesmos assets do About)
+        logos = QHBoxLayout()
+        logos.setSpacing(32)
+        logos.addStretch(1)
+        self.company_logo = QLabel()
+        pix = QPixmap(os.path.join(SHARE, "logo_empresa.png"))
+        if not pix.isNull():
+            self.company_logo.setPixmap(pix.scaledToHeight(
+                140, Qt.TransformationMode.SmoothTransformation))
+        logos.addWidget(self.company_logo)
+        self.system_logo = QLabel()
+        pix = QPixmap(os.path.join(SHARE, "mychirp_logo_transparente.png"))
+        if not pix.isNull():
+            self.system_logo.setPixmap(pix.scaledToHeight(
+                140, Qt.TransformationMode.SmoothTransformation))
+        logos.addWidget(self.system_logo)
+        logos.addStretch(1)
+        root.addLayout(logos)
 
-        self.copy_button = QPushButton(_("Copy diagnostics"))
-        self.copy_button.clicked.connect(self.copy_diagnostics)
-        root.addWidget(self.copy_button)
+        # E-mail de contato: selecionável e clicável (mailto:)
+        self.email_label = QLabel()
+        self.email_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.email_label.setTextFormat(Qt.TextFormat.RichText)
+        self.email_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.LinksAccessibleByMouse |
+            Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.email_label.setOpenExternalLinks(True)
+        self.email_label.setText(
+            "%s<br><a href=\"mailto:%s\">%s</a>" % (
+                _("Contact email:"), self.CONTACT_EMAIL, self.CONTACT_EMAIL))
+        root.addWidget(self.email_label)
+
+        # Transparência: onde os logs do sistema vivem (pasta do projeto)
+        log_hint = QLabel(_("System logs: %s") % debug_log_path())
+        log_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        log_hint.setProperty("muted", True)
+        log_hint.setWordWrap(True)
+        root.addWidget(log_hint)
+
+        # Ações: copiar e-mail + copiar últimos logs
+        actions = QHBoxLayout()
+        actions.addStretch(1)
+        self.copy_email_button = QPushButton(_("Copiar e-mail"))
+        self.copy_email_button.clicked.connect(self.copy_email)
+        actions.addWidget(self.copy_email_button)
+        self.copy_logs_button = QPushButton(_("Copiar últimos logs"))
+        self.copy_logs_button.clicked.connect(self.copy_logs)
+        actions.addWidget(self.copy_logs_button)
+        actions.addStretch(1)
+        root.addLayout(actions)
+        root.addStretch(1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
         root.addWidget(buttons)
 
-    def diagnostics_report(self):
-        lines = [
-            "== MyChirp bug report ==",
-            "",
-            versions_text(),
-            "Git commit: %s" % _git_revision(),
-        ]
-        if self.eset is not None:
-            radio = self.eset.radio
-            lines.append("Radio: %s" % self.eset.radio_label)
-            lines.append("Driver class: %s" % type(radio).__name__)
-            lines.append("Driver module: %s" % type(radio).__module__)
-            lines.append("File: %s" % self.eset.filename)
-        else:
-            lines.append("Radio: (none open)")
-        if self.summary.text().strip():
-            lines.append("Summary: %s" % self.summary.text().strip())
-        return "\n".join(lines)
+    def copy_email(self):
+        QApplication.clipboard().setText(self.CONTACT_EMAIL)
+        self.state.set_status(
+            _("E-mail copiado para a área de transferência"))
 
-    def copy_diagnostics(self):
-        QApplication.clipboard().setText(self.diagnostics_report())
-        self.state.set_status(_("Diagnostics copied to clipboard"))
-
-
-def _git_revision():
-    """Short git revision of the source tree, if available."""
-    root = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", ".."))
-    try:
-        out = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=root, stderr=subprocess.DEVNULL, timeout=5)
-        return out.decode().strip()
-    except Exception:
-        return _("unknown")
+    def copy_logs(self):
+        QApplication.clipboard().setText(read_debug_log_tail())
+        self.state.set_status(
+            _("Logs copiados para a área de transferência"))

@@ -29,16 +29,41 @@ def test_developer_dialog_no_radio(qapp, state):
     dlg.close()
 
 
-def test_bug_report_dialog_copy(qapp, state):
+def test_bug_report_dialog_popup(qapp, state):
+    """Popup de reporte: logos + e-mail de contato + cópia de logs."""
     from mychirp.pysideui.dialogs.devtools import BugReportDialog
     dlg = BugReportDialog(None, state, None)
-    dlg.summary.setText("test summary")
-    dlg.copy_diagnostics()
+
+    # e-mail de contato visível e clicável (mailto:)
+    assert BugReportDialog.CONTACT_EMAIL == "adlercyberlab@gmail.com"
+    assert BugReportDialog.CONTACT_EMAIL in dlg.email_label.text()
+    assert dlg.email_label.openExternalLinks()
+
+    # logos da empresa e do sistema criados (assets do share/)
+    assert dlg.company_logo is not None
+    assert dlg.system_logo is not None
+
+    # copiar e-mail coloca o endereço no clipboard
+    dlg.copy_email()
+    assert QApplication.clipboard().text() == \
+        BugReportDialog.CONTACT_EMAIL
+
+    # copiar logs coloca conteúdo (log real ou aviso de ausência)
+    dlg.copy_logs()
     text = QApplication.clipboard().text()
-    assert "PySide6" in text
-    assert "test summary" in text
-    assert "(none open)" in text
+    assert isinstance(text, str) and text
     dlg.close()
+
+
+def test_bug_report_dialog_no_legacy_home_fallback(state):
+    """O caminho do log vive DENTRO da pasta do projeto (sem fallback
+    ~/.chirp legado)."""
+    from mychirp.pysideui.dialogs import devtools
+    path = devtools.debug_log_path()
+    assert "logs" in path
+    assert os.path.normpath(path).startswith(
+        os.path.normpath(os.path.join(
+            os.path.dirname(devtools.__file__), "..", "..", "..")))
 
 
 def test_debug_log_tail(state):
@@ -75,8 +100,18 @@ def test_dialogs_with_radio(qapp, state, tmp_path):
     dlg.close()
 
     bug = BugReportDialog(None, state, eset)
-    bug.copy_diagnostics()
-    text = QApplication.clipboard().text()
-    assert "Driver module" in text
-    assert "CSVRadio" in text
+    # popup de reporte com rádio aberto: contato + logs continuam
+    # disponíveis (o popup não depende do estado do editor)
+    assert BugReportDialog.CONTACT_EMAIL in bug.email_label.text()
+    bug.copy_logs()
+    assert QApplication.clipboard().text()
     bug.close()
+
+
+def test_main_window_report_bug_action_enabled(qapp, state):
+    """A ação 'Report a bug...' do menu Help está habilitada."""
+    from mychirp.pysideui.widgets.main_window import MainWindow
+    win = MainWindow(state)
+    state.main_window = win
+    assert win.action_report_bug.isEnabled()
+    win.close()

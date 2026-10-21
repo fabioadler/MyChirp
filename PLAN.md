@@ -397,6 +397,38 @@ RC 3002 G2, BOM-5701 - rádios reconectados na bancada). Feitos:
   escrevendo AUX + MAIN com ACK/retry, re-leitura idêntica em
   `20261017-195404`, sha_old == sha_new == `bccd9a99`, diffs=[])
   com dupla confirmação realizada. Backups pre/post salvos.
+- [x] **GUI: mensagens de mismatch informativas** (`55b1de2f`): ao
+  selecionar imagem e ao gravar, o aviso de tamanho informa o
+  esperado por família (992 B h777; 6.472 B aux-first) — antes só
+  dizia "mismatch".
+- [x] **GUI: listas de vendor/model vazias no 1º lançamento**
+  (`feb033bc`): `_supported_vendors`/`_supported_*_models` do
+  fw_dump e fw_restore chamam `directory.import_drivers()` antes de
+  iterar `DRV_TO_RADIO` — sem isso o dicionário estava vazio (0
+  entradas) e nenhum modelo compatível aparecia.
+- [x] **Restore BOM-5701 aceita imagem full window** (`97c24e65`):
+  `restore_bom5701_image` converte dumps de 8.192 B (janela
+  0x0000-0x1FFF) ao formato clone 6.472 B (ident do pre-dump + main
+  0x0000-0x1800 + aux 0x1EC0-0x2000); GUI `_family_sizes` aceita
+  ambos os tamanhos sem marcar SIZE MISMATCH.
+- [x] **GUI: preseleção do rádio aberto não populava Model**
+  (2026-10-21): quando o vendor do rádio aberto já era o índice 0,
+  `setCurrentIndex` é no-op no Qt (não emite `currentTextChanged`) e
+  o combo Model ficava vazio — mesma causa raiz do item anterior.
+  Corrigido em fw_dump E fw_restore: popula o Model explicitamente
+  quando nenhum sinal foi emitido. Testes de fw_dump destravados:
+  prompt pós-dump extraído p/ `_ask_save_dest` (stubável offscreen),
+  fake fwtool atualizado p/ kwarg `out`, `import os` no topo.
+- [x] **GUI: popup de reporte (Help > Report a bug...)** (2026-10-21):
+  ação reabilitada (estava desabilitada "sem servidor"); popup com
+  logo da empresa + logo do sistema lado a lado (assets do share/),
+  e-mail de contato `adlercyberlab@gmail.com` (clicável mailto:,
+  selecionável + botão copiar), caminho dos logs em exibição
+  (<projeto>/logs/log.txt — fallback legado `~/.chirp/debug.log`
+  removido: todo log fica na pasta do projeto) e botão "Copiar
+  últimos logs" (`read_debug_log_tail`, 200 linhas). Formulário
+  antigo (Summary/Steps/Description/Copy diagnostics) removido — o
+  usuário escreve e envia o próprio e-mail.
 - [ ] **P1 — Família 115200**: dump real do **UV-17M** (imagem
   33,6 KB = codeplug 0x8380 da família UV-17Pro confirmado em
   `radio_tool`; XOR "CO 7" = chave 1 da tabela de 20). Dados de RE em
