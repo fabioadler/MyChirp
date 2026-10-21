@@ -134,6 +134,11 @@ class FirmwareDumpDialog(QDialog):
             idx = self.vendor.findText(getattr(r, "VENDOR", "") or "")
             if idx >= 0:
                 self.vendor.setCurrentIndex(idx)
+                if not self.model.count():
+                    # vendor já era o índice atual: o Qt NÃO emite
+                    # currentTextChanged (setCurrentIndex é no-op) e o
+                    # combo Model nunca foi populado — popula agora
+                    self._on_vendor(self.vendor.currentText())
                 label = ("%s %s" % (getattr(r, "MODEL", ""),
                                     getattr(r, "VARIANT", "") or ""))
                 m = self.model.findText(label.strip())
@@ -254,6 +259,17 @@ class FirmwareDumpDialog(QDialog):
             hasattr(rclass, "download_full_window"),
             on_done=self._dump_done)
 
+    def _ask_save_dest(self, default_name):
+        """Destino adicional escolhido pelo usuário (pós-dump).
+
+        Prompt modal separado em método para os testes offscreen
+        stubarem sem bloquear num event loop de diálogo.
+        """
+        return QFileDialog.getSaveFileName(
+            self, _("Salvar firmware dump como"),
+            default_name,
+            _("Raw clone images (*.bin);;Todos os arquivos (*)"))[0]
+
     def _dump_done(self, job):
         self._set_busy(False)
         if job.error:
@@ -276,11 +292,7 @@ class FirmwareDumpDialog(QDialog):
             LOG.debug("sidecar readback failed", exc_info=True)
 
         # Pergunta ao usuário onde deseja salvar a imagem extraída
-        default_name = os.path.basename(bin_path)
-        dest_bin = QFileDialog.getSaveFileName(
-            self, _("Salvar firmware dump como"),
-            default_name,
-            _("Raw clone images (*.bin);;Todos os arquivos (*)"))[0]
+        dest_bin = self._ask_save_dest(os.path.basename(bin_path))
 
         final_bin = bin_path
         final_yaml = yaml_path

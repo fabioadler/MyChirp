@@ -157,6 +157,11 @@ class FirmwareRestoreDialog(QDialog):
             idx = self.vendor.findText(getattr(r, "VENDOR", "") or "")
             if idx >= 0:
                 self.vendor.setCurrentIndex(idx)
+                if not self.model.count():
+                    # vendor já era o índice atual: o Qt NÃO emite
+                    # currentTextChanged (setCurrentIndex é no-op) e o
+                    # combo Model nunca foi populado — popula agora
+                    self._on_vendor(self.vendor.currentText())
                 label = ("%s %s" % (getattr(r, "MODEL", ""),
                                     getattr(r, "VARIANT", "") or ""))
                 m = self.model.findText(label.strip())

@@ -1,5 +1,7 @@
 """Offscreen tests for the read-only firmware dump feature (Qt)."""
 
+import os
+
 import pytest
 
 from PySide6.QtWidgets import QApplication
@@ -78,6 +80,8 @@ def test_fw_dump_prefills_and_validates(qapp, tmp_state, parent_widget, bom_rcla
 def test_fw_dump_done_success_and_failure(qapp, tmp_state, parent_widget, bom_rclass,
                                           tmp_path):
     dlg = FirmwareDumpDialog(parent_widget, tmp_state)
+    # stub do prompt modal de destino (bloquearia offscreen)
+    dlg._ask_save_dest = lambda default_name: ""
 
     # sucesso: label recebe bin + yaml + sha
     bin_path = str(tmp_path / "fake.bin")
@@ -111,12 +115,12 @@ def test_fw_dump_service_method(qapp, tmp_state, parent_widget, bom_rclass, monk
 
     class _FakeFwtool:
         @staticmethod
-        def dump_clone(radio_id, port, backup=False):
+        def dump_clone(radio_id, port, out=None, backup=False):
             calls.append(("clone", radio_id, backup))
             return "/tmp/%s.bin" % radio_id
 
         @staticmethod
-        def dump_full_window(radio_id, port, backup=False):
+        def dump_full_window(radio_id, port, out=None, backup=False):
             calls.append(("full", radio_id, backup))
             return "/tmp/%s.bin" % radio_id
 
@@ -157,9 +161,6 @@ def test_fw_dump_service_method(qapp, tmp_state, parent_widget, bom_rclass, monk
         time.sleep(0.02)
     assert done and done[0].error is None
     assert calls and calls[0][0] == "clone" and calls[0][2] is True
-
-
-import os  # noqa: E402
 
 
 def test_fwtool_full_window_requires_support(qapp, bom_rclass, tmp_path):
