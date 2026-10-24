@@ -7,8 +7,10 @@ claro/escuro consistentes em todos os componentes.
 Créditos do projeto original: CHIRP Project (Dan Smith e contribuidores),
 GPLv3. Esta versão: **Feita/modificada por Fábio Adler de Luna Gomes**.
 
-> **Plataformas suportadas**: atualmente **apenas Linux** (testado em
-> Debian 13). Não há suporte oficial para Windows/macOS nesta versão.
+> **Plataformas**: **Linux** é a plataforma de referência (Debian 13,
+> validada em hardware). O MyChirp roda também em **Windows 10/11**
+> (interface Qt + pyserial multiplataforma) — instruções de instalação
+> e uso abaixo.
 
 ## Esta versão
 
@@ -42,8 +44,61 @@ venv/bin/pip install -r requirements-dev.txt
 venv/bin/mychirp
 ```
 
-> O diálogo de arquivos usa o `zenity` do sistema
-> (`sudo apt install zenity` no Debian/Ubuntu).
+## Instalação (Windows 10/11)
+
+### 1. Python
+
+Baixe o **Python 3.10 ou superior** em <https://www.python.org/downloads/>
+e instale **marcando a opção "Add python.exe to PATH"** na primeira tela
+do instalador. Confirme no PowerShell:
+
+```powershell
+py -3 --version
+```
+
+### 2. Preparar a pasta do projeto
+
+Abra o PowerShell na pasta do MyChirp (ex.: botão direito → "Abrir no
+Terminal") e crie o ambiente virtual:
+
+```powershell
+py -3 -m venv venv
+venv\Scripts\python -m pip install -r requirements-dev.txt
+```
+
+> Se o PowerShell reclamar de execução de scripts ao usar
+> `Activate.ps1`, rode antes:
+> `Set-ExecutionPolicy -Scope Process RemoteSigned`
+> (vale só para a janela atual).
+
+### 3. Executar
+
+```powershell
+venv\Scripts\mychirp.exe
+```
+
+Os comandos de terminal seguem o mesmo padrão: `venv\Scripts\mychirpc.exe`
+e `venv\Scripts\mychirp-fw.exe` (veja os exemplos abaixo trocando
+`venv/bin/...` por `venv\Scripts\...exe`).
+
+### 4. Driver do cabo de programação
+
+A maioria dos cabos Baofeng/similares usa o chip **CH340/CH341**:
+
+- No **Windows 10/11** o driver normalmente é instalado sozinho pelo
+  Windows Update na primeira vez que o cabo é conectado.
+- Se não aparecer nenhuma porta, abra o **Gerenciador de Dispositivos**
+  (Win+X → Gerenciador de Dispositivos) → seção **"Portas (COM e LPT)"**:
+  um item "USB-SERIAL CH340 (COM**x**)" indica o número da porta
+  (ex.: `COM3`). Se houver um alerta amarelo, clique com o botão
+  direito → **Atualizar driver** → "Procurar automaticamente".
+
+Use esse `COMx` no lugar de `/dev/ttyUSB0` em todos os comandos e na
+caixa **Porta** da interface gráfica.
+
+> Se o rádio falhar ao iniciar a clonagem logo após conectar, desconecte
+> e reconecte o cabo e aguarde 2–3 s (a porta CH340 precisa se
+> reestabilizar — o mesmo vale no Linux).
 
 ## Interface gráfica
 
@@ -63,6 +118,16 @@ venv/bin/mychirpc --serial=/dev/ttyUSB0 --radio=BOMVINK_BOM-5701 \
     --upload-mmap --mmap=backup.img       # gravar (protocolo validado)
 ```
 
+No **Windows** (PowerShell, porta `COM3` como exemplo):
+
+```powershell
+venv\Scripts\mychirpc.exe --serial=COM3 --radio=BOMVINK_BOM-5701 `
+    --download-mmap --mmap=backup.img
+venv\Scripts\mychirpc.exe --mmap=backup.img --list-mem
+venv\Scripts\mychirpc.exe --serial=COM3 --radio=BOMVINK_BOM-5701 `
+    --upload-mmap --mmap=backup.img
+```
+
 ## Dump de memória (mychirp-fw)
 
 Ferramenta read-only: baixa a **imagem completa de memória** de
@@ -80,11 +145,21 @@ venv/bin/mychirp-fw --map dump.bin                     # análise semântica
 
 - `--backup` salva também em `~/.chirp/fw-backups/` (nome assinado pelo
   sha256), junto do YAML de metadados (modelo, porta, baud, data, hash).
+  No Windows: `C:\Users\<seu_usuário>\.chirp\fw-backups\`.
 - O `--diff` compara dois dumps byte a byte (resumo por faixa).
 - O `--map` dá o resumo semântico de um dump (driver resolvido pelo
   YAML sidecar ou `--radio`): canais usados, settings por grupo e
   regiões com dados reais — destacando as que ficam FORA das structs
   do driver (candidatas a engenharia reversa).
+- Exemplos no Windows (PowerShell):
+
+```powershell
+venv\Scripts\mychirp-fw.exe --list-radios --vendor=baofeng
+venv\Scripts\mychirp-fw.exe --serial=COM3 --radio=BAOFENG_BF-777S
+venv\Scripts\mychirp-fw.exe --diff antigo.bin novo.bin
+venv\Scripts\mychirp-fw.exe --map dump.bin
+```
+
 - Formatos documentados: [família H777](docs/dump-format-h777.md) e
   [família UV-5R](docs/dump-format-uv5r.md).
 
