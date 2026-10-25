@@ -201,7 +201,7 @@ class MainWindow(QMainWindow):
             return
         self._clear_hotplug_widgets()
         self._hotplug_label = QLabel(
-            _("Cabo programador detectado em %s — usar?") % port)
+            _("Programming cable detected on %s — use it?") % port)
         self._hotplug_button = QToolButton(self)
         self._hotplug_button.setText(_("Connect"))
         self._hotplug_button.setAutoRaise(True)

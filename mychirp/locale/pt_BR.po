@@ -47,7 +47,7 @@ msgstr[1] "%i Memórias e blocos de deslocamento para cima"
 #: ../wxui/accessibility.py:177
 #, python-format
 msgid "%s %s, row %d"
-msgstr ""
+msgstr "%s %s, linha %d"
 
 #: ../wxui/main.py:1533
 #, python-format
@@ -618,6 +618,11 @@ msgid ""
 "4. Press OK on chirp prompt.\n"
 "5. <b>After clicking OK</b>, press the [DWN] button on radio to send image. The radio will say CLN OUT while downloading.\n"
 msgstr ""
+"1. Desligue o rádio.\n"
+"2. Conecte o cabo ao jack MIC/SP.\n"
+"3. Pressione e segure [FW] ao ligar o rádio para entrar no modo CLONE.\n"
+"4. Pressione OK no prompt do chirp.\n"
+"5. <b>Após clicar em OK</b>, pressione o botão [DWN] no rádio para enviar a imagem. O rádio dirá CLN OUT durante o download.\n"
 
 #: ../drivers/vx1.py:407
 msgid ""
@@ -627,6 +632,11 @@ msgid ""
 "4. Press [UP] button on radio. The radio will say CLN IN.\n"
 "5. <b>After radio says CLN IN</b>, press OK on chirp prompt to upload.\n"
 msgstr ""
+"1. Desligue o rádio.\n"
+"2. Conecte o cabo ao jack MIC/SP.\n"
+"3. Pressione e segure [FW] ao ligar o rádio para entrar no modo CLONE.\n"
+"4. Pressione o botão [UP] no rádio. O rádio dirá CLN IN.\n"
+"5. <b>Após o rádio dizer CLN IN</b>, pressione OK no prompt do chirp para enviar.\n"
 
 #: ../drivers/ft50.py:195
 msgid ""
@@ -892,6 +902,13 @@ msgid ""
 "5. <b>After clicking OK</b>, hold [PTT] briefly to transmit.\n"
 "     (\"SENDING\" will appear on the display)\n"
 msgstr ""
+"1. Desligue o rádio.\n"
+"2. Conecte o cabo clone ao jack MIC/SP.\n"
+"3. Pressione e segure [PTT] e [Lamp] ao ligar o rádio.\n"
+"4. Gire o dial para selecionar \"CLONE\" e pressione [F].\n"
+"     (\"CLONE\" aparecerá no display)\n"
+"5. <b>Após clicar em OK</b>, segure [PTT] brevemente para transmitir.\n"
+"     (\"SENDING\" aparecerá no display)\n"
 
 #: ../drivers/vx150.py:360
 msgid ""
@@ -903,6 +920,13 @@ msgid ""
 "5. Press [MONI] to receive.\n"
 "     (\"SAVING\" will appear on the display)\n"
 msgstr ""
+"1. Desligue o rádio.\n"
+"2. Conecte o cabo clone ao jack MIC/SP.\n"
+"3. Pressione e segure [PTT] e [Lamp] ao ligar o rádio.\n"
+"4. Gire o dial para selecionar \"CLONE\" e pressione [F].\n"
+"     (\"CLONE\" aparecerá no display)\n"
+"5. Pressione [MONI] para receber.\n"
+"     (\"SAVING\" aparecerá no display)\n"
 
 #: ../drivers/yaesu_clone.py:247
 msgid ""
@@ -1079,6 +1103,8 @@ msgid ""
 "Aircraft frequencies must be aligned to 25kHz, 8.33kHz, be or a valid "
 "channel"
 msgstr ""
+"Frequências aeronáuticas devem estar alinhadas a 25kHz, 8.33kHz ou ser um "
+"canal válido"
 
 #: ../wxui/query_sources.py:452 ../wxui/query_sources.py:453
 msgid "All"
@@ -1190,6 +1216,10 @@ msgid ""
 "the repeater transmits on the 462 MHz output. A station using this repeater "
 "listens on the repeater output and transmits on the input."
 msgstr ""
+"As frequências dos canais são do ponto de vista do repetidor. A frequência "
+"de recepção é a entrada de 467 MHz. O duplex é negativo e o offset é de 5 "
+"MHz, portanto o repetidor transmite na saída de 462 MHz. Uma estação usando "
+"este repetidor escuta na saída do repetidor e transmite na entrada."
 
 #: ../wxui/memedit.py:1884
 #, python-format
@@ -1448,6 +1478,8 @@ msgid ""
 "Disabling Transit Function disables repeating. The repeater will not repeat "
 "until this setting is enabled."
 msgstr ""
+"Desativar a Função de Transmissão desativa a repetição. O repetidor não "
+"repetirá até que esta configuração seja ativada."
 
 #: ../wxui/query_sources.py:104 ../wxui/query_sources.py:383
 #: ../wxui/query_sources.py:682 ../wxui/query_sources.py:840
@@ -1485,7 +1517,7 @@ msgstr "Instruções de download"
 
 #: ../wxui/radioinfo.py:66
 msgid "Driver"
-msgstr ""
+msgstr "Driver"
 
 #: ../drivers/uvk5.py:1263
 msgid "Driver information"
@@ -1564,6 +1596,10 @@ msgid ""
 "step you will have a chance to add more details about the problem. Before "
 "proceeding, please search for duplicate issues!"
 msgstr ""
+"Informe dados sobre o bug incluindo um assunto curto, porém significativo, e"
+" informações sobre o modelo de rádio em questão (se aplicável). Na próxima "
+"etapa você poderá adicionar mais detalhes sobre o problema. Antes de "
+"prosseguir, pesquise issues duplicadas!"
 
 #: ../wxui/bugreport.py:523
 msgid "Enter information to add to the bug here"
@@ -2033,7 +2069,7 @@ msgstr "Frequência"
 #: ../import_logic.py:77
 #, python-format
 msgid "Frequency %s is out of supported ranges %s"
-msgstr ""
+msgstr "A frequência %s está fora das faixas suportadas %s"
 
 #: ../wxui/memedit.py:162
 msgid "Frequency granularity in kHz"
@@ -2047,7 +2083,7 @@ msgstr "A frequência nessa faixa não deve ser em modo AM"
 
 #: ../drivers/retevis_ha1g.py:1430
 msgid "Frequency in this range not supported by firmware"
-msgstr ""
+msgstr "Frequência nesta faixa não é suportada pelo firmware"
 
 #: ../drivers/retevis_ha1g.py:1435 ../drivers/ga510.py:1087
 #: ../drivers/uv5r.py:2245 ../drivers/tdh8.py:2537
@@ -2086,7 +2122,7 @@ msgstr "Ir para..."
 #: ../wxui/common.py:584 ../wxui/accessibility.py:310
 #, python-format
 msgid "Group: %s"
-msgstr ""
+msgstr "Grupo: %s"
 
 #: ../wxui/main.py:1043
 msgid "Help"
@@ -2118,7 +2154,7 @@ msgstr "Comentário legível por humanos (não armazenado no rádio)"
 
 #: ../wxui/bugreport.py:414
 msgid "I have"
-msgstr ""
+msgstr "Eu"
 
 #: ../wxui/query_sources.py:366 ../wxui/query_sources.py:372
 #: ../wxui/query_sources.py:666 ../wxui/query_sources.py:672
@@ -2185,6 +2221,8 @@ msgid ""
 "Internal driver error: Attempt to modify frozen memory; Please report this "
 "as a bug using \"Report or update a bug\" in the Help menu"
 msgstr ""
+"Erro interno do driver: tentativa de modificar memória congelada; relate "
+"isso como um bug usando \"Reportar ou atualizar um bug\" no menu Ajuda"
 
 #: ../wxui/query_sources.py:62
 #, python-format
@@ -2364,7 +2402,7 @@ msgstr "A memória %i não pode ser excluída"
 
 #: ../wxui/memedit.py:120
 msgid "Memory List"
-msgstr ""
+msgstr "Lista de memórias"
 
 #: ../wxui/memquery.py:203
 #, python-format
@@ -2773,19 +2811,19 @@ msgstr "Rádio"
 
 #: ../wxui/radioinfo.py:65
 msgid "Radio Info: Driver"
-msgstr ""
+msgstr "Informações do rádio: Driver"
 
 #: ../wxui/radioinfo.py:46
 msgid "Radio Info: Features"
-msgstr ""
+msgstr "Informações do rádio: Recursos"
 
 #: ../wxui/radioinfo.py:92
 msgid "Radio Info: Icom"
-msgstr ""
+msgstr "Informações do rádio: Icom"
 
 #: ../wxui/radioinfo.py:120
 msgid "Radio Info: Image Metadata"
-msgstr ""
+msgstr "Informações do rádio: Metadados da imagem"
 
 #: ../drivers/ft450d.py:576 ../drivers/ft60.py:89 ../drivers/ft60.py:91
 #: ../drivers/ft817.py:410
@@ -2944,6 +2982,10 @@ msgid ""
 "the SatNOGS API directly for the most granular and\n"
 "up-to-date transmitter data."
 msgstr ""
+"O SatNOGS DB fornece um banco de dados vivo, mantido pela\n"
+"comunidade, com informações de transmissores de satélites.\n"
+"Esta fonte consulta a API do SatNOGS diretamente para os\n"
+"dados de transmissores mais granulares e atualizados."
 
 #: ../wxui/main.py:1073
 msgid "Save"
@@ -2996,7 +3038,7 @@ msgstr "Selecionar modos"
 
 #: ../wxui/query_sources.py:1300
 msgid "Select Modes to Import"
-msgstr ""
+msgstr "Selecione os modos a importar"
 
 #: ../wxui/main.py:2087
 msgid "Select a bandplan"
@@ -3027,7 +3069,7 @@ msgstr ""
 #: ../wxui/common.py:464
 #, python-format
 msgid "Settings: %s"
-msgstr ""
+msgstr "Configurações: %s"
 
 #: ../wxui/memedit.py:161
 msgid "Shift amount (or transmit frequency) controlled by duplex"
@@ -3270,6 +3312,7 @@ msgstr ""
 msgid ""
 "This image is read-only due to being from a radio with unsupported firmware"
 msgstr ""
+"Esta imagem é somente leitura por ser de um rádio com firmware não suportado"
 
 #: ../wxui/main.py:1743
 msgid ""
@@ -3386,6 +3429,9 @@ msgid ""
 "satellites, mirrored from the JE9PEL database via GitHub.\n"
 "It is a stable, simplified list of popular frequencies."
 msgstr ""
+"Esta fonte fornece uma lista curada de satélites ativos de\n"
+"rádio amador, espelhada do banco JE9PEL via GitHub.\n"
+"É uma lista estável e simplificada de frequências populares."
 
 #: ../wxui/bugreport.py:198
 msgid ""
@@ -3696,11 +3742,11 @@ msgstr "bytes cada"
 
 #: ../wxui/common.py:545
 msgid "checkbox"
-msgstr ""
+msgstr "caixa de seleção"
 
 #: ../wxui/common.py:521
 msgid "checked"
-msgstr ""
+msgstr "marcado"
 
 #: ../wxui/main.py:1992
 msgid "disabled"
@@ -3708,7 +3754,7 @@ msgstr "desabilitado"
 
 #: ../wxui/accessibility.py:176
 msgid "empty"
-msgstr ""
+msgstr "vazio"
 
 #: ../wxui/main.py:1992
 msgid "enabled"
@@ -3716,31 +3762,31 @@ msgstr "habilitado"
 
 #: ../wxui/common.py:547
 msgid "list"
-msgstr ""
+msgstr "lista"
 
 #: ../wxui/common.py:566
 msgid "locked"
-msgstr ""
+msgstr "bloqueado"
 
 #: ../wxui/common.py:550
 msgid "number"
-msgstr ""
+msgstr "número"
 
 #: ../wxui/bugreport.py:421
 msgid "searched for duplicate issues"
-msgstr ""
+msgstr "pesquisei issues duplicadas"
 
 #: ../wxui/common.py:552
 msgid "text"
-msgstr ""
+msgstr "texto"
 
 #: ../wxui/common.py:521
 msgid "unchecked"
-msgstr ""
+msgstr "desmarcado"
 
 #: ../wxui/common.py:564
 msgid "unspecified"
-msgstr ""
+msgstr "não especificado"
 
 #: ../drivers/vx5.py:116
 #, python-brace-format
@@ -4476,7 +4522,7 @@ msgid "Switch to Light Theme"
 msgstr "Mudar para tema claro"
 
 msgid "ToneSql"
-msgstr "TomSql"
+msgstr "TomSq"
 
 msgid "Tune Step"
 msgstr "Passo de frequência"
@@ -4787,6 +4833,559 @@ msgstr "Tempo de ataque DTMF"
 msgid "ANI Code %i"
 msgstr "Código ANI %i"
 
+msgid ""
+"\n"
+"NOTE: %d protection range(s) not written by the driver (unit content preserved)."
+msgstr ""
+"\n"
+"NOTA: %d faixa(s) de proteção não gravada(s) pelo driver (conteúdo da unidade preservado)."
+
+msgid "  [SIZE MISMATCH: expected %s B for %s]"
+msgstr "  [TAMANHO INCOMPATÍVEL: esperado %s B para %s]"
+
+msgid "%d differences after write"
+msgstr "%d divergências após a gravação"
+
+msgid ""
+"%s\n"
+"sha256: %s…  %d B%s"
+msgstr ""
+"%s\n"
+"sha256: %s…  %d B%s"
+
+msgid "Choose image (.bin)..."
+msgstr "Escolher imagem (.bin)..."
+
+msgid "Choose the image (.bin) to restore"
+msgstr "Escolha a imagem (.bin) a restaurar"
+
+msgid ""
+"Could not save to %s: %s\n"
+"The original backup was kept at %s"
+msgstr ""
+"Não foi possível salvar em %s: %s\n"
+"O backup original foi mantido em %s"
+
+msgid ""
+"Dump complete!\n"
+"Saved to: %s (%s bytes)\n"
+"sha256: %s\n"
+"meta: %s"
+msgstr ""
+"Dump concluído!\n"
+"Salvo em: %s (%s bytes)\n"
+"sha256: %s\n"
+"meta: %s"
+
+msgid ""
+"Driver not supported for restore (validated: h777 family and UV-5R aux-"
+"first)"
+msgstr ""
+"Driver sem suporte para restauração (validados: família h777 e UV-5R aux-"
+"first)"
+
+msgid "Final confirmation"
+msgstr "Confirmação final"
+
+msgid "Firmware dump (read-only)"
+msgstr "Dump de firmware (somente leitura)"
+
+msgid "Firmware dump failed"
+msgstr "Falha no dump de firmware"
+
+msgid "Firmware dump saved to %s"
+msgstr "Dump de firmware salvo em %s"
+
+msgid "Firmware dump..."
+msgstr "Dump de firmware..."
+
+msgid "Firmware restore"
+msgstr "Restauração de firmware"
+
+msgid "Firmware restore (WRITE)"
+msgstr "Restauração de firmware (ESCRITA)"
+
+msgid "Firmware restore (write)..."
+msgstr "Restauração de firmware (gravação)..."
+
+msgid "Firmware restore failed"
+msgstr "Falha na restauração de firmware"
+
+msgid "Firmware restore: %s"
+msgstr "Restauração de firmware: %s"
+
+msgid "Firmware write risk warning"
+msgstr "Aviso de risco — gravação de firmware"
+
+msgid "Full memory window (adds factory calibration area)"
+msgstr "Janela de memória completa (inclui a área de calibração de fábrica)"
+
+msgid "Image size mismatch: %d B (expected %s B for family %s)"
+msgstr ""
+"Tamanho de imagem incompatível: %d B (esperado %s B para a família %s)"
+
+msgid "Image:"
+msgstr "Imagem:"
+
+msgid "Loading raw image..."
+msgstr "Carregando imagem bruta..."
+
+msgid "No image selected"
+msgstr "Nenhuma imagem selecionada"
+
+msgid "No raw image available for this radio"
+msgstr "Nenhuma imagem bruta disponível para este rádio"
+
+msgid ""
+"Only supported on drivers that expose the complete cable-visible window "
+"(e.g. aux-first clones). Includes the factory calibration area the standard "
+"image omits."
+msgstr ""
+"Suportado apenas em drivers que expõem a janela completa visível ao cabo "
+"(ex.: clones aux-first). Inclui a área de calibração de fábrica que a imagem"
+" padrão omite."
+
+msgid "Operation canceled by user"
+msgstr "Operação cancelada pelo usuário"
+
+msgid "Pre-dump + write + verify in progress (do NOT touch the radio)..."
+msgstr "Pré-dump + gravação + verificação em andamento (NÃO mexa no rádio)..."
+
+msgid "Raw clone images (*.bin)"
+msgstr "Imagens clone brutas (*.bin)"
+
+msgid "Raw clone images (*.bin);;All files (*)"
+msgstr "Imagens clone brutas (*.bin);;Todos os arquivos (*)"
+
+msgid "Raw dump"
+msgstr "Dump bruto"
+
+msgid ""
+"Read-only raw dump of the radio memory (clone image or full window), saved "
+"to ~/.chirp/fw-backups/"
+msgstr ""
+"Dump bruto somente leitura da memória do rádio (imagem clone ou janela "
+"completa), salvo em ~/.chirp/fw-backups/"
+
+msgid "RESTORE OK: 0 differences (readback identical)"
+msgstr "RESTORE OK: 0 divergências (re-leitura idêntica)"
+
+msgid "RESTORE PITFALL: incomplete write (aborted)"
+msgstr "RESTORE PITFALL: gravação incompleta (abortada)"
+
+msgid ""
+"Saves a raw dump + signed YAML sidecar into ~/.chirp/fw-backups/. Read-only:"
+" no byte is ever written to the radio."
+msgstr ""
+"Salva um dump bruto + sidecar YAML assinado em ~/.chirp/fw-backups/. Somente"
+" leitura: nenhum byte é gravado no rádio."
+
+msgid "Save firmware dump as"
+msgstr "Salvar dump de firmware como"
+
+msgid ""
+"This operation WRITES to the radio memory and can render it unusable if used incorrectly.\n"
+"\n"
+"Use ONLY a backup from the SAME unit.\n"
+"The pre-write dump is saved automatically before writing.\n"
+"\n"
+"Continue?"
+msgstr ""
+"Esta operação GRAVA na memória do rádio e pode torná-lo inutilizável se usada incorretamente.\n"
+"\n"
+"Use APENAS um backup da MESMA unidade.\n"
+"O dump prévio é salvo automaticamente antes de gravar.\n"
+"\n"
+"Continuar?"
+
+msgid "Unexpected confirmation text; write canceled."
+msgstr "Texto de confirmação inesperado; gravação cancelada."
+
+msgid ""
+"WRITE a clone image into the radio memory window (h777 and UV-5R-aux-first "
+"families; double confirmation + automatic pre/post backups)"
+msgstr ""
+"GRAVAR uma imagem de clone na janela de memória do rádio (famílias h777 e "
+"UV-5R-aux-first; dupla confirmação + backups automáticos pré/pós)"
+
+msgid "Write"
+msgstr "Gravar"
+
+msgid "Write canceled by user"
+msgstr "Gravação cancelada pelo usuário"
+
+msgid ""
+"Write is validated only for the h777 family (PROGRAM handshake; e.g. Baofeng"
+" BF-777S) and UV-5R-aux-first (e.g. BOMVINK BOM-5701). Select a model from "
+"one of these families."
+msgstr ""
+"A gravação é validada apenas nas famílias h777 (handshake PROGRAM; ex.: "
+"Baofeng BF-777S) e UV-5R-aux-first (ex.: BOMVINK BOM-5701). Selecione um "
+"modelo de uma dessas famílias."
+
+msgid ""
+"Write the image back to the radio? This overwrites the radio memory. "
+"Continue?"
+msgstr ""
+"Gravar a imagem de volta no rádio? Isso sobrescreve a memória do rádio. "
+"Continuar?"
+
+msgid ""
+"Write the selected image to the radio memory?\n"
+"\n"
+"This overwrites the current radio memory window. The radio's own pre-write dump is saved automatically.\n"
+msgstr ""
+"Gravar a imagem selecionada na memória do rádio?\n"
+"\n"
+"Isso sobrescreve a janela de memória atual do rádio. O dump pré-gravação do próprio rádio é salvo automaticamente.\n"
+
+msgid ""
+"Writes the bytes of a clone image into the radio memory window (WRITE operation).\n"
+"\n"
+"Built-in safety: a pre-write dump of the unit is saved automatically; every block requires an ACK (aborted on NACK/timeout); read-back with a final diff. Use ONLY a backup from the SAME unit."
+msgstr ""
+"Grava os bytes de uma imagem de clone na janela de memória do rádio (operação de ESCRITA).\n"
+"\n"
+"Segurança integrada: o dump prévio da unidade é salvo automaticamente; cada bloco exige ACK (abortado em NACK/timeout); re-leitura com diff no final. Use APENAS um backup da MESMA unidade."
+
+msgid "%1 — %2"
+msgstr "%1 — %2"
+
+msgid "%i result(s)"
+msgstr "%i resultado(s)"
+
+msgid "&Import..."
+msgstr "&Importar..."
+
+msgid "&Print..."
+msgstr "&Imprimir..."
+
+msgid "(auto-detect)"
+msgstr "(detecção automática)"
+
+msgid "<%i items>"
+msgstr "<%i itens>"
+
+msgid "<error: %s>"
+msgstr "<erro: %s>"
+
+msgid "Add to bank"
+msgstr "Adicionar ao banco"
+
+msgid "Added network source %s"
+msgstr "Fonte de rede %s adicionada"
+
+msgid "Band (optional):"
+msgstr "Faixa (opcional):"
+
+msgid "Band plan"
+msgstr "Plano de bandas"
+
+msgid "Band plan: %s"
+msgstr "Plano de bandas: %s"
+
+msgid "Bank:"
+msgstr "Banco:"
+
+msgid "City:"
+msgstr "Cidade:"
+
+msgid "Class: %s"
+msgstr "Classe: %s"
+
+msgid "Clear logs"
+msgstr "Limpar logs"
+
+msgid "Clear the system log history (logs/log.txt)?"
+msgstr "Limpar o histórico de logs do sistema (logs/log.txt)?"
+
+msgid "Communicating with radio... (read-only)"
+msgstr "Comunicando com o rádio... (somente leitura)"
+
+msgid "Connect"
+msgstr "Conectar"
+
+msgid "Contact email:"
+msgstr "E-mail de contato:"
+
+msgid "Copied %i channel(s)"
+msgstr "%i canal(is) copiado(s)"
+
+msgid "Copy email"
+msgstr "Copiar e-mail"
+
+msgid "Copy recent logs"
+msgstr "Copiar últimos logs"
+
+msgid "Could not create the network radio source."
+msgstr "Não foi possível criar a fonte de rádio de rede."
+
+msgid "Could not read debug log: %s"
+msgstr "Não foi possível ler o log de depuração: %s"
+
+msgid "Country:"
+msgstr "País:"
+
+msgid "Delete %i channels?"
+msgstr "Excluir %i canais?"
+
+msgid "Developer"
+msgstr "Desenvolvedor"
+
+msgid "Developer mode"
+msgstr "Modo desenvolvedor"
+
+msgid "Developer mode disabled"
+msgstr "Modo desenvolvedor desativado"
+
+msgid "Developer mode enabled"
+msgstr "Modo desenvolvedor ativado"
+
+msgid "Developer tools"
+msgstr "Ferramentas de desenvolvedor"
+
+msgid "Developer tools (raw dump)"
+msgstr "Ferramentas de desenvolvedor (dump bruto)"
+
+msgid "Don't Save"
+msgstr "Não salvar"
+
+msgid "Dump"
+msgstr "Dump"
+
+msgid "Edit channel %s"
+msgstr "Editar canal %s"
+
+msgid "Email copied to clipboard"
+msgstr "E-mail copiado para a área de transferência"
+
+msgid "Enable View > Developer mode first"
+msgstr "Ative primeiro Exibir > Modo desenvolvedor"
+
+msgid "Enter the source as host:port"
+msgstr "Informe a fonte como host:porta"
+
+msgid "Export to %s"
+msgstr "Exportar para %s"
+
+msgid "Export to HMK..."
+msgstr "Exportar para HMK..."
+
+msgid "Export to ITM..."
+msgstr "Exportar para ITM..."
+
+msgid "Failed to load source"
+msgstr "Falha ao carregar a fonte"
+
+msgid "Failed to read image: %s"
+msgstr "Falha ao ler a imagem: %s"
+
+msgid "File deleted: %s"
+msgstr "Arquivo apagado: %s"
+
+msgid "File not found"
+msgstr "Arquivo não encontrado"
+
+msgid "Files not found"
+msgstr "Arquivos não encontrados"
+
+msgid "Filter (optional):"
+msgstr "Filtro (opcional):"
+
+msgid "Filter:"
+msgstr "Filtro:"
+
+msgid "Has valid tones: %s"
+msgstr "Possui tons válidos: %s"
+
+msgid "If you don't save, the changes will be lost."
+msgstr "Se você não salvar, as alterações serão perdidas."
+
+msgid "Import bank"
+msgstr "Importar banco"
+
+msgid "Import bank..."
+msgstr "Importar banco..."
+
+msgid "Import failed"
+msgstr "Falha na importação"
+
+msgid "Import failed: %s"
+msgstr "Falha na importação: %s"
+
+msgid "Import into open radio"
+msgstr "Importar para o rádio aberto"
+
+msgid "Import starting at channel:"
+msgstr "Importar a partir do canal:"
+
+msgid "Imported %i channel(s)"
+msgstr "%i canal(is) importado(s)"
+
+msgid "Imported %i memories from bank %s"
+msgstr "%i memórias importadas do banco %s"
+
+msgid "Importing %s..."
+msgstr "Importando %s..."
+
+msgid "Logs"
+msgstr "Logs"
+
+msgid "Logs cleared"
+msgstr "Logs limpos"
+
+msgid "Logs copied to clipboard"
+msgstr "Logs copiados para a área de transferência"
+
+msgid "Memory bounds: %s..%s"
+msgstr "Limites de memória: %s..%s"
+
+msgid "Network source"
+msgstr "Fonte de rede"
+
+msgid "Network source..."
+msgstr "Fonte de rede..."
+
+msgid "New name for bank %s:"
+msgstr "Novo nome para o banco %s:"
+
+msgid "No debug log found at %s"
+msgstr "Nenhum log de depuração encontrado em %s"
+
+msgid "No other open radio with banks to import from"
+msgstr "Nenhum outro rádio aberto com bancos para importar"
+
+msgid "No radio detected on this port. Check the cable and try another port."
+msgstr ""
+"Nenhum rádio detectado nesta porta. Verifique o cabo e tente outra porta."
+
+msgid "No radio open"
+msgstr "Nenhum rádio aberto"
+
+msgid "Number of memories:"
+msgstr "Número de memórias:"
+
+msgid ""
+"Original project: CHIRP by Dan Smith (GPLv3)\n"
+"https://chirp.danplanet.com\n"
+"\n"
+"Developed by: Fábio Adler de Luna Gomes"
+msgstr ""
+"Projeto original: CHIRP por Dan Smith (GPLv3)\n"
+"https://chirp.danplanet.com\n"
+"\n"
+"Desenvolvido por: Fábio Adler de Luna Gomes"
+
+msgid "Password:"
+msgstr "Senha:"
+
+msgid "Print sent"
+msgstr "Impressão enviada"
+
+msgid "Programming cable detected on %s — use it?"
+msgstr "Cabo programador detectado em %s — usar?"
+
+msgid "Query failed: %s"
+msgstr "Consulta falhou: %s"
+
+msgid "Querying..."
+msgstr "Consultando..."
+
+msgid "Radio: %s"
+msgstr "Rádio: %s"
+
+msgid "Remove from bank"
+msgstr "Remover do banco"
+
+msgid "Report a bug"
+msgstr "Reportar um bug"
+
+msgid "Report a bug..."
+msgstr "Reportar um bug..."
+
+msgid "Save changes to %s before closing?"
+msgstr "Salvar alterações em %s antes de fechar?"
+
+msgid "Search"
+msgstr "Pesquisar"
+
+msgid "Select the Tone Mode first"
+msgstr "Selecione o Tone Mode primeiro"
+
+msgid "Serial ports:"
+msgstr "Portas seriais:"
+
+msgid ""
+"Serial ports:\n"
+"%s\n"
+"\n"
+"%s"
+msgstr ""
+"Portas seriais:\n"
+"%s\n"
+"\n"
+"%s"
+
+msgid "Source radio:"
+msgstr "Rádio de origem:"
+
+msgid "Source:"
+msgstr "Fonte:"
+
+msgid "State/Province:"
+msgstr "Estado/Província:"
+
+msgid "State:"
+msgstr "Estado:"
+
+msgid "System"
+msgstr "Sistema"
+
+msgid "System logs: %s"
+msgstr "Logs do sistema: %s"
+
+msgid ""
+"The file %s was deleted from disk. It was removed from the recent list."
+msgstr ""
+"O arquivo %s foi apagado do disco. Ele foi removido da lista de recentes."
+
+msgid ""
+"The following files were deleted from disk and were removed from the recent list:\n"
+"%s"
+msgstr ""
+"Os seguintes arquivos foram apagados do disco e removidos da lista de recentes:\n"
+"%s"
+
+msgid "This removes the list only; the files on disk are not deleted."
+msgstr "Isto remove apenas a lista; os arquivos no disco não são apagados."
+
+msgid "Username:"
+msgstr "Usuário:"
+
+msgid "ZIP (US) / County ID (CA):"
+msgstr "CEP (EUA) / ID de condado (CA):"
+
+msgid "edit"
+msgstr "editar"
+
+msgid "hostname:port"
+msgstr "host:porta"
+
+msgid "Loc"
+msgstr "Loc"
+
+msgid "Move down"
+msgstr "Mover para baixo"
+
+msgid "Move up"
+msgstr "Mover para cima"
+
+msgid "Name"
+msgstr "Nome"
+
+msgid "Printing not available"
+msgstr "Impressão não disponível"
+
 #~ msgid "Adding memory {number}"
 #~ msgstr "Adicionando memï¿œria {number}"
 
@@ -5007,9 +5606,6 @@ msgstr "Código ANI %i"
 #~ msgid "Inverse"
 #~ msgstr "Inverso"
 
-#~ msgid "Loc"
-#~ msgstr "Loc"
-
 #~ msgid "Location memory will be imported into"
 #~ msgstr "Memï¿œria de localizaï¿œï¿œo serï¿œ importada para"
 
@@ -5038,12 +5634,6 @@ msgstr "Código ANI %i"
 #~ msgid "Memory {number}"
 #~ msgstr "Memï¿œria {number}"
 
-#~ msgid "Move down"
-#~ msgstr "Mover abaixo"
-
-#~ msgid "Move up"
-#~ msgstr "Mover acima"
-
 #~ msgid "Moved {count} memories"
 #~ msgstr "Memï¿œrias {count} movidas"
 
@@ -5055,9 +5645,6 @@ msgstr "Código ANI %i"
 
 #~ msgid "My callsign"
 #~ msgstr "Meu indicativo"
-
-#~ msgid "Name"
-#~ msgstr "Nome"
 
 #~ msgid "None"
 #~ msgstr "Nenhum"

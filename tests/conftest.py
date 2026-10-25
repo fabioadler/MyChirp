@@ -9,6 +9,25 @@ import pytest
 builtins._ = lambda s: s
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _force_source_language():
+    """Renderiza os widgets com as strings-fonte (inglês) nos testes.
+
+    Sem isso, o ``_()`` da GUI faz lazy-install do catálogo da máquina
+    do desenvolvedor (ex.: state.lang=pt_BR) e os asserts de texto
+    quebram conforme o idioma local. Testes de idioma específicos
+    (U7) reinstalam o catálogo explicitamente por teste.
+    """
+    import gettext
+
+    from mychirp.pysideui import i18n
+    i18n._translation = gettext.NullTranslations()
+    i18n._checked = True
+    yield
+    i18n._checked = False
+    i18n._translation = None
+
+
 def pytest_configure(config):
     """Registra dinamicamente os marks por módulo de driver.
 
