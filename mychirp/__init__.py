@@ -14,3 +14,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 CHIRP_VERSION = "2.0"
+
+# ---------------------------------------------------------------------------
+# Translatable-string shim (upstream parity)
+#
+# Upstream CHIRP resolved the ``_()`` marker in every driver by injecting a
+# translation function into the Python builtins from the wxui package
+# (``builtins._ = wx.GetTranslation``).  The wxui was removed in the
+# PySide6 migration and nothing replaced the injection, leaving 73 driver
+# files and 2 chirp_common sites with an undefined ``_`` (NameError at
+# runtime: 227 of 564 drivers crashed in get_prompts()).
+#
+# This shim installs a NO-OP translation as soon as the mychirp package is
+# imported (so nothing ever crashes), and the real catalog-aware ``_`` is
+# installed later on top of it by mychirp.pysideui.i18n at GUI startup.
+import builtins
+
+if '_' not in builtins.__dict__:
+    builtins._ = str

@@ -13,11 +13,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gettext
+import builtins
 import logging
 from mychirp import chirp_common, errors
 
-_ = gettext.gettext
+
+def _(msg):
+    """Resolve o ``_()`` do catálogo ativo.
+
+    O i18n do PySide6 instala um ``_`` ciente do catálogo nos builtins
+    na inicialização da GUI (mesmo mecanismo do upstream CHIRP, que
+    fazia ``builtins._ = wx.GetTranslation``). Até lá, o shim de
+    ``mychirp/__init__.py`` deixa um no-op, evitando NameError em
+    qualquer ordem de importação.
+    """
+    return builtins._(msg)
 
 LOG = logging.getLogger(__name__)
 

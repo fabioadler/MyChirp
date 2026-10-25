@@ -72,6 +72,7 @@ def _install():
                 "CHIRP", localedir=_locale_dir(),
                 languages=[language], fallback=None)
             LOG.debug("Loaded locale catalog for %s", language)
+            _install_builtins()
             return
         except FileNotFoundError:
             LOG.debug("No locale catalog for %s; using source strings",
@@ -79,6 +80,16 @@ def _install():
         except Exception:
             LOG.exception("Failed to load locale catalog")
     _translation = gettext.NullTranslations()
+    _install_builtins()
+
+
+def _install_builtins():
+    """Make the catalog-aware ``_`` visible to every module (upstream
+    parity: CHIRP's wxui used to do ``builtins._ = wx.GetTranslation``).
+    Drivers and chirp_common call ``_()`` without importing gettext;
+    a no-op shim from mychirp/__init__.py covers the pre-GUI window."""
+    import builtins
+    builtins._ = _
 
 
 def _(message):
