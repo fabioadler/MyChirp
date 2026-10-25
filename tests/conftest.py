@@ -9,7 +9,7 @@ import pytest
 builtins._ = lambda s: s
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(autouse=True, scope="function")
 def _force_source_language():
     """Renderiza os widgets com as strings-fonte (inglês) nos testes.
 
@@ -21,6 +21,11 @@ def _force_source_language():
     import gettext
 
     from mychirp.pysideui import i18n
+    from mychirp import config
+    cfg = config.get()
+    cfg.remove_option("lang", "state")
+    cfg.save()
+    
     i18n._translation = gettext.NullTranslations()
     i18n._checked = True
     yield

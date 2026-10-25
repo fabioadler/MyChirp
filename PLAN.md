@@ -240,7 +240,91 @@ hardware V01. Driver `UV17M` em `baofeng_uv17Pro.py`:
   Ctrl+X/C/V/G, Ctrl+A (select all), Ctrl+Shift+T (restore), Ctrl+Backspace
   (delete channel), F5 (refresh em qualquer aba).
 
-## 8. Ritual por alteração
+---
+
+## 9. Internacionalização (i18n) — U1 a U7 (2026-10-24/25)
+
+> **Objetivo**: Todos os textos da GUI respeitam o idioma selecionado;
+> menu `View → Idioma` com **troca instantânea** (sem reiniciar); 15
+> idiomas suportados (pt_BR, en_US, ja_JP, zh_CN + 11 novos).
+
+### U1 — Injeção de `_()` nos builtins (backend/drivers) ✅ `03a4bf48`
+- **Problema**: 227/564 drivers falhavam com `NameError` em `get_prompts()`
+  (wxui injetava `builtins._ = wx.GetTranslation`; removido na migração).
+- **Correção**:
+  - `mychirp/__init__.py`: shim no-op `builtins._ = str` no import do pacote.
+  - `pysideui/i18n.py`: `_install()` substitui o shim pelo `_` ciente do
+    catálogo ativo na inicialização da GUI.
+  - `import_logic.py`: `_()` resolve via `builtins._` (não mais `gettext.gettext`).
+- **Verificado**: 564/564 drivers sem crash; prompts traduzem; validação
+  aeronáutica do `chirp_common` traduz; suíte pysideui 34/34 + backend 140/140.
+
+### U2 — Normalização PT→EN nas fontes da GUI ✅ `d1fa0668`
+- **Problema**: ~25 strings em `_()` tinham fonte em português (ex.: "Aviso",
+  "Gravar", "Salvar") — renderizavam PT em qualquer idioma.
+- **Correção**: fontes normalizadas para inglês (convenção upstream);
+  traduções movidas para `pt_BR.po`.
+- **Arquivos**: `fw_restore.py`, `fw_dump.py`, `devtools.py`,
+  `main_window.py`, `clone.py`, `serial_probe.py`, `memories.py`.
+- **Teste**: `test_pysideui_fw_restore.py` atualizado ("0 divergências"→
+  "0 differences").
+
+### U3 — Catálogo pt_BR completo ✅ `6f61d72e`
+- **Problema**: 151 strings usadas ausentes do catálogo + 43 entradas vazias
+  (herança upstream: validação aeronáutica, prompts Icom/FT-8x, importação).
+- **Correção**: `tools/translate_pt_br.py` (+147 traduções GUI + 46 vazias);
+  fix no tool: entradas obsoletas (`#~`) agora reativadas para entrarem no
+  `.mo` compilado via `polib`.
+- **Verificado**: 1046 entradas ativas, 0 strings usadas sem tradução,
+  0 vazias; suíte 156/156.
+
+### U4 — Settings dos rádios traduzíveis ✅ `16850a10`
+- **Problema**: Títulos de grupos/subgrupos no SettingsTab não eram
+  envolvidos em `_()` — exibiam inglês mesmo com pt_BR ativo.
+- **Correção**:
+  - `pysideui/tabs/settings.py`: 3 wraps `_()` (GroupListItem,
+    `group_title`, subgrupos `RadioSettingGroup`).
+  - `tools/translate_pt_br.py`: +220 traduções pt_BR para strings de
+    settings extraídas de 36 instâncias das famílias h777, uv5r/BOM-5701,
+    uv17Pro.
+- **Verificado**: settings 0 faltando/0 vazias; catálogo 1265 ativas; suíte 156/156.
+
+### U5 — 11 idiomas adicionais compilados ✅ `22c6e14e`
+- **Idiomas**: cs (95%), de (72%), es (98%), fr (92%), it (99%), pl (59%),
+  ro_RO (91%), ru (92%), tr_TR (95%), uk_UA (53%), bg_BG (73%).
+- **Total**: 15 idiomas com `.mo` compilado via `polib` (pt_BR, en_US,
+  ja_JP, zh_CN + 11 novos). `available_languages()` lista todos
+  automaticamente.
+
+### U6 — Menu `View → Idioma` com troca instantânea ✅ `de8c520e`
+- **API `pysideui/i18n.py`**: `set_language()`, `get_current_language()`,
+  `available_languages()`, `language_display_name()`.
+- **GUI `main_window.py`**: `_build_language_menu()` reconstrói submenu
+  com "System default" + 15 idiomas; `_on_language_change()` troca
+  catálogo, reconstrói menu, chama `_refresh_ui_texts()` que atualiza
+  títulos dos 5 menus da barra via referências guardadas
+  (`self._menu_file`, `_menu_edit`, `_menu_view`, `_menu_radio`,
+  `_menu_help`).
+- **Verificado**: pt_BR → es → None → pt_BR funciona sem reiniciar app.
+
+### U7 — Testes E2E de idioma + auditoria ✅
+- **Novo arquivo**: `tests/unit/test_pysideui_language.py` (10 testes):
+  - `test_available_languages_includes_expected`: 15 idiomas
+  - `test_language_display_names`: nomes nativos
+  - `test_set_language_switches_catalog`: troca runtime
+  - `test_main_window_builds_language_menu`: menu construído
+  - `test_main_window_language_switch_updates_menu_checkmarks`: checkmarks
+  - `test_main_window_menu_titles_translate_on_language_switch`: títulos
+  - `test_settings_tab_group_titles_are_translatable`: settings traduzíveis
+  - `test_fw_dump_restore_dialogs_translatable_strings`: diálogos fw
+  - `test_devtools_dialog_translatable_strings`: popup reporte
+  - `test_no_untranslated_pt_in_source_strings`: auditoria AST (0 violações)
+- **Fixture `conftest.py`**: escopo `function` força `NullTranslations`
+  antes de cada teste + limpa `config.state.lang` para determinismo.
+- **Suíte completa**: 44 testes pysideui passam; 828 testes unitários
+  (excl. rede) passam.
+
+## 10. Ritual por alteração
 
 1. Alteração mínima, testes (`venv/bin/python -m pytest tests/unit -q`).
 2. App abre sem erros (`: > ~/.chirp/debug.log; venv/bin/mychirp`,
