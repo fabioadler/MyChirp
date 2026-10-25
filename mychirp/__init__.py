@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-CHIRP_VERSION = "2.0"
+CHIRP_VERSION = "2.0.1-beta"
 
 # ---------------------------------------------------------------------------
 # Translatable-string shim (upstream parity)
