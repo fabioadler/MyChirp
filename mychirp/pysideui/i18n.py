@@ -97,3 +97,64 @@ def _(message):
     if _translation is None:
         _install()
     return _translation.gettext(message)
+
+
+# Nomes nativos para exibição no menu (código -> nome amigável)
+_LANGUAGE_NAMES = {
+    "pt_BR": "Português (Brasil)",
+    "en_US": "English",
+    "ja_JP": "日本語",
+    "zh_CN": "中文 (简体)",
+    "cs": "Čeština",
+    "de": "Deutsch",
+    "es": "Español",
+    "fr": "Français",
+    "it": "Italiano",
+    "pl": "Polski",
+    "ro_RO": "Română",
+    "ru": "Русский",
+    "tr_TR": "Türkçe",
+    "uk_UA": "Українська",
+    "bg_BG": "Български",
+}
+
+
+def language_display_name(code):
+    """Return the native display name for a language code."""
+    return _LANGUAGE_NAMES.get(code, code)
+
+
+def set_language(lang_code):
+    """Switch the active language at runtime.
+
+    Writes the preference to config, resets the translation state, and
+    reinstalls the catalog. Returns True on success, False if the
+    language code has no compiled catalog.
+    """
+    global _translation, _checked
+    if lang_code and lang_code not in available_languages():
+        LOG.warning("Language %s has no compiled catalog", lang_code)
+        return False
+
+    from mychirp import config
+    cfg = config.get()
+    if lang_code:
+        cfg.set("lang", lang_code, "state")
+    else:
+        cfg.remove_option("lang", "state")
+    cfg.save()
+
+    _translation = None
+    _checked = False
+    _install()
+    LOG.info("Language switched to %s", lang_code or "system default")
+    return True
+
+
+def get_current_language():
+    """Return the currently active language code (or None for system)."""
+    try:
+        from mychirp import config
+        return config.get().get("lang", "state")
+    except Exception:
+        return None

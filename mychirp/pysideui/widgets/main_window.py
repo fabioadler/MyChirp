@@ -25,7 +25,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from mychirp.pysideui.i18n import _
+from mychirp.pysideui.i18n import (
+    _,
+    available_languages,
+    language_display_name,
+    set_language,
+    get_current_language,
+)
 from mychirp.pysideui.services.app_state import AppState, EditorSetState
 from mychirp.pysideui.services.radio_service import get_service
 from mychirp.pysideui.tabs.memories import MemoriesTab
@@ -249,119 +255,119 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
 
         # File menu
-        file_menu = menubar.addMenu(_("&File"))
+        self._menu_file = menubar.addMenu(_("&File"))
 
         self.action_open = QAction(_("&Open..."), self)
         self.action_open.setShortcut(QKeySequence.StandardKey.Open)
         self.action_open.triggered.connect(self.pick_open)
-        file_menu.addAction(self.action_open)
+        self._menu_file.addAction(self.action_open)
 
-        file_menu.addSeparator()
+        self._menu_file.addSeparator()
 
         self.action_save = QAction(_("&Save"), self)
         self.action_save.setShortcut(QKeySequence.StandardKey.Save)
         self.action_save.triggered.connect(self.save_current)
-        file_menu.addAction(self.action_save)
+        self._menu_file.addAction(self.action_save)
 
         self.action_saveas = QAction(_("Save As..."), self)
         self.action_saveas.setShortcut(QKeySequence.StandardKey.SaveAs)
         self.action_saveas.triggered.connect(
             lambda: self.save_current(as_new=True))
-        file_menu.addAction(self.action_saveas)
+        self._menu_file.addAction(self.action_saveas)
 
         self.action_export = QAction(_("Export to CSV..."), self)
         self.action_export.setShortcut(QKeySequence("Ctrl+E"))
         self.action_export.triggered.connect(self.export_current_csv)
-        file_menu.addAction(self.action_export)
+        self._menu_file.addAction(self.action_export)
 
         self.action_export_itm = QAction(_("Export to ITM..."), self)
         self.action_export_itm.triggered.connect(
             lambda: self.export_current_csv(fmt='itm'))
-        file_menu.addAction(self.action_export_itm)
+        self._menu_file.addAction(self.action_export_itm)
 
         self.action_export_hmk = QAction(_("Export to HMK..."), self)
         self.action_export_hmk.triggered.connect(
             lambda: self.export_current_csv(fmt='hmk'))
-        file_menu.addAction(self.action_export_hmk)
+        self._menu_file.addAction(self.action_export_hmk)
 
-        file_menu.addSeparator()
+        self._menu_file.addSeparator()
 
-        file_menu.addSeparator()
+        self._menu_file.addSeparator()
 
         self.action_print = QAction(_("&Print..."), self)
         self.action_print.setShortcut(QKeySequence.StandardKey.Print)
         self.action_print.triggered.connect(self.print_current)
-        file_menu.addAction(self.action_print)
+        self._menu_file.addAction(self.action_print)
 
         self.action_import = QAction(_("&Import..."), self)
         self.action_import.triggered.connect(self.import_into_current)
-        file_menu.addAction(self.action_import)
+        self._menu_file.addAction(self.action_import)
 
 
-        file_menu.addSeparator()
+        self._menu_file.addSeparator()
 
         self.action_restore = QAction(_("Restore last session"), self)
         self.action_restore.setShortcut("Ctrl+Shift+T")
         self.action_restore.triggered.connect(self.restore_session)
-        file_menu.addAction(self.action_restore)
+        self._menu_file.addAction(self.action_restore)
 
         self.action_close_tab = QAction(_("Close Tab"), self)
         self.action_close_tab.setShortcut(QKeySequence.StandardKey.Close)
         self.action_close_tab.triggered.connect(self.close_current)
-        file_menu.addAction(self.action_close_tab)
+        self._menu_file.addAction(self.action_close_tab)
 
-        file_menu.addSeparator()
+        self._menu_file.addSeparator()
 
         self.action_quit = QAction(_("&Quit"), self)
         self.action_quit.setShortcut(QKeySequence.StandardKey.Quit)
         self.action_quit.triggered.connect(self.close)
-        file_menu.addAction(self.action_quit)
+        self._menu_file.addAction(self.action_quit)
 
         # Edit menu
-        edit_menu = menubar.addMenu(_("&Edit"))
+        self._menu_edit = menubar.addMenu(_("&Edit"))
         self.action_copy = QAction(_("Copy"), self)
         self.action_copy.setShortcut(QKeySequence.StandardKey.Copy)
-        edit_menu.addAction(self.action_copy)
+        self._menu_edit.addAction(self.action_copy)
         self.action_cut = QAction(_("Cut"), self)
         self.action_cut.setShortcut(QKeySequence.StandardKey.Cut)
-        edit_menu.addAction(self.action_cut)
+        self._menu_edit.addAction(self.action_cut)
         self.action_paste = QAction(_("Paste"), self)
         self.action_paste.setShortcut(QKeySequence.StandardKey.Paste)
-        edit_menu.addAction(self.action_paste)
-        edit_menu.addSeparator()
+        self._menu_edit.addAction(self.action_paste)
+        self._menu_edit.addSeparator()
         self.action_delete = QAction(_("Delete channel"), self)
         self.action_delete.setShortcut(QKeySequence.StandardKey.Delete)
-        edit_menu.addAction(self.action_delete)
-        edit_menu.addSeparator()
+        self._menu_edit.addAction(self.action_delete)
+        self._menu_edit.addSeparator()
         self.action_undo = QAction(_("Undo"), self)
         self.action_undo.setShortcut(QKeySequence.StandardKey.Undo)
-        edit_menu.addAction(self.action_undo)
+        self._menu_edit.addAction(self.action_undo)
         self.action_redo = QAction(_("Redo"), self)
         self.action_redo.setShortcut(QKeySequence.StandardKey.Redo)
-        edit_menu.addAction(self.action_redo)
-        edit_menu.addSeparator()
+        self._menu_edit.addAction(self.action_redo)
+        self._menu_edit.addSeparator()
         self.action_goto = QAction(_("Go to channel..."), self)
         self.action_goto.setShortcut(QKeySequence("Ctrl+G"))
-        edit_menu.addAction(self.action_goto)
+        self._menu_edit.addAction(self.action_goto)
         self.action_find_next = QAction(_("Find next"), self)
         self.action_find_next.setShortcut(QKeySequence.StandardKey.FindNext)
-        edit_menu.addAction(self.action_find_next)
+        self._menu_edit.addAction(self.action_find_next)
 
         # View menu
-        view_menu = menubar.addMenu(_("&View"))
+        self._menu_view = menubar.addMenu(_("&View"))
 
         self.action_theme = QAction(self._theme_label(), self)
         self.action_theme.triggered.connect(self.state.toggle_theme)
-        view_menu.addAction(self.action_theme)
+        self._menu_view.addAction(self.action_theme)
 
         self.action_refresh = QAction(_("&Refresh data"), self)
         self.action_refresh.setShortcut(Qt.Key.Key_F5)
         self.action_refresh.triggered.connect(self.refresh_current)
-        view_menu.addAction(self.action_refresh)
+        self._menu_view.addAction(self.action_refresh)
 
         self.action_session = QAction(self._session_label(), self)
         self.action_session.triggered.connect(self.toggle_session_restore)
-        view_menu.addAction(self.action_session)
+        self._menu_view.addAction(self.action_session)
 
         self.action_developer_mode = QAction(_("Developer mode"), self)
         self.action_developer_mode.setCheckable(True)
@@ -370,13 +376,16 @@ class MainWindow(QMainWindow):
                                      default=False))
         self.action_developer_mode.triggered.connect(
             self.toggle_developer_mode)
-        view_menu.addAction(self.action_developer_mode)
+        self._menu_view.addAction(self.action_developer_mode)
 
         self.action_devtools = QAction(_("Developer tools (raw dump)"), self)
         self.action_devtools.triggered.connect(self.show_devtools)
-        view_menu.addAction(self.action_devtools)
+        self._menu_view.addAction(self.action_devtools)
 
-        bandplan_menu = view_menu.addMenu(_("Band plan"))
+        # Language submenu
+        self._build_language_menu(self._menu_view)
+
+        bandplan_menu = self._menu_view.addMenu(_("Band plan"))
         self._bandplan_group = QActionGroup(self)
         self._bandplan_group.setExclusive(True)
         current_plan = self.state.conf.get("set_bandplan", "state") or ""
@@ -398,15 +407,15 @@ class MainWindow(QMainWindow):
             first.setChecked(True)
 
         # Radio menu
-        radio_menu = menubar.addMenu(_("&Radio"))
+        self._menu_radio = menubar.addMenu(_("&Radio"))
         self.action_download = QAction(_("Download from radio"), self)
         self.action_download.setShortcut("Ctrl+D")
         self.action_download.triggered.connect(self.download_from_radio)
-        radio_menu.addAction(self.action_download)
+        self._menu_radio.addAction(self.action_download)
         self.action_upload = QAction(_("Upload to radio"), self)
         self.action_upload.setShortcut("Ctrl+U")
         self.action_upload.triggered.connect(self.upload_to_radio)
-        radio_menu.addAction(self.action_upload)
+        self._menu_radio.addAction(self.action_upload)
 
         self.action_fw_dump = QAction(_("Firmware dump..."), self)
         self.action_fw_dump.setShortcut("Ctrl+Shift+D")
@@ -414,7 +423,7 @@ class MainWindow(QMainWindow):
             _("Read-only raw dump of the radio memory (clone image or "
               "full window), saved to ~/.chirp/fw-backups/"))
         self.action_fw_dump.triggered.connect(self.firmware_dump)
-        radio_menu.addAction(self.action_fw_dump)
+        self._menu_radio.addAction(self.action_fw_dump)
         self.action_fw_restore = QAction(_("Firmware restore (write)..."),
                                          self)
         self.action_fw_restore.setShortcut("Ctrl+Shift+W")
@@ -423,17 +432,17 @@ class MainWindow(QMainWindow):
               "(h777 and UV-5R-aux-first families; double "
               "confirmation + automatic pre/post backups)"))
         self.action_fw_restore.triggered.connect(self.firmware_restore)
-        radio_menu.addAction(self.action_fw_restore)
+        self._menu_radio.addAction(self.action_fw_restore)
 
-        radio_menu.addSeparator()
+        self._menu_radio.addSeparator()
 
         self.action_network_source = QAction(_("Network source..."), self)
         self.action_network_source.triggered.connect(self.open_network_source)
-        radio_menu.addAction(self.action_network_source)
+        self._menu_radio.addAction(self.action_network_source)
 
-        radio_menu.addSeparator()
+        self._menu_radio.addSeparator()
 
-        query_menu = radio_menu.addMenu(_("Query Source"))
+        query_menu = self._menu_radio.addMenu(_("Query Source"))
         from mychirp.pysideui.dialogs.query_source import SOURCES
         for source_name, (_module, _class, label) in SOURCES.items():
             action = QAction(label, self)
@@ -443,16 +452,16 @@ class MainWindow(QMainWindow):
             query_menu.addAction(action)
 
         # Help menu
-        help_menu = menubar.addMenu(_("&Help"))
+        self._menu_help = menubar.addMenu(_("&Help"))
         self.action_report_bug = QAction(_("Report a bug..."), self)
         self.action_report_bug.triggered.connect(self.report_bug)
-        help_menu.addAction(self.action_report_bug)
+        self._menu_help.addAction(self.action_report_bug)
         self.action_clear_logs = QAction(_("Clear logs"), self)
         self.action_clear_logs.triggered.connect(self.clear_logs)
-        help_menu.addAction(self.action_clear_logs)
+        self._menu_help.addAction(self.action_clear_logs)
         self.action_about = QAction(_("About"), self)
         self.action_about.triggered.connect(self.show_about)
-        help_menu.addAction(self.action_about)
+        self._menu_help.addAction(self.action_about)
 
         # window icon
         logo = os.path.join(ASSETS_DIR, "mychirp-logo.png")
@@ -1018,6 +1027,90 @@ class MainWindow(QMainWindow):
             self.state.set_status(_("Band plan: %s") % label)
         except Exception:
             LOG.exception("Failed to set band plan")
+
+    # ----- language menu -----
+    def _build_language_menu(self, parent_menu):
+        """Build/rebuild the View → Language submenu.
+
+        Rebuildable at runtime to reflect the current language choice
+        immediately after a switch.
+        """
+        # Remove existing Language menu if present
+        old = getattr(self, "_language_menu", None)
+        if old:
+            parent_menu.removeAction(old.menuAction())
+            old.deleteLater()
+
+        lang_menu = parent_menu.addMenu(_("Language"))
+        self._language_menu = lang_menu
+        self._language_actions = {}
+
+        current = get_current_language()  # None = system default
+        langs = available_languages()
+
+        # "System default" action
+        act_sys = QAction(_("System default"), self)
+        act_sys.setCheckable(True)
+        act_sys.setChecked(current is None)
+        act_sys.setData(None)
+        act_sys.triggered.connect(
+            lambda checked, a=act_sys: self._on_language_change(a))
+        lang_menu.addAction(act_sys)
+        self._language_actions[None] = act_sys
+
+        lang_menu.addSeparator()
+
+        # Available languages
+        for code in sorted(langs, key=lambda c: language_display_name(c)):
+            name = language_display_name(code)
+            act = QAction(name, self)
+            act.setCheckable(True)
+            act.setChecked(code == current)
+            act.setData(code)
+            act.triggered.connect(
+                lambda checked, a=act: self._on_language_change(a))
+            lang_menu.addAction(act)
+            self._language_actions[code] = act
+
+    def _on_language_change(self, action):
+        """Handle language selection from the menu."""
+        lang_code = action.data()  # None for system default
+        if lang_code == get_current_language():
+            return  # already active
+        if not set_language(lang_code):
+            return
+        # Rebuild Language submenu to update checkmarks
+        self._build_language_menu(self._menu_view)
+        # Update immediate UI texts (menu bar, status tip, window title)
+        self._refresh_ui_texts()
+        self.state.set_status(_("Language changed to %s") %
+                              (language_display_name(lang_code)
+                               if lang_code else _("System default")))
+
+    def _refresh_ui_texts(self):
+        """Refresh texts that are cached on the main window.
+
+        Called after language change; re-translates menu titles and
+        action texts that were set once at startup. Widgets inside tabs
+        will update when they are recreated (e.g., tab switch, dialog
+        reopen).
+        """
+        self._menu_file.setTitle(_("&File"))
+        self._menu_edit.setTitle(_("&Edit"))
+        self._menu_view.setTitle(_("&View"))
+        self._menu_radio.setTitle(_("&Radio"))
+        self._menu_help.setTitle(_("&Help"))
+
+        # Theme action label
+        self.action_theme.setText(self._theme_label())
+        # Session action label
+        self.action_session.setText(self._session_label())
+        # Developer tools
+        self.action_devtools.setText(_("Developer tools (raw dump)"))
+        # Band plan menu title (rebuilt on language change via _build_language_menu)
+        # Window title
+        self.setWindowTitle("MyChirp")
+        self.state.set_status(_("Ready"))
 
     def upload_to_radio(self):
         eset = self.current_editorset
