@@ -5386,6 +5386,830 @@ msgstr "Nome"
 msgid "Printing not available"
 msgstr "Impressão não disponível"
 
+msgid "Shift"
+msgstr "Deslocamento"
+
+msgid "A Channel Display Type"
+msgstr "Tipo de exibição do canal A"
+
+msgid "Alarm"
+msgstr "Alarme"
+
+msgid ""
+"Allows or blocks use of the 65-108 MHz broadcast FM receiver from the "
+"radio's CALL button."
+msgstr ""
+"Permite ou bloqueia o uso do receptor FM de radiodifusão 65-108 MHz pelo "
+"botão CALL do rádio."
+
+msgid ""
+"Announces the channel number and other operations out loud as you use the "
+"radio. It can be intrusive in quiet surroundings."
+msgstr ""
+"Anuncia o número do canal e outras operações em voz alta conforme você usa o"
+" rádio. Pode ser intrusivo em ambientes silenciosos."
+
+msgid "Auto Key Lock"
+msgstr "Trava automática de teclas"
+
+msgid "Automatic Key Lock"
+msgstr "Trava automática de teclas"
+
+msgid ""
+"Automatically locks the keypad to prevent accidental changes. Hold the # key"
+" to unlock the keypad."
+msgstr ""
+"Trava o teclado automaticamente para evitar alterações acidentais. Segure a "
+"tecla # para destravar o teclado."
+
+msgid "B Channel Display Type"
+msgstr "Tipo de exibição do canal B"
+
+msgid "Backlight"
+msgstr "Luz de fundo"
+
+msgid "Backlight Timer"
+msgstr "Temporizador da luz de fundo"
+
+msgid "Bandwidth"
+msgstr "Largura de banda"
+
+msgid "Bank name 1"
+msgstr "Nome do banco 1"
+
+msgid "Bank name 10"
+msgstr "Nome do banco 10"
+
+msgid "Bank name 2"
+msgstr "Nome do banco 2"
+
+msgid "Bank name 3"
+msgstr "Nome do banco 3"
+
+msgid "Bank name 4"
+msgstr "Nome do banco 4"
+
+msgid "Bank name 5"
+msgstr "Nome do banco 5"
+
+msgid "Bank name 6"
+msgstr "Nome do banco 6"
+
+msgid "Bank name 7"
+msgstr "Nome do banco 7"
+
+msgid "Bank name 8"
+msgstr "Nome do banco 8"
+
+msgid "Bank name 9"
+msgstr "Nome do banco 9"
+
+msgid "Battery Save Mode"
+msgstr "Modo de economia de bateria"
+
+msgid "Battery saver"
+msgstr "Economia de bateria"
+
+msgid "Beep Tone"
+msgstr "Tom do beep"
+
+msgid "Bluetooth"
+msgstr "Bluetooth"
+
+msgid "Boot Screen 1"
+msgstr "Tela de inicialização 1"
+
+msgid "Boot Screen 2"
+msgstr "Tela de inicialização 2"
+
+msgid "Boot Screen Mode"
+msgstr "Modo da tela de inicialização"
+
+msgid "Broadcast FM Radio"
+msgstr "Rádio FM de radiodifusão"
+
+msgid ""
+"Broadcast FM radio receiver. The radio cannot scan while this is active"
+msgstr ""
+"Receptor de rádio FM de radiodifusão. O rádio não pode fazer varredura "
+"enquanto isso estiver ativo"
+
+msgid "Busy Channel Lockout"
+msgstr "Bloqueio de canal ocupado"
+
+msgid "CTCSS Tail Revert"
+msgstr "Reversão de cauda CTCSS"
+
+msgid "Channel A display type"
+msgstr "Tipo de exibição do canal A"
+
+msgid "Channel A work mode"
+msgstr "Modo de trabalho do canal A"
+
+msgid "Channel B display type"
+msgstr "Tipo de exibição do canal B"
+
+msgid "Channel B work mode"
+msgstr "Modo de trabalho do canal B"
+
+msgid ""
+"Chooses how the alarm function operates when the CALL button is held: Site, "
+"Tone, or Code."
+msgstr ""
+"Escolhe como a função de alarme opera quando o botão CALL é segurado: Site, "
+"Tom ou Código."
+
+msgid ""
+"Controls access to the full front-panel menu. Disabling it can prevent users"
+" from changing programmed settings on the radio."
+msgstr ""
+"Controla o acesso ao menu completo do painel frontal. Desativá-lo pode "
+"impedir usuários de alterar configurações programadas no rádio."
+
+msgid ""
+"Controls what scanning does after finding a signal. TO resumes after a "
+"preset time, CO resumes after the signal disappears, and SE stops scanning "
+"on the detected frequency or channel."
+msgstr ""
+"Controla o que a varredura faz após encontrar um sinal. TO retoma após um "
+"tempo predefinido, CO retoma após o sinal desaparecer, e SE para a varredura"
+" na frequência ou canal detectado."
+
+msgid ""
+"Controls whether the VFO/MR button can switch between frequency and memory-"
+"channel modes."
+msgstr ""
+"Controla se o botão VFO/MR pode alternar entre modos de frequência e canal "
+"de memória."
+
+msgid ""
+"Controls whether the radio's front-panel RESET menu is available. This does "
+"not reset the radio by itself."
+msgstr ""
+"Controla se o menu RESET do painel frontal do rádio está disponível. Isso "
+"não reinicia o rádio por si só."
+
+msgid ""
+"Cuts standby power consumption by switching the receiver off and on in a "
+"repeating cycle once no signal has been received for a few seconds. It "
+"considerably extends battery life, at the cost of occasionally clipping the "
+"first moment of an incoming transmission."
+msgstr ""
+"Reduz o consumo de energia em espera desligando e ligando o receptor em um "
+"ciclo repetido quando nenhum sinal foi recebido por alguns segundos. Aumenta"
+" consideravelmente a vida útil da bateria, com o custo de ocasionalmente "
+"cortar o primeiro momento de uma transmissão recebida."
+
+msgid "DTMF Sidetone"
+msgstr "Tom lateral DTMF"
+
+msgid "DTMF Speed (off)"
+msgstr "Velocidade DTMF (desligado)"
+
+msgid "DTMF Speed (on)"
+msgstr "Velocidade DTMF (ligado)"
+
+msgid "Delay Time (ms)"
+msgstr "Tempo de atraso (ms)"
+
+msgid "Digit Duration (ms)"
+msgstr "Duração do dígito (ms)"
+
+msgid "Digit Interval Duration (ms)"
+msgstr "Duração do intervalo entre dígitos (ms)"
+
+msgid "Disable FM radio"
+msgstr "Desativar rádio FM"
+
+msgid "Display ANI"
+msgstr "Exibir ANI"
+
+msgid "Display Mode"
+msgstr "Modo de exibição"
+
+msgid "Display Mode (A)"
+msgstr "Modo de exibição (A)"
+
+msgid "Display Mode (B)"
+msgstr "Modo de exibição (B)"
+
+msgid "Dual Standby"
+msgstr "Dupla espera"
+
+msgid "Dual Watch TX Priority"
+msgstr "Prioridade TX do Dual Watch"
+
+msgid ""
+"Emergency alarm triggered by the side key. Depending on the model this "
+"either sounds a local siren or also alerts other radios on the channel"
+msgstr ""
+"Alarme de emergência acionado pela tecla lateral. Dependendo do modelo, isso"
+" soa uma sirene local ou também alerta outros rádios no canal."
+
+msgid "Enable FM radio"
+msgstr "Ativar rádio FM"
+
+msgid "Enable Menu Rst"
+msgstr "Ativar Reset do Menu"
+
+msgid "Enable Voice"
+msgstr "Ativar voz"
+
+msgid "Enables or disables the alarm sound."
+msgstr "Ativa ou desativa o som do alarme."
+
+msgid "Entry 1"
+msgstr "Entrada 1"
+
+msgid "Entry 10"
+msgstr "Entrada 10"
+
+msgid "Entry 11"
+msgstr "Entrada 11"
+
+msgid "Entry 12"
+msgstr "Entrada 12"
+
+msgid "Entry 13"
+msgstr "Entrada 13"
+
+msgid "Entry 14"
+msgstr "Entrada 14"
+
+msgid "Entry 15"
+msgstr "Entrada 15"
+
+msgid "Entry 2"
+msgstr "Entrada 2"
+
+msgid "Entry 3"
+msgstr "Entrada 3"
+
+msgid "Entry 4"
+msgstr "Entrada 4"
+
+msgid "Entry 5"
+msgstr "Entrada 5"
+
+msgid "Entry 6"
+msgstr "Entrada 6"
+
+msgid "Entry 7"
+msgstr "Entrada 7"
+
+msgid "Entry 8"
+msgstr "Entrada 8"
+
+msgid "Entry 9"
+msgstr "Entrada 9"
+
+msgid "FM function"
+msgstr "Função FM"
+
+msgid "GPS Mode"
+msgstr "Modo GPS"
+
+msgid "GPS On"
+msgstr "GPS Ligado"
+
+msgid "GPS Speed Units"
+msgstr "Unidades de velocidade GPS"
+
+msgid "GPS Timezone"
+msgstr "Fuso horário GPS"
+
+msgid "Hang-up time"
+msgstr "Tempo de espera"
+
+msgid "High voltage inhibit transmit"
+msgstr "Inibir transmissão em alta tensão"
+
+msgid ""
+"In channel mode, chooses whether display line A shows the memory channel "
+"number, its programmed name, or its frequency."
+msgstr ""
+"No modo canal, escolhe se a linha A do display mostra o número do canal de "
+"memória, seu nome programado ou sua frequência."
+
+msgid ""
+"In channel mode, chooses whether display line B shows the memory channel "
+"number, its programmed name, or its frequency."
+msgstr ""
+"No modo canal, escolhe se a linha B do display mostra o número do canal de "
+"memória, seu nome programado ou sua frequência."
+
+msgid "Inhibit VOX on receive"
+msgstr "Inibir VOX na recepção"
+
+msgid "Input DTMF"
+msgstr "DTMF de entrada"
+
+msgid "Key Auto Lock"
+msgstr "Trava automática de teclas"
+
+msgid "Key Lock"
+msgstr "Trava de teclas"
+
+msgid ""
+"Limits how long a single transmission may last. When the time runs out the "
+"radio stops transmitting until PTT is released, which prevents overheating "
+"and stops a stuck PTT from blocking the channel for everyone else."
+msgstr ""
+"Limita quanto tempo uma única transmissão pode durar. Quando o tempo acaba o"
+" rádio para de transmitir até que o PTT seja solto, o que previne "
+"superaquecimento e impede que um PTT travado bloqueie o canal para todos os "
+"outros."
+
+msgid "Low voltage inhibit transmit"
+msgstr "Inibir transmissão em baixa tensão"
+
+msgid "Makes the dual PTT controls operate as a single PTT."
+msgstr "Faz os controles de PTT duplo operarem como um único PTT."
+
+msgid "Menu Quit Timer"
+msgstr "Temporizador de saída do menu"
+
+msgid "Offset (0.0-999.999)"
+msgstr "Offset (0.0-999.999)"
+
+msgid "PTT Press Send"
+msgstr "Enviar ao pressionar PTT"
+
+msgid "PTT Release Send"
+msgstr "Enviar ao soltar PTT"
+
+msgid ""
+"Periodically checks both the A and B displayed frequencies. When either "
+"receives a signal, the radio stays on it until that signal disappears."
+msgstr ""
+"Verifica periodicamente as frequências A e B exibidas. Quando uma delas "
+"recebe um sinal, o rádio permanece nela até que o sinal desapareça."
+
+msgid "Pilot Tone"
+msgstr "Tom piloto"
+
+msgid "Power On Display Type"
+msgstr "Tipo de exibição ao ligar"
+
+msgid "Power On Time"
+msgstr "Tempo ao ligar"
+
+msgid "Power On Tone"
+msgstr "Tom ao ligar"
+
+msgid ""
+"Prevents transmitting on a channel that is already in use. Pressing PTT on a"
+" busy channel sounds an alert tone instead of keying the transmitter."
+msgstr ""
+"Impede a transmissão em um canal já em uso. Pressionar PTT em um canal "
+"ocupado emite um tom de alerta em vez de acionar o transmissor."
+
+msgid "QT Save Mode"
+msgstr "Modo de economia QT"
+
+msgid "RESET Menu"
+msgstr "Menu RESET"
+
+msgid "RX LED Color"
+msgstr "Cor do LED RX"
+
+msgid "Radio ID"
+msgstr "ID do rádio"
+
+msgid "Range Override Parameter"
+msgstr "Parâmetro de sobrescrita de alcance"
+
+msgid "Read Password"
+msgstr "Senha de leitura"
+
+msgid "Read Protect"
+msgstr "Proteção de leitura"
+
+msgid "Repeater Tail Delay (ms)"
+msgstr "Atraso de cauda do repetidor (ms)"
+
+msgid "Repeater Tail Revert (ms)"
+msgstr "Reversão de cauda do repetidor (ms)"
+
+msgid "Roger"
+msgstr "Roger"
+
+msgid "Roger Beep"
+msgstr "Beep Roger"
+
+msgid "Roger Beep (RX)"
+msgstr "Beep Roger (RX)"
+
+msgid "Roger Beep (TX)"
+msgstr "Beep Roger (TX)"
+
+msgid "Rpt Tail Clear"
+msgstr "Limpar cauda do repetidor"
+
+msgid "Rpt Tail Delay"
+msgstr "Atraso de cauda do repetidor"
+
+msgid "STE Repeater Delay"
+msgstr "Atraso do repetidor STE"
+
+msgid "Save Mode"
+msgstr "Modo de economia"
+
+msgid "Scan"
+msgstr "Varredura"
+
+msgid "Scan Mode"
+msgstr "Modo de varredura"
+
+msgid "Scan mode"
+msgstr "Modo de varredura"
+
+msgid ""
+"Selects the display backlight color used while receiving, or turns receive "
+"illumination off."
+msgstr ""
+"Seleciona a cor da luz de fundo do display usada durante a recepção, ou "
+"desliga a iluminação de recepção."
+
+msgid ""
+"Selects the display backlight color used while transmitting, or turns "
+"transmit illumination off."
+msgstr ""
+"Seleciona a cor da luz de fundo do display usada durante a transmissão, ou "
+"desliga a iluminação de transmissão."
+
+msgid ""
+"Selects the display backlight color while the radio is in standby, or turns "
+"that standby illumination off."
+msgstr ""
+"Seleciona a cor da luz de fundo do display enquanto o rádio está em espera, "
+"ou desliga essa iluminação de espera."
+
+msgid ""
+"Selects the language for spoken radio-operation prompts, or disables those "
+"prompts."
+msgstr ""
+"Seleciona o idioma para avisos falados de operação do rádio, ou desativa "
+"esses avisos."
+
+msgid ""
+"Selects the language the spoken voice prompts use. It has no effect unless "
+"Voice prompts are enabled."
+msgstr ""
+"Seleciona o idioma que os avisos de voz falados usam. Não tem efeito a menos"
+" que os avisos de voz estejam ativados."
+
+msgid "Selects the memory channel monitored by the Dual Watch function."
+msgstr "Seleciona o canal de memória monitorado pela função Dual Watch."
+
+msgid ""
+"Selects the squelch-tail elimination setting used for communication through "
+"a compatible repeater. Use OFF when the repeater does not support this "
+"feature."
+msgstr ""
+"Seleciona a configuração de eliminação de cauda de squelch usada para "
+"comunicação através de um repetidor compatível. Use DESLIGADO quando o "
+"repetidor não suporta este recurso."
+
+msgid "Selects the tone-burst frequency sent for repeater access."
+msgstr ""
+"Seleciona a frequência de burst de tom enviada para acesso ao repetidor."
+
+msgid ""
+"Selects whether the radio sounds an end-of-reception tone for the A or B "
+"display, or disables it."
+msgstr ""
+"Seleciona se o rádio emite um tom de fim de recepção para o display A ou B, "
+"ou desativa-o."
+
+msgid "Selects which side has transmit priority while Dual Watch is enabled."
+msgstr ""
+"Seleciona qual lado tem prioridade de transmissão enquanto o Dual Watch está"
+" ativado."
+
+msgid "Send ID Delay"
+msgstr "Atraso de envio de ID"
+
+msgid ""
+"Sends a short tone at the end of each transmission so other stations can "
+"hear that you released PTT."
+msgstr ""
+"Emite um tom curto no fim de cada transmissão para que outras estações ouçam"
+" que você soltou o PTT."
+
+msgid ""
+"Service override for supported-frequency checks during upload. Leave this at"
+" Default unless you fully understand the radio's hardware limits and the "
+"legal limits for your location."
+msgstr ""
+"Sobrescrita de serviço para verificações de frequência suportada durante o "
+"upload. Deixe em Padrão a menos que você compreenda totalmente os limites de"
+" hardware do rádio e os limites legais para sua localização."
+
+msgid ""
+"Set the channel selector to channel 16 to scan channels 1-15. Scanning stops"
+" when a signal is detected and resumes once it clears. At least two channels"
+" are required, and scanning is unavailable while the FM radio function is "
+"active"
+msgstr ""
+"Defina o seletor de canal para o canal 16 para varrer canais 1-15. A "
+"varredura para quando um sinal é detectado e retoma quando ele desaparece. "
+"Pelo menos dois canais são necessários, e a varredura não está disponível "
+"enquanto a função de rádio FM está ativa."
+
+msgid ""
+"Sets how many seconds the display backlight remains on after a key press or "
+"radio activity. 0 disables the automatic backlight."
+msgstr ""
+"Define quantos segundos a luz de fundo do display permanece acesa após uma "
+"tecla ser pressionada ou atividade do rádio. 0 desativa a luz de fundo "
+"automática."
+
+msgid ""
+"Sets how strong a received signal must be before the speaker unmutes. 0 "
+"leaves the squelch open so you hear noise all the time, higher values reject"
+" more weak signals and noise. Raise this value if the speaker keeps unmuting"
+" on interference, lower it if distant stations are being cut off."
+msgstr ""
+"Define a força que um sinal recebido deve ter antes de o alto-falante "
+"desmutar. 0 deixa o squelch aberto para que você ouça ruído o tempo todo, "
+"valores mais altos rejeitam mais sinais fracos e ruído. Aumente este valor "
+"se o alto-falante continuar desmutando em interferência, diminua se estações"
+" distantes estão sendo cortadas."
+
+msgid ""
+"Sets the VOX sensitivity. Too sensitive a setting keys the transmitter on "
+"the noise around the radio, too insensitive a setting fails to pick up your "
+"voice."
+msgstr ""
+"Define a sensibilidade do VOX. Uma configuração muito sensível aciona o "
+"transmissor com o ruído ao redor do rádio, uma configuração muito insensível"
+" falha em captar sua voz."
+
+msgid ""
+"Sets the delay before repeater squelch-tail elimination is applied. Match "
+"this timing to the repeater; use OFF when the feature is not required."
+msgstr ""
+"Define o atraso antes da eliminação de cauda de squelch do repetidor ser "
+"aplicada. Ajuste este tempo ao repetidor; use DESLIGADO quando o recurso não"
+" é necessário."
+
+msgid "Side Tone"
+msgstr "Tom lateral"
+
+msgid "Side key function"
+msgstr "Função da tecla lateral"
+
+msgid "Signal Code"
+msgstr "Código de sinal"
+
+msgid "Signal Code 1"
+msgstr "Código de sinal 1"
+
+msgid "Signal Code 1 Name"
+msgstr "Nome do código de sinal 1"
+
+msgid "Signal Code 10"
+msgstr "Código de sinal 10"
+
+msgid "Signal Code 10 Name"
+msgstr "Nome do código de sinal 10"
+
+msgid "Signal Code 11"
+msgstr "Código de sinal 11"
+
+msgid "Signal Code 11 Name"
+msgstr "Nome do código de sinal 11"
+
+msgid "Signal Code 12"
+msgstr "Código de sinal 12"
+
+msgid "Signal Code 12 Name"
+msgstr "Nome do código de sinal 12"
+
+msgid "Signal Code 13"
+msgstr "Código de sinal 13"
+
+msgid "Signal Code 13 Name"
+msgstr "Nome do código de sinal 13"
+
+msgid "Signal Code 14"
+msgstr "Código de sinal 14"
+
+msgid "Signal Code 14 Name"
+msgstr "Nome do código de sinal 14"
+
+msgid "Signal Code 15"
+msgstr "Código de sinal 15"
+
+msgid "Signal Code 15 Name"
+msgstr "Nome do código de sinal 15"
+
+msgid "Signal Code 16"
+msgstr "Código de sinal 16"
+
+msgid "Signal Code 16 Name"
+msgstr "Nome do código de sinal 16"
+
+msgid "Signal Code 17"
+msgstr "Código de sinal 17"
+
+msgid "Signal Code 17 Name"
+msgstr "Nome do código de sinal 17"
+
+msgid "Signal Code 18"
+msgstr "Código de sinal 18"
+
+msgid "Signal Code 18 Name"
+msgstr "Nome do código de sinal 18"
+
+msgid "Signal Code 19"
+msgstr "Código de sinal 19"
+
+msgid "Signal Code 19 Name"
+msgstr "Nome do código de sinal 19"
+
+msgid "Signal Code 2"
+msgstr "Código de sinal 2"
+
+msgid "Signal Code 2 Name"
+msgstr "Nome do código de sinal 2"
+
+msgid "Signal Code 20"
+msgstr "Código de sinal 20"
+
+msgid "Signal Code 20 Name"
+msgstr "Nome do código de sinal 20"
+
+msgid "Signal Code 3"
+msgstr "Código de sinal 3"
+
+msgid "Signal Code 3 Name"
+msgstr "Nome do código de sinal 3"
+
+msgid "Signal Code 4"
+msgstr "Código de sinal 4"
+
+msgid "Signal Code 4 Name"
+msgstr "Nome do código de sinal 4"
+
+msgid "Signal Code 5"
+msgstr "Código de sinal 5"
+
+msgid "Signal Code 5 Name"
+msgstr "Nome do código de sinal 5"
+
+msgid "Signal Code 6"
+msgstr "Código de sinal 6"
+
+msgid "Signal Code 6 Name"
+msgstr "Nome do código de sinal 6"
+
+msgid "Signal Code 7"
+msgstr "Código de sinal 7"
+
+msgid "Signal Code 7 Name"
+msgstr "Nome do código de sinal 7"
+
+msgid "Signal Code 8"
+msgstr "Código de sinal 8"
+
+msgid "Signal Code 8 Name"
+msgstr "Nome do código de sinal 8"
+
+msgid "Signal Code 9"
+msgstr "Código de sinal 9"
+
+msgid "Signal Code 9 Name"
+msgstr "Nome do código de sinal 9"
+
+msgid "Single PTT (BTech UV-82HP only)"
+msgstr "PTT único (apenas BTech UV-82HP)"
+
+msgid "Single PTT (UV-82C only)"
+msgstr "PTT único (apenas UV-82C)"
+
+msgid "Skey2 Short"
+msgstr "Skey2 curto"
+
+msgid "Sound Alarm"
+msgstr "Soar alarme"
+
+msgid ""
+"Sounds a short confirmation tone as you operate the radio. Turn it off when "
+"the radio has to be used discreetly."
+msgstr ""
+"Emite um tom curto de confirmação conforme você opera o rádio. Desligue "
+"quando o rádio precisar ser usado discretamente."
+
+msgid "Squelch"
+msgstr "Squelch"
+
+msgid "Squelch Level"
+msgstr "Nível de squelch"
+
+msgid "Squelch Tail Eliminate (HT to HT)"
+msgstr "Eliminação de cauda de squelch (HT para HT)"
+
+msgid "Squelch Tail Eliminate (repeater)"
+msgstr "Eliminação de cauda de squelch (repetidor)"
+
+msgid "Squelch level"
+msgstr "Nível de squelch"
+
+msgid "Standby LED Color"
+msgstr "Cor do LED em espera"
+
+msgid "TX LED Color"
+msgstr "Cor do LED TX"
+
+msgid "Tail Clear"
+msgstr "Limpar cauda"
+
+msgid "Timeout (s)"
+msgstr "Tempo limite (s)"
+
+msgid "Timeout Timer Alarm"
+msgstr "Alarme do temporizador de tempo limite"
+
+msgid "Timeout timer"
+msgstr "Temporizador de tempo limite"
+
+msgid "Tone Burst Frequency (BTech UV-82HP only)"
+msgstr "Frequência de burst de tom (apenas BTech UV-82HP)"
+
+msgid ""
+"Transmits a special end-of-transmission signal intended to reduce the "
+"squelch burst heard by another compatible handheld. The manual recommends "
+"disabling this for repeater operation."
+msgstr ""
+"Transmite um sinal especial de fim de transmissão destinado a reduzir o "
+"burst de squelch ouvido por outro portátil compatível. O manual recomenda "
+"desativar isso para operação em repetidor."
+
+msgid "VFO A"
+msgstr "VFO A"
+
+msgid "VFO B"
+msgstr "VFO B"
+
+msgid "VFO/MR Button"
+msgstr "Botão VFO/MR"
+
+msgid "VFO/MR Switching (BTech UV-82HP only)"
+msgstr "Comutação VFO/MR (apenas BTech UV-82HP)"
+
+msgid "VFO/MR Switching (UV-82C only)"
+msgstr "Comutação VFO/MR (apenas UV-82C)"
+
+msgid "VOX"
+msgstr "VOX"
+
+msgid "VOX level"
+msgstr "Nível VOX"
+
+msgid "Voice"
+msgstr "Voz"
+
+msgid "Voice Alert"
+msgstr "Alerta de voz"
+
+msgid "Voice language"
+msgstr "Idioma da voz"
+
+msgid ""
+"Voice operated transmit. The radio starts transmitting when you speak "
+"towards the microphone, so hands-free conversation is possible without "
+"pressing PTT."
+msgstr ""
+"Transmissão operada por voz. O rádio começa a transmitir quando você fala em"
+" direção ao microfone, permitindo conversa com as mãos livres sem pressionar"
+" o PTT."
+
+msgid "Voice prompt"
+msgstr "Aviso de voz"
+
+msgid "Vox"
+msgstr "Vox"
+
+msgid "Vox Delay Time"
+msgstr "Tempo de atraso do Vox"
+
+msgid "Vox Level"
+msgstr "Nível do Vox"
+
+msgid "Vox Switch"
+msgstr "Chave do Vox"
+
+msgid "When to send ANI ID"
+msgstr "Quando enviar ID ANI"
+
+msgid "Write Password"
+msgstr "Senha de gravação"
+
+msgid "Write Protect"
+msgstr "Proteção de gravação"
+
 #~ msgid "Adding memory {number}"
 #~ msgstr "Adicionando memï¿œria {number}"
 
@@ -5736,9 +6560,6 @@ msgstr "Impressão não disponível"
 
 #~ msgid "Setting memory {number}"
 #~ msgstr "Configurando memï¿œria {number}"
-
-#~ msgid "Shift"
-#~ msgstr "Shift"
 
 #~ msgid "Show Empty"
 #~ msgstr "Mostrar Vazias"

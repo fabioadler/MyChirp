@@ -38,7 +38,7 @@ _CONTROL_WIDTH = 360
 
 class GroupListItem(QListWidgetItem):
     def __init__(self, group):
-        super().__init__(group.get_shortname())
+        super().__init__(_(group.get_shortname()))
         self.group = group
 
 
@@ -131,7 +131,7 @@ class SettingsTab(QWidget):
         self._controls.clear()
 
     def _show_group(self, group):
-        self.group_title.setText(group.get_shortname())
+        self.group_title.setText(_(group.get_shortname()))
         self._clear_form()
 
         def render(container, depth=0):
@@ -139,7 +139,7 @@ class SettingsTab(QWidget):
                 if isinstance(element, chirp_settings.RadioSetting):
                     self._add_setting_row(element, depth)
                 elif isinstance(element, chirp_settings.RadioSettingGroup):
-                    subtitle = QLabel(element.get_shortname())
+                    subtitle = QLabel(_(element.get_shortname()))
                     subtitle.setStyleSheet(
                         "font-size: 13px; font-weight: 600; "
                         "margin-top: 16px;")
