@@ -248,7 +248,7 @@ class FirmwareDumpDialog(QDialog):
             probe_port(port, rclass, timeout=2.0)
         except PortProbeError as e:
             QMessageBox.warning(
-                self, _("Aviso"), str(e) or NO_RADIO_MESSAGE)
+                self, _("Warning"), str(e) or NO_RADIO_MESSAGE)
             return
         self._set_busy(True)
         self.state.conf.set("clone_last_port", port, "state")
@@ -266,9 +266,9 @@ class FirmwareDumpDialog(QDialog):
         stubarem sem bloquear num event loop de diálogo.
         """
         return QFileDialog.getSaveFileName(
-            self, _("Salvar firmware dump como"),
+            self, _("Save firmware dump as"),
             default_name,
-            _("Raw clone images (*.bin);;Todos os arquivos (*)"))[0]
+            _("Raw clone images (*.bin);;All files (*)"))[0]
 
     def _dump_done(self, job):
         self._set_busy(False)
@@ -276,7 +276,7 @@ class FirmwareDumpDialog(QDialog):
             self.state.set_status(_("Firmware dump failed"))
             if is_serial_error(job.error):
                 QMessageBox.warning(
-                    self, _("Aviso"), NO_RADIO_MESSAGE)
+                    self, _("Warning"), NO_RADIO_MESSAGE)
                 self._finish_label(str(job.error))
                 return
             self._finish_label(str(job.error))
@@ -307,14 +307,15 @@ class FirmwareDumpDialog(QDialog):
             except Exception as e:
                 LOG.error("Falha ao salvar cópia no destino escolhido: %s", e)
                 QMessageBox.warning(
-                    self, _("Aviso"),
-                    _("Não foi possível salvar em %s: %s\n"
-                      "O backup original foi mantido em %s") % (
+                    self, _("Warning"),
+                    _("Could not save to %s: %s\n"
+                      "The original backup was kept at %s") % (
                         dest_bin, e, bin_path))
 
-        msg = _("Dump concluído!\nSalvo em: %s (%s bytes)\nsha256: %s\nmeta: %s") % (
+        msg = _("Dump complete!\nSaved to: %s (%s bytes)\nsha256: %s\n"
+                "meta: %s") % (
             final_bin, size or "?", (sha or "-")[:16] + "…"
             if sha else "-", final_yaml)
         self._finish_label(msg)
         self.state.set_status(
-            _("Firmware dump salvo em %s") % final_bin)
+            _("Firmware dump saved to %s") % final_bin)

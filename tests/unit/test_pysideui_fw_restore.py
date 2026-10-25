@@ -250,7 +250,7 @@ def test_restore_dialog_done_report(qapp, tmp_state, parent_widget):
                   "sha_old": "a" * 64, "sha_new": "b" * 64,
                   "pre_path": "/p.bin", "post_path": "/p_post.bin"}
     dlg._restore_done(job)
-    assert "0 divergências" in dlg.progress_label.text()
+    assert "0 differences" in dlg.progress_label.text()
     assert not dlg._busy
 
     dlg2 = FirmwareRestoreDialog(parent_widget, tmp_state)

@@ -131,7 +131,7 @@ class CloneDialog(QDialog):
         """Aviso de porta/rádio; @message sobrepõe o texto padrão
         (ex.: motivo da porta ocupada)."""
         QMessageBox.warning(
-            self, _("Aviso"), message or NO_RADIO_MESSAGE)
+            self, _("Warning"), message or NO_RADIO_MESSAGE)
 
     def _on_vendor(self, vendor):
         if not vendor:

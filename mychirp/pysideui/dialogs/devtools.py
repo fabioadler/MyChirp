@@ -284,10 +284,10 @@ class BugReportDialog(QDialog):
         # Ações: copiar e-mail + copiar últimos logs
         actions = QHBoxLayout()
         actions.addStretch(1)
-        self.copy_email_button = QPushButton(_("Copiar e-mail"))
+        self.copy_email_button = QPushButton(_("Copy email"))
         self.copy_email_button.clicked.connect(self.copy_email)
         actions.addWidget(self.copy_email_button)
-        self.copy_logs_button = QPushButton(_("Copiar últimos logs"))
+        self.copy_logs_button = QPushButton(_("Copy recent logs"))
         self.copy_logs_button.clicked.connect(self.copy_logs)
         actions.addWidget(self.copy_logs_button)
         actions.addStretch(1)
@@ -302,9 +302,9 @@ class BugReportDialog(QDialog):
     def copy_email(self):
         QApplication.clipboard().setText(self.CONTACT_EMAIL)
         self.state.set_status(
-            _("E-mail copiado para a área de transferência"))
+            _("Email copied to clipboard"))
 
     def copy_logs(self):
         QApplication.clipboard().setText(read_debug_log_tail())
         self.state.set_status(
-            _("Logs copiados para a área de transferência"))
+            _("Logs copied to clipboard"))

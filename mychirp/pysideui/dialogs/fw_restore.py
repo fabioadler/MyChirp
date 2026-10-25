@@ -63,7 +63,7 @@ class FirmwareRestoreDialog(QDialog):
         self._busy = False
         self.image_path = None
 
-        self.setWindowTitle(_("Firmware gravar (ESCRITA)"))
+        self.setWindowTitle(_("Firmware restore (WRITE)"))
         self._icon_text = "⚠"
 
         root = QVBoxLayout(self)
@@ -71,12 +71,12 @@ class FirmwareRestoreDialog(QDialog):
         root.setSpacing(10)
 
         info = QLabel(
-            _("Grava os bytes de uma imagem de clone na janela de "
-              "memória do rádio (operação de ESCRITA).\n\n"
-              "Segurança integrada: dump prévio da unidade é salvo "
-              "automaticamente; cada bloco exige ACK (aborto em \n"
-              "NACK/timeout); re-leitura com diff no fim. Use "
-              "APENAS o backup da MESMA unidade."))
+            _("Writes the bytes of a clone image into the radio memory "
+              "window (WRITE operation).\n\n"
+              "Built-in safety: a pre-write dump of the unit is saved "
+              "automatically; every block requires an ACK (aborted on "
+              "NACK/timeout); read-back with a final diff. Use ONLY a "
+              "backup from the SAME unit."))
         info.setProperty("muted", True)
         info.setWordWrap(True)
         root.addWidget(info)
@@ -144,7 +144,7 @@ class FirmwareRestoreDialog(QDialog):
         buttons.accepted.connect(self._on_start)
         buttons.rejected.connect(self.reject)
         buttons.button(QDialogButtonBox.StandardButton.Ok).setText(
-            _("Gravar"))
+            _("Write"))
         self._gravar_btn = buttons.button(QDialogButtonBox.StandardButton.Ok)
         self._gravar_btn.setEnabled(False)
         root.addWidget(buttons)
@@ -263,10 +263,10 @@ class FirmwareRestoreDialog(QDialog):
             self.warn_label.clear()
         else:
             self.warn_label.setText(
-                _("Escrita validada apenas nas famílias h777 "
-                  "(handshake PROGRAM; ex.: Baofeng BF-777S) e "
-                  "UV-5R-aux-first (ex.: BOMVINK BOM-5701). "
-                  "Selecione um modelo de uma dessas famílias."))
+                _("Write is validated only for the h777 family "
+                  "(PROGRAM handshake; e.g. Baofeng BF-777S) and "
+                  "UV-5R-aux-first (e.g. BOMVINK BOM-5701). "
+                  "Select a model from one of these families."))
         self._validate_start()
 
     def _validate_start(self):
@@ -308,7 +308,7 @@ class FirmwareRestoreDialog(QDialog):
         extra = ""
         if not ok_size:
             if sizes:
-                extra = _("  [SIZE MISMATCH: esperado %s B para %s]") % (
+                extra = _("  [SIZE MISMATCH: expected %s B for %s]") % (
                     " / ".join(str(s) for s in sizes), family_name)
         self.img_label.setText(
             _("%s\nsha256: %s…  %d B%s") % (path, sha16, len(data), extra))
@@ -350,7 +350,7 @@ class FirmwareRestoreDialog(QDialog):
             return False
         if dlg.textValue() != CONFIRM_WORD:
             QMessageBox.warning(
-                self, _("Aviso"),
+                self, _("Warning"),
                 _("Unexpected confirmation text; write canceled."))
             return False
         return True
@@ -375,31 +375,32 @@ class FirmwareRestoreDialog(QDialog):
         data = open(self.image_path, "rb").read()
         sizes = self._family_sizes(rclass)
         if sizes is None or len(data) not in sizes:
-            family_name = self._fw_family(rclass) or "desconhecida"
-            esperado = " / ".join(str(s) for s in sizes) if sizes else "?"
+            family_name = self._fw_family(rclass) or "unknown"
+            expected = " / ".join(str(s) for s in sizes) if sizes else "?"
             self._finish_label(
-                _("Image size mismatch: %d B (esperado %s B para "
-                  "família %s)") % (len(data), esperado, family_name))
+                _("Image size mismatch: %d B (expected %s B for "
+                  "family %s)") % (len(data), expected, family_name))
             return
 
         # aviso de risco explícito antes da gravação
         reply = QMessageBox.warning(
-            self, _("Aviso de risco — gravação de firmware"),
-            _("Esta operação GRAVA na memória do rádio e pode torná-lo "
-              "inutilizável se usada incorretamente.\n\n"
-              "Use APENAS um backup da MESMA unidade.\n"
-              "O dump prévio é salvo automaticamente antes de gravar.\n\n"
-              "Deseja continuar?"),
+            self, _("Firmware write risk warning"),
+            _("This operation WRITES to the radio memory and can "
+              "render it unusable if used incorrectly.\n\n"
+              "Use ONLY a backup from the SAME unit.\n"
+              "The pre-write dump is saved automatically before "
+              "writing.\n\n"
+              "Continue?"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No)
         if reply != QMessageBox.StandardButton.Yes:
-            self._finish_label(_("Operação cancelada pelo usuário"))
+            self._finish_label(_("Operation canceled by user"))
             return
 
         try:
             probe_port(port, rclass, timeout=2.0)
         except PortProbeError as e:
-            QMessageBox.warning(self, _("Aviso"), str(e))
+            QMessageBox.warning(self, _("Warning"), str(e))
             return
         if not self._confirm(rclass):
             self.progress_label.setVisible(True)
@@ -417,23 +418,23 @@ class FirmwareRestoreDialog(QDialog):
             self.state.set_status(_("Firmware restore failed"))
             msg = str(job.error)
             if is_serial_error(job.error):
-                QMessageBox.warning(self, _("Aviso"), msg)
+                QMessageBox.warning(self, _("Warning"), msg)
             self._finish_label(msg)
             return
         rep = job.result
         if rep["ok"] and rep.get("diffs") == []:
-            head = _("RESTORE OK: 0 divergências (re-leitura idêntica)")
+            head = _("RESTORE OK: 0 differences (readback identical)")
         elif rep.get("aborted") or rep.get("diffs") is None:
-            head = _("RESTORE PITFALL: gravação incompleta (abortada)")
+            head = _("RESTORE PITFALL: incomplete write (aborted)")
         else:
-            head = ("%d divergências pós-gravação" % len(rep["diffs"]))
+            head = _("%d differences after write") % len(rep["diffs"])
         notes = ""
         if rep.get("preserve_diffs"):
-            notes = _("\nNOTA: %d faixa(s) de proteção não gravada(s) "
-                      "pelo driver (conteúdo da unidade preservado)."
+            notes = _("\nNOTE: %d protection range(s) not written by the "
+                      "driver (unit content preserved)."
                       ) % len(rep["preserve_diffs"])
         self._finish_label(
-            "%s%s\nsha_antigo: %s…\nsha_novo:   %s…\npre: %s\npost: %s" % (
+            "%s%s\nsha_old: %s…\nsha_new: %s…\npre: %s\npost: %s" % (
                 head, notes, (rep["sha_old"] or "-")[:16],
                 (rep["sha_new"] or "-")[:16],
                 rep["pre_path"], rep["post_path"]))

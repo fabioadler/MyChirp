@@ -15,8 +15,8 @@ from mychirp.pysideui.i18n import _
 LOG = logging.getLogger(__name__)
 
 NO_RADIO_MESSAGE = _(
-    "Nenhum rádio detectado nesta porta. "
-    "Verifique o cabo e tente outra porta.")
+    "No radio detected on this port. "
+    "Check the cable and try another port.")
 
 
 class PortProbeError(Exception):

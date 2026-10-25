@@ -587,7 +587,7 @@ class MemoriesTab(QWidget):
     def _tone_blocked_hint(self):
         """Aviso quando o usuário tenta editar um campo de tom sem
         ter selecionado o Tone Mode antes."""
-        self.state.set_status(_("Selecione o Tone Mode primeiro"))
+        self.state.set_status(_("Select the Tone Mode first"))
 
     # ----- data -----
     def load_memories(self):

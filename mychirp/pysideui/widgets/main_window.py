@@ -415,12 +415,13 @@ class MainWindow(QMainWindow):
               "full window), saved to ~/.chirp/fw-backups/"))
         self.action_fw_dump.triggered.connect(self.firmware_dump)
         radio_menu.addAction(self.action_fw_dump)
-        self.action_fw_restore = QAction(_("Firmware gravar..."), self)
+        self.action_fw_restore = QAction(_("Firmware restore (write)..."),
+                                         self)
         self.action_fw_restore.setShortcut("Ctrl+Shift+W")
         self.action_fw_restore.setToolTip(
-            _("GRAVAR uma imagem de clone na janela de memória do rádio "
-              "(famílias h777 e UV-5R-aux-first; dupla confirmação + "
-              "backups automáticos pré/post)"))
+            _("WRITE a clone image into the radio memory window "
+              "(h777 and UV-5R-aux-first families; double "
+              "confirmation + automatic pre/post backups)"))
         self.action_fw_restore.triggered.connect(self.firmware_restore)
         radio_menu.addAction(self.action_fw_restore)
 
@@ -704,7 +705,7 @@ class MainWindow(QMainWindow):
                 pass
             self.warn_deleted_files([filename])
             self.state.set_status(
-                _("Arquivo apagado: %s") % os.path.basename(filename))
+                _("File deleted: %s") % os.path.basename(filename))
             return
 
         self.state.set_status(_("Opening %s...") % filename)
@@ -940,16 +941,16 @@ class MainWindow(QMainWindow):
             return
         if len(files) == 1:
             QMessageBox.warning(
-                self, _("Arquivo não encontrado"),
-                _("O arquivo %s foi apagado do disco. "
-                  "Ele foi removido da lista de recentes.")
+                self, _("File not found"),
+                _("The file %s was deleted from disk. "
+                  "It was removed from the recent list.")
                 % files[0])
         else:
             listing = "\n".join("- %s" % f for f in files)
             QMessageBox.warning(
-                self, _("Arquivos não encontrados"),
-                _("Os seguintes arquivos foram apagados do disco e foram "
-                  "removidos da lista de recentes:\n%s") % listing)
+                self, _("Files not found"),
+                _("The following files were deleted from disk and were "
+                  "removed from the recent list:\n%s") % listing)
 
     def restore_session(self):
         restored, purged = self.state.restore_session()
