@@ -30,9 +30,9 @@ class RecentTab(QWidget):
         layout.setSpacing(12)
 
         header = QHBoxLayout()
-        title = QLabel(_("Recent files"))
-        title.setProperty("heading", True)
-        header.addWidget(title)
+        self.title = QLabel(_("Recent files"))
+        self.title.setProperty("heading", True)
+        header.addWidget(self.title)
         header.addStretch(1)
 
         self.clear_btn = QPushButton(_("Clear recent files"))
@@ -101,3 +101,10 @@ class RecentTab(QWidget):
 
     def retheme(self):
         self.refresh()
+
+    def retranslate(self):
+        """Re-translate cached texts (called after a language switch)."""
+        self.title.setText(_("Recent files"))
+        self.clear_btn.setText(_("Clear recent files"))
+        self.refresh_btn.setText(_("Refresh"))
+        self.refresh()  # re-translates list items via _()

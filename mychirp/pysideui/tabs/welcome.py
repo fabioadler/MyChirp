@@ -44,10 +44,10 @@ class WelcomeTab(QWidget):
         title.setProperty("heading", True)
         root.addWidget(title)
 
-        subtitle = QLabel(_("Modern radio programming software"))
-        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        subtitle.setProperty("muted", True)
-        root.addWidget(subtitle)
+        self.subtitle = QLabel(_("Modern radio programming software"))
+        self.subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.subtitle.setProperty("muted", True)
+        root.addWidget(self.subtitle)
 
         root.addSpacing(24)
 
@@ -69,12 +69,20 @@ class WelcomeTab(QWidget):
         root.addLayout(row)
 
         root.addSpacing(12)
-        hint = QLabel(
+        self.hint = QLabel(
             _("Use File > Open or Ctrl+D to download from a radio"))
-        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        hint.setProperty("muted", True)
-        root.addWidget(hint)
+        self.hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.hint.setProperty("muted", True)
+        root.addWidget(self.hint)
         root.addStretch(1)
+
+    def retranslate(self):
+        """Re-translate cached texts (called after a language switch)."""
+        self.subtitle.setText(_("Modern radio programming software"))
+        self.open_btn.setText(_("&Open file"))
+        self.download_btn.setText(_("Download from radio"))
+        self.hint.setText(
+            _("Use File > Open or Ctrl+D to download from a radio"))
 
     def _on_open(self):
         if self.state.main_window:

@@ -1112,6 +1112,17 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("MyChirp")
         self.state.set_status(_("Ready"))
 
+        # Permanent tabs (Welcome / Recent files): tab titles + cached
+        # texts inside them re-translate instantly on language switch.
+        idx = self.tabs.indexOf(self.welcome)
+        if idx >= 0:
+            self.tabs.setTabText(idx, _("Welcome"))
+            self.welcome.retranslate()
+        idx = self.tabs.indexOf(self.recent)
+        if idx >= 0:
+            self.tabs.setTabText(idx, _("Recent files"))
+            self.recent.retranslate()
+
     def upload_to_radio(self):
         eset = self.current_editorset
         if not eset:

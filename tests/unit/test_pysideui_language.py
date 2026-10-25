@@ -112,6 +112,54 @@ def test_main_window_builds_language_menu(qapp, state):
         assert not win._language_actions[code].isChecked()
 
 
+def test_permanent_tabs_retranslate_on_language_change(qapp, state):
+    """Welcome/Recent permanent tabs update titles + content on switch."""
+    from mychirp.pysideui.theme import apply_theme
+
+    apply_theme(qapp, state.is_dark())
+    win = MainWindow(state)
+    state.main_window = win
+    qapp.processEvents()
+
+    # Source English before the switch
+    assert win.tabs.tabText(win.tabs.indexOf(win.welcome)) == "Welcome"
+    assert win.tabs.tabText(win.tabs.indexOf(win.recent)) == "Recent files"
+    assert win.welcome.subtitle.text() == \
+        "Modern radio programming software"
+    assert win.welcome.open_btn.text() == "&Open file"
+    assert win.welcome.download_btn.text() == "Download from radio"
+    assert win.recent.title.text() == "Recent files"
+    assert win.recent.clear_btn.text() == "Clear recent files"
+    assert win.recent.refresh_btn.text() == "Refresh"
+
+    # Switch to pt_BR via the menu action (real E2E path)
+    win._language_actions["pt_BR"].trigger()
+    qapp.processEvents()
+
+    assert win.tabs.tabText(win.tabs.indexOf(win.welcome)) == "Bem Vindo"
+    assert win.tabs.tabText(win.tabs.indexOf(win.recent)) == \
+        "Arquivos recentes"
+    assert win.welcome.subtitle.text() == \
+        "Software moderno de programação de rádios"
+    assert win.welcome.open_btn.text() == "&Abrir arquivo"
+    assert win.welcome.download_btn.text() == "Download a partir do rádio"
+    assert win.recent.title.text() == "Arquivos recentes"
+    assert win.recent.clear_btn.text() == "Limpar arquivos recentes"
+    assert win.recent.refresh_btn.text() == "Atualizar"
+
+    # Recent list empty state also retranslated (only when list is empty;
+    # developer machines may have real recents)
+    from PySide6.QtCore import Qt
+    item0 = win.recent._list.item(0)
+    if item0 is not None and item0.data(
+            Qt.ItemDataRole.UserRole) is None:
+        assert item0.text() == "Nenhum arquivo recente ainda"
+
+    # Restore system default for other tests
+    set_language(None)
+    qapp.processEvents()
+
+
 def test_main_window_language_switch_updates_menu_checkmarks(qapp, state):
     """Switching language updates checkmarks in the Language menu."""
     from mychirp.pysideui.theme import apply_theme
